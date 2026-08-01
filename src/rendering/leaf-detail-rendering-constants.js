@@ -10,4 +10,7 @@ export const LEAF_DETAIL_RENDERING_CONSTANTS = Object.freeze({
   scaleJitterMinimum: 0.88,
   scaleJitterMaximum: 1.12,
   tangentReferenceThreshold: 0.9,
+  innerInsetMultiplier: 2.6,
+  outerOffsetMultiplier: 0.55,
+  tangentialJitterMultiplier: 1.8,
 });
