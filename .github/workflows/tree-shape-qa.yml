@@ -10,6 +10,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: tree-shape-qa-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   shape-qa:
     runs-on: ubuntu-latest
@@ -33,7 +37,7 @@ jobs:
         run: npm run qa:shape
 
       - name: Upload QA report
-        if: always()
+        if: always() && hashFiles('qa-results/tree-shape/**') != ''
         uses: actions/upload-artifact@v7
         with:
           name: tree-shape-qa-report
