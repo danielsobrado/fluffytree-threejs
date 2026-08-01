@@ -1,18 +1,26 @@
 import { BranchGenerator } from './branch-generator.js';
 import { CrownEnvelope } from './crown-envelope.js';
+import { FoliageShellGenerator } from './foliage-shell-generator.js';
+import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
 import { LobeConnectivityEnforcer } from './lobe-connectivity-enforcer.js';
 import { LobeGenerator } from './lobe-generator.js';
 import { SeededRandom } from './seeded-random.js';
+
+function createShellSeed(seed) {
+  return (Number(seed) ^ FOLIAGE_SHELL_CONSTANTS.seedSalt) >>> 0;
+}
 
 export class TreeGenerator {
   constructor({
     lobeGenerator = new LobeGenerator(),
     lobeConnectivityEnforcer = new LobeConnectivityEnforcer(),
     branchGenerator = new BranchGenerator(),
+    foliageShellGenerator = new FoliageShellGenerator(),
   } = {}) {
     this.lobeGenerator = lobeGenerator;
     this.lobeConnectivityEnforcer = lobeConnectivityEnforcer;
     this.branchGenerator = branchGenerator;
+    this.foliageShellGenerator = foliageShellGenerator;
   }
 
   generate(preset, seed) {
@@ -21,15 +29,22 @@ export class TreeGenerator {
     const generatedLobes = this.lobeGenerator.generate(preset, envelope, random);
     const lobes = this.lobeConnectivityEnforcer.enforce(generatedLobes);
     const structure = this.branchGenerator.generate(preset, lobes, random);
+    const shell = this.foliageShellGenerator.generate(
+      preset,
+      lobes,
+      new SeededRandom(createShellSeed(seed)),
+    );
 
     return Object.freeze({
       presetId: preset.id,
       seed,
       height: preset.height,
       lobes: Object.freeze(lobes),
+      lobeExposure: Object.freeze(shell.lobeExposure),
+      shell: Object.freeze(shell.instances),
       trunk: Object.freeze(structure.trunk),
       branches: Object.freeze(structure.branches),
-      palette: Object.freeze({ ...preset.foliage }),
+      palette: preset.foliage,
       trunkColor: preset.trunk.color,
     });
   }
