@@ -8,7 +8,8 @@ test('leaf detail configuration is validated and frozen', () => {
   assert.equal(preset.foliage.leafDetail.enabled, true);
   assert.equal(preset.foliage.leafDetail.leavesPerCluster, 5);
   assert.equal(preset.foliage.leafDetail.coreScale, 0.8);
-  assert.equal(preset.foliage.leafDetail.layerCount, 2);
+  assert.equal(preset.foliage.leafDetail.layerCount, 4);
+  assert.equal(preset.foliage.leafDetail.layerOffsetRatio, 0.16);
   assert.equal(Object.isFrozen(preset.foliage.leafDetail), true);
 });
 
