@@ -87,14 +87,26 @@ function createVolumeSamples(treeData, field, settings, startId) {
   return samples;
 }
 
+function calculateTrunkHeightRange(treeData, field) {
+  const first = treeData.trunk.points[0];
+  const last = treeData.trunk.points.at(-1);
+  const padding =
+    field.crownHeight * CANOPY_CLOSURE_CONSTANTS.trunkHeightPaddingRatio;
+  const minimum = Math.max(field.bounds.minimum.y + padding, first.y);
+  const maximum = Math.min(field.bounds.maximum.y - padding, last.y);
+  return maximum > minimum ? { minimum, maximum } : null;
+}
+
 function createTrunkSamples(treeData, field, settings, startId) {
   const samples = [];
+  const heightRange = calculateTrunkHeightRange(treeData, field);
+  if (!heightRange) return samples;
 
   for (let slice = 0; slice < settings.trunkSlices; slice += 1) {
-    const height = interpolateHeight(
-      field.bounds,
+    const height = interpolate(
+      heightRange.minimum,
+      heightRange.maximum,
       (slice + 0.5) / settings.trunkSlices,
-      CANOPY_CLOSURE_CONSTANTS.trunkHeightPaddingRatio,
     );
     const crossSection = createCanopyCrossSection(treeData.lobes, height);
     const trunkCenter = pointAtHeight(treeData.trunk.points, height);
