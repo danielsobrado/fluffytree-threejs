@@ -84,7 +84,11 @@ test('shape QA report is deterministic and passes a healthy preset', () => {
   const second = runner.run(presets, configuration);
 
   assert.deepEqual(first, second);
-  assert.equal(first.passed, true);
+  assert.equal(
+    first.passed,
+    true,
+    JSON.stringify(first.presets.test.failureExamples, null, 2),
+  );
   assert.equal(first.summary.treesAnalyzed, 16);
   assert.equal(first.presets.test.uniqueTreeCount, 16);
 });
