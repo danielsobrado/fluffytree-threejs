@@ -1,4 +1,7 @@
-import { applyDocumentTitle } from './app/release-title.js';
+import {
+  applyDocumentTitle,
+  formatReleaseVersion,
+} from './app/release-title.js';
 import { TreeDemo } from './app/tree-demo.js';
 import { YamlConfigLoader } from './config/yaml-config-loader.js';
 import { logger } from './core/logger.js';
@@ -26,10 +29,11 @@ async function bootstrap() {
       loader.load(CONFIG_URLS.scene),
       loader.load(CONFIG_URLS.trees),
     ]);
+    const releaseVersion = formatReleaseVersion(releaseConfig);
     applyDocumentTitle(releaseConfig);
     const presetMap = createTreePresetMap(treeConfig);
     const demo = new TreeDemo();
-    demo.start(container, sceneConfig, presetMap, releaseConfig);
+    demo.start(container, sceneConfig, presetMap, releaseVersion);
   } catch (error) {
     logger.error('Application bootstrap failed.', error);
     markRenderSmokeBootstrapFailure(error);
