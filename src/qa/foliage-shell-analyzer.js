@@ -160,6 +160,8 @@ function analyzeProjection(tree, horizontalAxis, resolution) {
     contribution:
       coreCount === 0 ? 0 : Math.max(0, combinedCount - coreCount) / coreCount,
     componentCount: components.count,
+    largestComponentRatio:
+      combinedCount === 0 ? 0 : components.largest / combinedCount,
     holeRatio: calculateHoleRatio(
       combinedMask,
       resolution,
@@ -275,6 +277,10 @@ export function analyzeFoliageShell(tree, preset, resolution) {
     shellSilhouetteComponentCount: Math.max(
       front.componentCount,
       side.componentCount,
+    ),
+    shellSilhouetteLargestComponentRatio: Math.min(
+      front.largestComponentRatio,
+      side.largestComponentRatio,
     ),
     shellSilhouetteHoleRatio: Math.max(front.holeRatio, side.holeRatio),
   };
