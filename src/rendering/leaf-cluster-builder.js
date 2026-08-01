@@ -5,6 +5,7 @@ import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constan
 import { samplePaletteColor } from './palette-color-sampler.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
+const RIGHT = new THREE.Vector3(1, 0, 0);
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
 function hashUnit(seed, id, salt) {
@@ -58,15 +59,47 @@ function createInstanceRecords(samples, layerCount) {
   );
 }
 
-function calculateLayerScale(layer, settings) {
-  if (settings.layerCount <= 1) return 1;
-  const ratio = layer / (settings.layerCount - 1);
-  return THREE.MathUtils.lerp(1.04, 0.82, ratio);
+function calculateLayerRatio(layer, settings) {
+  return settings.layerCount <= 1 ? 0.5 : layer / (settings.layerCount - 1);
 }
 
-function calculateLayerOffset(layer, settings, instanceScale) {
-  const center = (settings.layerCount - 1) * 0.5;
-  return (layer - center) * instanceScale * settings.layerOffsetRatio;
+function calculateLayerScale(layer, settings) {
+  return THREE.MathUtils.lerp(
+    LEAF_DETAIL_RENDERING_CONSTANTS.innerLayerScale,
+    LEAF_DETAIL_RENDERING_CONSTANTS.outerLayerScale,
+    calculateLayerRatio(layer, settings),
+  );
+}
+
+function calculateRadialOffset(layer, settings, instanceScale) {
+  const offsetRatio = THREE.MathUtils.lerp(
+    -settings.innerInsetRatio,
+    settings.outerOffsetRatio,
+    calculateLayerRatio(layer, settings),
+  );
+  return offsetRatio * instanceScale;
+}
+
+function createTangentBasis(normal) {
+  const reference =
+    Math.abs(normal.y) < LEAF_DETAIL_RENDERING_CONSTANTS.tangentReferenceThreshold
+      ? UP
+      : RIGHT;
+  const tangent = new THREE.Vector3().crossVectors(reference, normal).normalize();
+  const bitangent = new THREE.Vector3().crossVectors(normal, tangent).normalize();
+  return { tangent, bitangent };
+}
+
+function addTangentialJitter(position, normal, treeData, sample, layer, settings, scale) {
+  const id = sample.id + layer * 8191;
+  const angle = hashUnit(treeData.seed, id, 0x165667b1) * LEAF_DETAIL_RENDERING_CONSTANTS.tau;
+  const radius =
+    Math.sqrt(hashUnit(treeData.seed, id, 0xd3a2646c)) *
+    settings.tangentialJitterRatio *
+    scale;
+  const { tangent, bitangent } = createTangentBasis(normal);
+  position.addScaledVector(tangent, Math.cos(angle) * radius);
+  position.addScaledVector(bitangent, Math.sin(angle) * radius);
 }
 
 export class LeafClusterBuilder {
@@ -106,10 +139,11 @@ export class LeafClusterBuilder {
 
     records.forEach(({ sample, layer }, index) => {
       const surface = projectToSurface(field, sample);
+      const instanceId = sample.id + layer * 4099;
       const scaleJitter = THREE.MathUtils.lerp(
-        0.9,
-        1.1,
-        hashUnit(treeData.seed, sample.id + layer * 4099, 0x27d4eb2d),
+        LEAF_DETAIL_RENDERING_CONSTANTS.scaleJitterMinimum,
+        LEAF_DETAIL_RENDERING_CONSTANTS.scaleJitterMaximum,
+        hashUnit(treeData.seed, instanceId, 0x27d4eb2d),
       );
       const instanceScale = Math.max(
         LEAF_DETAIL_RENDERING_CONSTANTS.minimumScale,
@@ -122,8 +156,17 @@ export class LeafClusterBuilder {
         .clone()
         .addScaledVector(
           surface.normal,
-          calculateLayerOffset(layer, settings, instanceScale),
+          calculateRadialOffset(layer, settings, instanceScale),
         );
+      addTangentialJitter(
+        position,
+        surface.normal,
+        treeData,
+        sample,
+        layer,
+        settings,
+        instanceScale,
+      );
 
       alignment.setFromUnitVectors(UP, surface.normal);
       spin.setFromAxisAngle(UP, sample.rotation + layer * GOLDEN_ANGLE);
@@ -157,6 +200,9 @@ export class LeafClusterBuilder {
       sourceSampleCount: selected.length,
       layerCount: settings.layerCount,
       leafCount: records.length * settings.leavesPerCluster,
+      innerInsetRatio: settings.innerInsetRatio,
+      outerOffsetRatio: settings.outerOffsetRatio,
+      tangentialJitterRatio: settings.tangentialJitterRatio,
     };
     return mesh;
   }
