@@ -19,15 +19,16 @@ presets:
     trunk:
       baseRadius: 0.36
       topRadius: 0.14
-      bend: 0.24
+      bend: 0.34
+      flare: 0.45
       segments: 8
       branchCount: 6
       color: '#554133'
     foliage:
       palette: ['#24382d', '#4f754c', '#7fa45b', '#c2d982']
       variation: 0.1
-      paletteBase: 0.48
-      heightPaletteShift: 0.16
+      paletteBase: 0.52
+      heightPaletteShift: 0.14
       exposurePaletteShift: 0.1
       radialNormalStrength: 0.78
       crownNormalBlend: 0.52
@@ -35,6 +36,15 @@ presets:
       skyLightStrength: 0.2
       cavityStrength: 0.28
       heightLightStrength: 0.12
+      volume:
+        resolution: 30
+        smoothing: 0.58
+        padding: 0.32
+        noiseAmplitude: 0.055
+        noiseFrequency: 1.15
+        normalEpsilon: 0.025
+        colorPatchScale: 0.55
+        colorPatchStrength: 0.08
       shell:
         instancesPerLobe: 24
         candidateMultiplier: 4
@@ -71,15 +81,16 @@ presets:
     trunk:
       baseRadius: 0.3
       topRadius: 0.11
-      bend: 0.12
+      bend: 0.22
+      flare: 0.32
       segments: 9
       branchCount: 5
       color: '#4c3b30'
     foliage:
       palette: ['#19352e', '#315c4c', '#5e8d68', '#a1c99a']
       variation: 0.08
-      paletteBase: 0.45
-      heightPaletteShift: 0.14
+      paletteBase: 0.5
+      heightPaletteShift: 0.12
       exposurePaletteShift: 0.11
       radialNormalStrength: 0.82
       crownNormalBlend: 0.62
@@ -87,6 +98,15 @@ presets:
       skyLightStrength: 0.18
       cavityStrength: 0.3
       heightLightStrength: 0.1
+      volume:
+        resolution: 32
+        smoothing: 0.48
+        padding: 0.28
+        noiseAmplitude: 0.045
+        noiseFrequency: 1.05
+        normalEpsilon: 0.022
+        colorPatchScale: 0.48
+        colorPatchStrength: 0.07
       shell:
         instancesPerLobe: 23
         candidateMultiplier: 4
@@ -123,15 +143,16 @@ presets:
     trunk:
       baseRadius: 0.4
       topRadius: 0.13
-      bend: 0.42
+      bend: 0.5
+      flare: 0.55
       segments: 9
       branchCount: 7
       color: '#5a3d2e'
     foliage:
       palette: ['#5b2d24', '#9b4c2d', '#d77b3c', '#f0b968']
       variation: 0.12
-      paletteBase: 0.5
-      heightPaletteShift: 0.18
+      paletteBase: 0.56
+      heightPaletteShift: 0.16
       exposurePaletteShift: 0.12
       radialNormalStrength: 0.76
       crownNormalBlend: 0.46
@@ -139,6 +160,15 @@ presets:
       skyLightStrength: 0.18
       cavityStrength: 0.3
       heightLightStrength: 0.13
+      volume:
+        resolution: 32
+        smoothing: 0.62
+        padding: 0.34
+        noiseAmplitude: 0.07
+        noiseFrequency: 1.25
+        normalEpsilon: 0.025
+        colorPatchScale: 0.5
+        colorPatchStrength: 0.12
       shell:
         instancesPerLobe: 26
         candidateMultiplier: 4
