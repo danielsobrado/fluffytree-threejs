@@ -23,7 +23,7 @@ function sampleShape(x, y, shape) {
   const distance =
     (localX / shape.radiusX) ** 2 + (localY / shape.radiusY) ** 2;
 
-  return 1 - smoothstep(0.72, 1.04, distance);
+  return 1 - smoothstep(0.7, 1.04, distance);
 }
 
 function sampleAlpha(x, y) {
@@ -33,9 +33,10 @@ function sampleAlpha(x, y) {
     alpha = Math.max(alpha, sampleShape(x, y, shape));
   }
 
-  const centreDistance = Math.hypot(x, y);
-  const centreFill = 1 - smoothstep(0.14, 0.42, centreDistance);
-  return clamp01(Math.max(alpha, centreFill));
+  const spine =
+    (1 - smoothstep(0.04, 0.15, Math.abs(x))) *
+    (1 - smoothstep(0.45, 0.51, Math.abs(y)));
+  return clamp01(Math.max(alpha, spine * 0.92));
 }
 
 export class FoliageAlphaTextureFactory {
@@ -63,7 +64,7 @@ export class FoliageAlphaTextureFactory {
       THREE.RGBAFormat,
       THREE.UnsignedByteType,
     );
-    texture.name = 'foliage-tuft-alpha';
+    texture.name = 'foliage-fin-alpha';
     texture.colorSpace = THREE.NoColorSpace;
     texture.wrapS = THREE.ClampToEdgeWrapping;
     texture.wrapT = THREE.ClampToEdgeWrapping;

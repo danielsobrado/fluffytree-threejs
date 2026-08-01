@@ -148,11 +148,14 @@ function createCandidate(
     normal,
     exposure,
     score,
-    scale:
-      meanScale *
-      random.range(settings.sizeRatio[0], settings.sizeRatio[1]),
+    scale: meanScale * random.range(settings.sizeRatio[0], settings.sizeRatio[1]),
+    widthRatio: random.range(settings.widthRatio[0], settings.widthRatio[1]),
+    outwardRatio: random.range(
+      settings.outwardRatio[0],
+      settings.outwardRatio[1],
+    ),
     rotation: random.range(0, FOLIAGE_SHELL_CONSTANTS.tau),
-    colorMix: random.next(),
+    colorMix: clamp01(lobe.colorMix + random.signed() * settings.colorJitter),
     windPhase: random.range(0, FOLIAGE_SHELL_CONSTANTS.tau),
   };
 }
@@ -161,13 +164,11 @@ function selectLobeShell(candidates, settings) {
   const exposed = candidates.filter(
     (candidate) => candidate.exposure >= settings.exposureThreshold,
   );
-  const pool =
-    exposed.length >= settings.instancesPerLobe ? exposed : candidates;
+  const pool = exposed.length >= settings.instancesPerLobe ? exposed : candidates;
 
   pool.sort(
     (left, right) =>
-      right.score - left.score ||
-      left.candidateIndex - right.candidateIndex,
+      right.score - left.score || left.candidateIndex - right.candidateIndex,
   );
 
   return selectDistributedCandidates(pool, settings.instancesPerLobe);
@@ -212,6 +213,8 @@ export class FoliageShellGenerator {
           position: candidate.position,
           normal: candidate.normal,
           scale: candidate.scale,
+          widthRatio: candidate.widthRatio,
+          outwardRatio: candidate.outwardRatio,
           rotation: candidate.rotation,
           colorMix: candidate.colorMix,
           exposure: candidate.exposure,

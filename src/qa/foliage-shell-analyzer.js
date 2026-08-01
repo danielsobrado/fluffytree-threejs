@@ -5,14 +5,24 @@ import {
 import { calculateHoleRatio, countComponents } from './mask-analyzer.js';
 
 const PROJECTION_PADDING = 0.04;
-const SHELL_HORIZONTAL_RADIUS_FACTOR = 0.58;
-const SHELL_VERTICAL_RADIUS_FACTOR = 0.68;
+const FIN_WIDTH_PROJECTION_FACTOR = 0.55;
+const FIN_OUTWARD_PROJECTION_FACTOR = 0.72;
 const POSITION_KEY_PRECISION = 6;
 
 function mean(values) {
   return values.length === 0
     ? 0
     : values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function projectedFinRadius(instance, axis) {
+  return (
+    instance.scale * instance.widthRatio * FIN_WIDTH_PROJECTION_FACTOR +
+    instance.scale *
+      instance.outwardRatio *
+      Math.abs(instance.normal[axis]) *
+      FIN_OUTWARD_PROJECTION_FACTOR
+  );
 }
 
 function calculateProjectionBounds(tree, horizontalAxis) {
@@ -31,13 +41,15 @@ function calculateProjectionBounds(tree, horizontalAxis) {
   }
 
   for (const instance of tree.shell) {
+    const horizontalRadius = projectedFinRadius(instance, horizontalAxis);
+    const verticalRadius = projectedFinRadius(instance, 'y');
     horizontalValues.push(
-      instance.position[horizontalAxis] - instance.scale,
-      instance.position[horizontalAxis] + instance.scale,
+      instance.position[horizontalAxis] - horizontalRadius,
+      instance.position[horizontalAxis] + horizontalRadius,
     );
     verticalValues.push(
-      instance.position.y - instance.scale,
-      instance.position.y + instance.scale,
+      instance.position.y - verticalRadius,
+      instance.position.y + verticalRadius,
     );
   }
 
@@ -146,9 +158,8 @@ function analyzeProjection(tree, horizontalAxis, resolution) {
     rasterizeEllipse(combinedMask, resolution, bounds, {
       horizontal: instance.position[horizontalAxis],
       vertical: instance.position.y,
-      horizontalRadius:
-        instance.scale * SHELL_HORIZONTAL_RADIUS_FACTOR,
-      verticalRadius: instance.scale * SHELL_VERTICAL_RADIUS_FACTOR,
+      horizontalRadius: projectedFinRadius(instance, horizontalAxis),
+      verticalRadius: projectedFinRadius(instance, 'y'),
     });
   }
 
@@ -209,6 +220,9 @@ export function analyzeFoliageShell(tree, preset, resolution) {
   const outwardAlignments = [];
   const exposures = [];
   const scales = [];
+  const widthRatios = [];
+  const outwardRatios = [];
+  const colorDeviations = [];
   const positionKeys = new Set();
   let duplicatePositions = 0;
   let missingSources = 0;
@@ -237,6 +251,9 @@ export function analyzeFoliageShell(tree, preset, resolution) {
     outwardAlignments.push(calculateOutwardAlignment(instance, lobe));
     exposures.push(instance.exposure);
     scales.push(instance.scale);
+    widthRatios.push(instance.widthRatio);
+    outwardRatios.push(instance.outwardRatio);
+    colorDeviations.push(Math.abs(instance.colorMix - lobe.colorMix));
     if (isOccluded(instance, tree.lobes)) occluded += 1;
 
     const positionKey = createPositionKey(instance);
@@ -269,6 +286,12 @@ export function analyzeFoliageShell(tree, preset, resolution) {
     shellOccludedRatio: tree.shell.length === 0 ? 0 : occluded / tree.shell.length,
     shellMinimumScale: Math.min(...scales),
     shellMaximumScale: Math.max(...scales),
+    shellMinimumWidthRatio: Math.min(...widthRatios),
+    shellMaximumWidthRatio: Math.max(...widthRatios),
+    shellMinimumOutwardRatio: Math.min(...outwardRatios),
+    shellMaximumOutwardRatio: Math.max(...outwardRatios),
+    shellMeanOutwardRatio: mean(outwardRatios),
+    shellMaximumColorDeviation: Math.max(...colorDeviations),
     lobeMinimumExposure: Math.min(...lobeExposure),
     lobeMeanExposure: mean(lobeExposure),
     lobeMaximumExposure: Math.max(...lobeExposure),

@@ -17,7 +17,8 @@ export class FoliageCoreMaterialFactory {
       sunDirection,
       radialNormalExpression: 'normalize( position )',
       heightExpression: 'position.y * 0.5 + 0.5',
-      cacheKey: 'foliage-core-phase-2-v1',
+      forceRadialFragmentNormal: true,
+      cacheKey: 'foliage-core-phase-2-5-v1',
     });
   }
 }

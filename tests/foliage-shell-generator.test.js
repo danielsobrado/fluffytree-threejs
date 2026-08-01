@@ -32,7 +32,7 @@ test('foliage shell has an exact distributed count for every lobe', () => {
   }
 });
 
-test('foliage shell instances sit outside their source lobe with unit normals', () => {
+test('foliage shell fins sit outside their source lobe with valid dimensions', () => {
   const preset = createTestPreset();
   const tree = new TreeGenerator().generate(preset, 9981);
 
@@ -40,10 +40,7 @@ test('foliage shell instances sit outside their source lobe with unit normals', 
     const lobe = tree.lobes.find((candidate) => candidate.id === instance.lobeId);
     assert.ok(lobe);
 
-    const surfaceDistance = normalizedRotatedPointDistance(
-      instance.position,
-      lobe,
-    );
+    const surfaceDistance = normalizedRotatedPointDistance(instance.position, lobe);
     assert.ok(surfaceDistance > 1);
     assert.ok(surfaceDistance < 1.2);
 
@@ -56,6 +53,14 @@ test('foliage shell instances sit outside their source lobe with unit normals', 
     assert.ok(instance.exposure >= 0 && instance.exposure <= 1);
     assert.ok(instance.colorMix >= 0 && instance.colorMix <= 1);
     assert.ok(instance.scale > 0);
+    assert.ok(instance.widthRatio >= preset.foliage.shell.widthRatio[0]);
+    assert.ok(instance.widthRatio <= preset.foliage.shell.widthRatio[1]);
+    assert.ok(instance.outwardRatio >= preset.foliage.shell.outwardRatio[0]);
+    assert.ok(instance.outwardRatio <= preset.foliage.shell.outwardRatio[1]);
+    assert.ok(
+      Math.abs(instance.colorMix - lobe.colorMix) <=
+        preset.foliage.shell.colorJitter + Number.EPSILON,
+    );
   }
 });
 
@@ -69,4 +74,5 @@ test('foliage shell uses a seed stream independent from phase 1 geometry', () =>
   assert.deepEqual(tree.branches, replay.branches);
   assert.deepEqual(tree.shell, replay.shell);
   assert.deepEqual(tree.lobeExposure, replay.lobeExposure);
+  assert.deepEqual(tree.crownCenter, replay.crownCenter);
 });

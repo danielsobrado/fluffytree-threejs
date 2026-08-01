@@ -45,6 +45,7 @@ const foliage = Object.freeze({
   heightPaletteShift: 0.2,
   exposurePaletteShift: 0.1,
   radialNormalStrength: 0.8,
+  crownNormalBlend: 0.5,
   wrapLight: 0.5,
   skyLightStrength: 0.2,
   cavityStrength: 0.3,
@@ -63,7 +64,7 @@ function configure(material, overrides = {}) {
   });
 }
 
-test('stylized foliage shader installs attributes uniforms and lighting', () => {
+test('stylized foliage shader installs crown-aware attributes and lighting', () => {
   const material = createMaterial();
   const paletteTexture = { name: 'palette' };
   configure(material, { paletteTexture });
@@ -73,12 +74,16 @@ test('stylized foliage shader installs attributes uniforms and lighting', () => 
 
   assert.match(shader.vertexShader, /attribute float instanceColorMix/);
   assert.match(shader.vertexShader, /attribute float instanceExposure/);
+  assert.match(shader.vertexShader, /attribute vec3 instanceCrownDirection/);
+  assert.match(shader.vertexShader, /uFoliageCrownNormalBlend/);
+  assert.match(shader.vertexShader, /foliageCrownRadialWorld/);
   assert.match(shader.vertexShader, /foliageRadialLocal/);
   assert.match(shader.vertexShader, /vFoliagePaletteCoordinate/);
   assert.match(shader.fragmentShader, /uniform sampler2D uFoliagePalette/);
   assert.match(shader.fragmentShader, /foliageWrappedLight/);
   assert.match(shader.fragmentShader, /foliageCavityFactor/);
   assert.equal(shader.uniforms.uFoliagePalette.value, paletteTexture);
+  assert.equal(shader.uniforms.uFoliageCrownNormalBlend.value, 0.5);
   assert.equal(material.customProgramCacheKey(), 'test-shader');
   assert.equal(material.needsUpdate, true);
   assert.deepEqual(material.userData.disposables, [paletteTexture]);

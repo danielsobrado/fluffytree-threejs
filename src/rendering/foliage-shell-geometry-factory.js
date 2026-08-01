@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js';
 
-const PLANE_VERTICES = Object.freeze([
-  Object.freeze([-0.5, -0.5, 0]),
-  Object.freeze([0.5, -0.5, 0]),
-  Object.freeze([0.5, 0.5, 0]),
-  Object.freeze([-0.5, 0.5, 0]),
+const FIN_VERTICES = Object.freeze([
+  Object.freeze([-0.5, 0, FOLIAGE_RENDERING_CONSTANTS.shellRootInset]),
+  Object.freeze([0.5, 0, FOLIAGE_RENDERING_CONSTANTS.shellRootInset]),
+  Object.freeze([FOLIAGE_RENDERING_CONSTANTS.shellTipWidth, 0, 1]),
+  Object.freeze([-FOLIAGE_RENDERING_CONSTANTS.shellTipWidth, 0, 1]),
 ]);
 
-const PLANE_UVS = Object.freeze([
+const FIN_UVS = Object.freeze([
   Object.freeze([0, 0]),
   Object.freeze([1, 0]),
   Object.freeze([1, 1]),
@@ -17,23 +17,21 @@ const PLANE_UVS = Object.freeze([
 
 function calculatePlaneAngle(index, count) {
   if (count === 1) return 0;
-  const normalized = index / (count - 1);
-  return (normalized * 2 - 1) * FOLIAGE_RENDERING_CONSTANTS.shellPlaneTilt;
+  return (index / count) * Math.PI;
 }
 
-function appendPlane(buffers, planeIndex, planeCount) {
+function appendFin(buffers, planeIndex, planeCount) {
   const angle = calculatePlaneAngle(planeIndex, planeCount);
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
   const vertexOffset = buffers.positions.length / 3;
 
-  PLANE_VERTICES.forEach((vertex, index) => {
-    const x = vertex[0] * cos + vertex[2] * sin;
-    const y = vertex[1] * FOLIAGE_RENDERING_CONSTANTS.shellHeightScale;
-    const z = -vertex[0] * sin + vertex[2] * cos;
-    buffers.positions.push(x, y, z);
-    buffers.normals.push(sin, 0, cos);
-    buffers.uvs.push(PLANE_UVS[index][0], PLANE_UVS[index][1]);
+  FIN_VERTICES.forEach((vertex, index) => {
+    const x = vertex[0] * cos;
+    const y = vertex[0] * sin;
+    buffers.positions.push(x, y, vertex[2]);
+    buffers.normals.push(-sin, cos, 0);
+    buffers.uvs.push(FIN_UVS[index][0], FIN_UVS[index][1]);
   });
 
   buffers.indices.push(
@@ -56,7 +54,7 @@ export class FoliageShellGeometryFactory {
     };
 
     for (let index = 0; index < planesPerCluster; index += 1) {
-      appendPlane(buffers, index, planesPerCluster);
+      appendFin(buffers, index, planesPerCluster);
     }
 
     const geometry = new THREE.BufferGeometry();
@@ -75,7 +73,7 @@ export class FoliageShellGeometryFactory {
     geometry.setIndex(buffers.indices);
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
-    geometry.name = 'foliage-shell-cluster-geometry';
+    geometry.name = 'foliage-shell-fin-geometry';
     return geometry;
   }
 }

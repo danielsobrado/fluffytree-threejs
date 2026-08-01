@@ -3,6 +3,19 @@ import { FoliageCoreGeometryFactory } from './foliage-core-geometry-factory.js';
 import { FoliageCoreMaterialFactory } from './foliage-core-material-factory.js';
 import { addFoliageInstanceAttributes } from './instanced-foliage-attributes.js';
 
+function crownDirection(position, center) {
+  const x = position.x - center.x;
+  const y = position.y - center.y;
+  const z = position.z - center.z;
+  const length = Math.hypot(x, y, z);
+
+  if (length <= Number.EPSILON) {
+    return { x: 0, y: 1, z: 0 };
+  }
+
+  return { x: x / length, y: y / length, z: z / length };
+}
+
 export class FoliageCoreBuilder {
   constructor({
     geometryFactory = new FoliageCoreGeometryFactory(),
@@ -14,11 +27,11 @@ export class FoliageCoreBuilder {
 
   build(treeData, { paletteTexture, sunDirection }) {
     const geometry = this.geometryFactory.create();
-    addFoliageInstanceAttributes(
-      geometry,
-      treeData.lobes,
-      (lobe) => treeData.lobeExposure[lobe.id] ?? 1,
-    );
+    addFoliageInstanceAttributes(geometry, treeData.lobes, {
+      getExposure: (lobe) => treeData.lobeExposure[lobe.id] ?? 1,
+      getCrownDirection: (lobe) =>
+        crownDirection(lobe.position, treeData.crownCenter),
+    });
 
     const material = this.materialFactory.create({
       foliage: treeData.palette,
