@@ -31,3 +31,17 @@ test('generated tree respects requested topology counts', () => {
   );
   assert.equal(tree.lobeExposure.length, preset.crown.lobeCount);
 });
+
+test('runtime generation omits obsolete foliage surface samples', () => {
+  const tree = new TreeGenerator().generate(preset, 44, {
+    includeSurfaceSamples: false,
+  });
+
+  assert.equal(tree.shell.length, 0);
+  assert.deepEqual(
+    tree.lobeExposure,
+    Array.from({ length: preset.crown.lobeCount }, () => 1),
+  );
+  assert.equal(tree.lobes.length, preset.crown.lobeCount);
+  assert.equal(tree.branches.length, preset.trunk.branchCount);
+});
