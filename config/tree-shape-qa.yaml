@@ -1,0 +1,107 @@
+run:
+  seedStart: 1
+  seedCount: 2048
+  deterministicReplayCount: 2
+
+analysis:
+  silhouetteResolution: 64
+  volumeResolution: 14
+  profileSampleCount: 48
+
+thresholds:
+  aggregate:
+    maximumFailureRate: 0
+    minimumUniqueHashRate: 1
+
+  common:
+    exact:
+      nonFiniteValueCount: 0
+      lobeComponentCount: 1
+      isolatedLobeCount: 0
+      missingBranchTargetCount: 0
+      nonMonotonicTrunkSegments: 0
+      silhouetteComponentCount: 1
+    ranges:
+      minimumBranchInsertion: [0.54, 0.56]
+      maximumBranchInsertion: [0.54, 0.56]
+      trunkTopFoliageDistance: [0, 0.9]
+      silhouetteLargestComponentRatio: [0.995, 1]
+      silhouetteHoleRatio: [0, 0.02]
+      minimumColorMix: [0, 1]
+      maximumColorMix: [0, 1]
+
+  profiles:
+    round:
+      minimumVerticalBandCounts: [2, 3, 2]
+      ranges:
+        crownAspectRatio: [0.95, 1.6]
+        widthDepthRatio: [0.62, 1.58]
+        silhouetteFillRatio: [0.56, 0.82]
+        targetCoverage: [0.67, 0.93]
+        silhouetteExcessRatio: [0, 0.18]
+        profileRmse: [0, 0.27]
+        profileCorrelation: [0.15, 1]
+        envelopeCoverage: [0.3, 0.7]
+        unionSpillRatio: [0, 0.14]
+        upperLowerWidthRatio: [0.65, 1.5]
+        middleLowerWidthRatio: [0.85, 1.65]
+        middleUpperWidthRatio: [0.85, 1.7]
+
+    columnar:
+      minimumVerticalBandCounts: [3, 5, 3]
+      ranges:
+        crownAspectRatio: [2.25, 3.7]
+        widthDepthRatio: [0.68, 1.38]
+        silhouetteFillRatio: [0.53, 0.78]
+        targetCoverage: [0.52, 0.76]
+        silhouetteExcessRatio: [0, 0.08]
+        profileRmse: [0, 0.35]
+        profileCorrelation: [0.25, 1]
+        envelopeCoverage: [0.18, 0.38]
+        unionSpillRatio: [0, 0.07]
+        upperLowerWidthRatio: [0.6, 1.55]
+        middleLowerWidthRatio: [0.78, 1.75]
+        middleUpperWidthRatio: [0.78, 1.75]
+
+    vase:
+      minimumVerticalBandCounts: [3, 4, 3]
+      ranges:
+        crownAspectRatio: [0.95, 1.9]
+        widthDepthRatio: [0.55, 1.6]
+        silhouetteFillRatio: [0.5, 0.8]
+        targetCoverage: [0.64, 0.93]
+        silhouetteExcessRatio: [0, 0.23]
+        profileRmse: [0, 0.28]
+        profileCorrelation: [0.45, 1]
+        envelopeCoverage: [0.28, 0.72]
+        unionSpillRatio: [0, 0.21]
+        upperLowerWidthRatio: [0.8, 2.5]
+        middleLowerWidthRatio: [0.9, 2.4]
+        middleUpperWidthRatio: [0.65, 1.6]
+
+report:
+  maximumFailureExamples: 25
+  summaryMetrics:
+    - lobeCount
+    - branchCount
+    - lobeComponentCount
+    - crownAspectRatio
+    - widthDepthRatio
+    - silhouetteFillRatio
+    - silhouetteHoleRatio
+    - targetCoverage
+    - profileRmse
+    - profileCorrelation
+    - envelopeCoverage
+    - unionSpillRatio
+    - trunkTopFoliageDistance
+    - maximumBranchInsertion
+  worstSeedMetrics:
+    - crownAspectRatio
+    - widthDepthRatio
+    - silhouetteFillRatio
+    - targetCoverage
+    - profileRmse
+    - profileCorrelation
+    - envelopeCoverage
+    - unionSpillRatio
