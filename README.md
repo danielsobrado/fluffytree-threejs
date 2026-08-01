@@ -13,8 +13,8 @@ The repository is a deterministic, configuration-driven procedural tree system s
 - Generated curved trunks and primary supporting branches.
 - Connected crown enforcement and branch-to-crown insertion.
 - Seamless tapered tube geometry with configurable trunk flare.
-- A terrain-embedded root collar replaces the visibly sliced cylindrical base.
-- Seeded buttresses broaden the trunk naturally at ground level.
+- A capped root collar extends below the terrain and overlaps the trunk tube.
+- Seeded buttresses broaden the trunk naturally without exposing a cut seam.
 
 ## Leaf-only canopy
 
@@ -22,11 +22,11 @@ Control lobes and the smooth implicit crown remain generation tools. They are no
 
 - The implicit crown mesh is color- and depth-disabled in the camera pass.
 - It remains available only as a slightly inset coherent shadow proxy.
-- Dense instanced leaf tufts form the complete visible canopy.
-- Multiple shell layers cross the crown surface to create depth and hide the procedural support volume.
-- Irregular golden-angle tufts replace the repeated flower-like rosettes.
+- Small dense instanced leaf tufts form the complete visible canopy.
+- Four radial layers extend from inside the crown to its silhouette.
+- Deterministic tangential jitter breaks rings and closes gaps between control regions.
+- Irregular golden-angle tufts avoid repeated flower-like rosettes.
 - Per-cluster colors remain coherent with each seasonal palette.
-- Leaf shell density, scale, embedding, layering, color variation, and roughness are configured per preset.
 
 Hierarchical wind and production distance LOD remain later phases.
 
@@ -83,8 +83,8 @@ The automated gates cover:
 - A single closed proxy component with no boundary or non-manifold edges.
 - Finite proxy vertices, normalized field-gradient normals, coincident-normal consistency, and maximum surface edge length.
 - No smooth crown mesh writing color or depth in the camera pass.
-- Non-zero visible leaf-shell counts in desktop and mobile WebGL renders.
-- One capped, terrain-embedded root collar for every rendered tree.
+- A minimum four-layer leaf density for every rendered tree.
+- A capped, terrain-embedded root collar with positive trunk overlap.
 - The exact uploaded release identifier in the browser and visible demo titles.
 
 ## Structure
