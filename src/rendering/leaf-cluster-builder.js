@@ -5,6 +5,7 @@ import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constan
 import { samplePaletteColor } from './palette-color-sampler.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
 function hashUnit(seed, id, salt) {
   let value = (Number(seed) ^ Math.imul(id + 1, salt)) >>> 0;
@@ -51,6 +52,18 @@ function selectSamples(treeData, density) {
   );
 }
 
+function createInstanceRecords(samples, layerCount) {
+  return samples.flatMap((sample) =>
+    Array.from({ length: layerCount }, (_, layer) => ({ sample, layer })),
+  );
+}
+
+function calculateLayerScale(layer, settings) {
+  if (settings.layerCount <= 1) return 1;
+  const ratio = layer / (settings.layerCount - 1);
+  return THREE.MathUtils.lerp(1, 0.78, ratio);
+}
+
 export class LeafClusterBuilder {
   constructor({ geometryFactory = new LeafClusterGeometryFactory() } = {}) {
     this.geometryFactory = geometryFactory;
@@ -61,8 +74,9 @@ export class LeafClusterBuilder {
     const selected = settings.enabled
       ? selectSamples(treeData, settings.density)
       : [];
+    const records = createInstanceRecords(selected, settings.layerCount);
 
-    if (selected.length === 0) {
+    if (records.length === 0) {
       const empty = new THREE.Group();
       empty.name = 'leaf-detail-shell';
       return empty;
@@ -79,27 +93,47 @@ export class LeafClusterBuilder {
     });
     material.name = 'leaf-detail-material';
 
-    const mesh = new THREE.InstancedMesh(geometry, material, selected.length);
+    const mesh = new THREE.InstancedMesh(geometry, material, records.length);
     const matrix = new THREE.Matrix4();
     const alignment = new THREE.Quaternion();
     const spin = new THREE.Quaternion();
     const scale = new THREE.Vector3();
 
-    selected.forEach((sample, index) => {
+    records.forEach(({ sample, layer }, index) => {
       const surface = projectToSurface(field, sample);
+      const scaleJitter = THREE.MathUtils.lerp(
+        0.9,
+        1.1,
+        hashUnit(treeData.seed, sample.id + layer * 4099, 0x27d4eb2d),
+      );
       const instanceScale = Math.max(
         LEAF_DETAIL_RENDERING_CONSTANTS.minimumScale,
-        sample.scale * settings.scale,
+        sample.scale *
+          settings.scale *
+          calculateLayerScale(layer, settings) *
+          scaleJitter,
       );
+      const position = surface.position
+        .clone()
+        .addScaledVector(
+          surface.normal,
+          instanceScale * settings.layerOffsetRatio * layer,
+        );
+
       alignment.setFromUnitVectors(UP, surface.normal);
-      spin.setFromAxisAngle(UP, sample.rotation);
+      spin.setFromAxisAngle(
+        UP,
+        sample.rotation + layer * GOLDEN_ANGLE,
+      );
       alignment.multiply(spin);
       scale.setScalar(instanceScale);
-      matrix.compose(surface.position, alignment, scale);
+      matrix.compose(position, alignment, scale);
       mesh.setMatrixAt(index, matrix);
 
       const jitter =
-        (hashUnit(treeData.seed, sample.id, 0x85ebca6b) * 2 - 1) *
+        (hashUnit(treeData.seed, sample.id + layer * 6151, 0x85ebca6b) *
+          2 -
+          1) *
         settings.colorJitter;
       mesh.setColorAt(
         index,
@@ -117,8 +151,10 @@ export class LeafClusterBuilder {
     mesh.castShadow = false;
     mesh.receiveShadow = true;
     mesh.userData.leafDetail = {
-      clusterCount: selected.length,
-      leafCount: selected.length * settings.leavesPerCluster,
+      clusterCount: records.length,
+      sourceSampleCount: selected.length,
+      layerCount: settings.layerCount,
+      leafCount: records.length * settings.leavesPerCluster,
     };
     return mesh;
   }
