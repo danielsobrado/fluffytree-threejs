@@ -61,7 +61,12 @@ function createInstanceRecords(samples, layerCount) {
 function calculateLayerScale(layer, settings) {
   if (settings.layerCount <= 1) return 1;
   const ratio = layer / (settings.layerCount - 1);
-  return THREE.MathUtils.lerp(1, 0.78, ratio);
+  return THREE.MathUtils.lerp(1.04, 0.82, ratio);
+}
+
+function calculateLayerOffset(layer, settings, instanceScale) {
+  const center = (settings.layerCount - 1) * 0.5;
+  return (layer - center) * instanceScale * settings.layerOffsetRatio;
 }
 
 export class LeafClusterBuilder {
@@ -117,14 +122,11 @@ export class LeafClusterBuilder {
         .clone()
         .addScaledVector(
           surface.normal,
-          instanceScale * settings.layerOffsetRatio * layer,
+          calculateLayerOffset(layer, settings, instanceScale),
         );
 
       alignment.setFromUnitVectors(UP, surface.normal);
-      spin.setFromAxisAngle(
-        UP,
-        sample.rotation + layer * GOLDEN_ANGLE,
-      );
+      spin.setFromAxisAngle(UP, sample.rotation + layer * GOLDEN_ANGLE);
       alignment.multiply(spin);
       scale.setScalar(instanceScale);
       matrix.compose(position, alignment, scale);
@@ -148,7 +150,7 @@ export class LeafClusterBuilder {
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     mesh.name = 'leaf-detail-shell';
-    mesh.castShadow = false;
+    mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.userData.leafDetail = {
       clusterCount: records.length,
