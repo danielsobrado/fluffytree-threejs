@@ -29,7 +29,7 @@ export class TreeDemo {
     this.render = this.render.bind(this);
   }
 
-  start(container, sceneConfig, presetMap) {
+  start(container, sceneConfig, presetMap, releaseVersion) {
     this.container = container;
     this.sceneConfig = sceneConfig;
     this.presetMap = presetMap;
@@ -46,7 +46,7 @@ export class TreeDemo {
       return preset.label;
     });
 
-    createDemoOverlay(container, labels);
+    createDemoOverlay(container, labels, releaseVersion);
     this.rebuildTrees();
     window.addEventListener('resize', this.handleResize);
     window.addEventListener('keydown', this.handleKeyDown);
@@ -57,6 +57,7 @@ export class TreeDemo {
       this.context.camera,
     );
     logger.info('Procedural tree demo started.', {
+      releaseVersion,
       presets: labels,
       treeCount: sceneConfig.layout.length,
     });
