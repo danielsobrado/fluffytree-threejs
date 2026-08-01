@@ -55,6 +55,10 @@ export class BranchMeshBuilder {
     mesh.name = 'tree-structure';
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    mesh.userData.structure = {
+      rootCapped: true,
+      rootEmbedDepth: TREE_STRUCTURE_RENDERING_CONSTANTS.rootEmbedDepth,
+    };
     return mesh;
   }
 }
