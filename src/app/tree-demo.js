@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { TreeWindController } from '../animation/tree-wind-controller.js';
 import { logger } from '../core/logger.js';
+import { RenderSmokeProbe } from '../diagnostics/render-smoke-probe.js';
 import { TreeGenerator } from '../generation/tree-generator.js';
 import { disposeObject } from '../rendering/object-disposer.js';
 import { SceneFactory } from '../rendering/scene-factory.js';
@@ -13,11 +14,13 @@ export class TreeDemo {
     treeGenerator = new TreeGenerator(),
     treeMeshBuilder = new TreeMeshBuilder(),
     windController = new TreeWindController(),
+    renderSmokeProbe = new RenderSmokeProbe(),
   } = {}) {
     this.sceneFactory = sceneFactory;
     this.treeGenerator = treeGenerator;
     this.treeMeshBuilder = treeMeshBuilder;
     this.windController = windController;
+    this.renderSmokeProbe = renderSmokeProbe;
     this.treeRoots = [];
     this.generation = 0;
     this.clock = new THREE.Clock();
@@ -31,6 +34,7 @@ export class TreeDemo {
     this.sceneConfig = sceneConfig;
     this.presetMap = presetMap;
     this.context = this.sceneFactory.create(container, sceneConfig);
+    this.renderSmokeProbe.install(this.context.renderer);
 
     const labels = sceneConfig.layout.map((entry) => {
       const preset = presetMap.get(entry.preset);
@@ -47,6 +51,11 @@ export class TreeDemo {
     window.addEventListener('resize', this.handleResize);
     window.addEventListener('keydown', this.handleKeyDown);
     this.context.renderer.setAnimationLoop(this.render);
+    void this.renderSmokeProbe.compile(
+      this.context.renderer,
+      this.context.scene,
+      this.context.camera,
+    );
     logger.info('Procedural tree demo started.', {
       presets: labels,
       treeCount: sceneConfig.layout.length,
