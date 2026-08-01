@@ -7,32 +7,32 @@ import {
 } from '../src/app/release-title.js';
 
 const release = Object.freeze({
-  version: '1.5.0',
-  build: '20260801.2',
-  label: 'leaf shell + root collar',
+  version: '1.5.1',
+  build: '20260801.3',
+  label: 'dense leaf fill + seamless roots',
 });
 
 test('release version includes semantic version and uploaded build', () => {
-  assert.equal(formatReleaseVersion(release), 'v1.5.0+20260801.2');
+  assert.equal(formatReleaseVersion(release), 'v1.5.1+20260801.3');
 });
 
 test('browser title includes the exact uploaded release version', () => {
   assert.equal(
     formatDocumentTitle(release),
-    'Procedural Fluffy Trees v1.5.0+20260801.2 — leaf shell + root collar',
+    'Procedural Fluffy Trees v1.5.1+20260801.3 — dense leaf fill + seamless roots',
   );
 });
 
 test('overlay title includes the same uploaded release version', () => {
   assert.equal(
     formatOverlayTitle(release),
-    'Procedural fluffy trees — leaf shell + root collar · v1.5.0+20260801.2',
+    'Procedural fluffy trees — dense leaf fill + seamless roots · v1.5.1+20260801.3',
   );
 });
 
 test('release configuration rejects missing build identifiers', () => {
   assert.throws(
-    () => formatReleaseVersion({ version: '1.5.0' }),
+    () => formatReleaseVersion({ version: '1.5.1' }),
     /release configuration 'build'/,
   );
 });
