@@ -1,36 +1,49 @@
 import * as THREE from 'three';
 import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constants.js';
 
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
 function appendVertex(positions, point) {
   positions.push(point.x, point.y, point.z);
 }
 
-function createLeafPoints(angle, index, settings) {
-  const direction = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
+function createLeafPoints(index, leafCount, settings) {
+  const ratio = (index + 0.5) / leafCount;
+  const baseAngle = index * GOLDEN_ANGLE + (index % 3) * 0.17;
+  const baseRadius = 0.08 + Math.sqrt(ratio) * 0.2;
+  const baseCenter = new THREE.Vector3(
+    Math.cos(baseAngle) * baseRadius,
+    -settings.embedRatio * (0.78 + (index % 2) * 0.18),
+    Math.sin(baseAngle) * baseRadius,
+  );
+  const directionAngle = baseAngle + (index % 2 === 0 ? 0.48 : -0.34);
+  const direction = new THREE.Vector3(
+    Math.cos(directionAngle),
+    0,
+    Math.sin(directionAngle),
+  );
   const side = new THREE.Vector3(-direction.z, 0, direction.x);
-  const lengthVariation = 0.9 + (index % 3) * 0.06;
-  const widthVariation = 0.9 + ((index + 1) % 2) * 0.14;
-  const base = direction
+  const length = 0.48 + (index % 4) * 0.055;
+  const width = 0.12 + ((index + 1) % 3) * 0.018;
+  const fold = settings.protrusionRatio * (0.72 + (index % 3) * 0.12);
+  const base = baseCenter.clone();
+  const shoulder = baseCenter.clone().addScaledVector(direction, length * 0.44);
+  const left = shoulder
     .clone()
-    .multiplyScalar(0.04)
-    .add(new THREE.Vector3(0, -settings.embedRatio, 0));
-  const middle = direction.clone().multiplyScalar(0.36 * lengthVariation);
-  const left = middle
+    .addScaledVector(side, width)
+    .add(new THREE.Vector3(0, fold * 0.28, 0));
+  const right = shoulder
     .clone()
-    .addScaledVector(side, 0.15 * widthVariation)
-    .add(new THREE.Vector3(0, settings.protrusionRatio * 0.34, 0));
-  const right = middle
+    .addScaledVector(side, -width)
+    .add(new THREE.Vector3(0, fold * 0.28, 0));
+  const tip = baseCenter
     .clone()
-    .addScaledVector(side, -0.15 * widthVariation)
-    .add(new THREE.Vector3(0, settings.protrusionRatio * 0.34, 0));
-  const tip = direction
+    .addScaledVector(direction, length)
+    .add(new THREE.Vector3(0, fold, 0));
+  const ridge = baseCenter
     .clone()
-    .multiplyScalar(0.7 * lengthVariation)
-    .add(new THREE.Vector3(0, settings.protrusionRatio, 0));
-  const ridge = direction
-    .clone()
-    .multiplyScalar(0.34 * lengthVariation)
-    .add(new THREE.Vector3(0, settings.protrusionRatio * 0.78, 0));
+    .addScaledVector(direction, length * 0.48)
+    .add(new THREE.Vector3(0, fold * 0.76, 0));
   return { base, left, tip, right, ridge };
 }
 
@@ -41,10 +54,7 @@ export class LeafClusterGeometryFactory {
     const leafCount = settings.leavesPerCluster;
 
     for (let index = 0; index < leafCount; index += 1) {
-      const angle =
-        (index / leafCount) * LEAF_DETAIL_RENDERING_CONSTANTS.tau +
-        (index % 2) * 0.13;
-      const points = createLeafPoints(angle, index, settings);
+      const points = createLeafPoints(index, leafCount, settings);
       const offset = positions.length / 3;
 
       appendVertex(positions, points.base);
@@ -78,6 +88,10 @@ export class LeafClusterGeometryFactory {
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
     geometry.name = 'leaf-cluster-geometry';
+    geometry.userData.leafDetail = {
+      leavesPerCluster: leafCount,
+      triangleCount: leafCount * 4,
+    };
     return geometry;
   }
 }
