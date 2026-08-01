@@ -31,9 +31,9 @@ thresholds:
       silhouetteHoleRatio: [0, 0.02]
       minimumColorMix: [0, 1]
       maximumColorMix: [0, 1]
-      shellMinimumSurfaceDistance: [1.005, 1.16]
-      shellMaximumSurfaceDistance: [1.01, 1.24]
-      shellMeanSurfaceDistance: [1.01, 1.18]
+      shellMinimumSurfaceDistance: [1.001, 1.08]
+      shellMaximumSurfaceDistance: [1.003, 1.16]
+      shellMeanSurfaceDistance: [1.003, 1.12]
       shellMaximumNormalLengthError: [0, 0.00000001]
       shellMinimumOutwardAlignment: [0.32, 1]
       shellMeanOutwardAlignment: [0.72, 1]
@@ -41,60 +41,66 @@ thresholds:
       shellMeanExposure: [0.42, 1]
       shellMaximumExposure: [0.5, 1]
       shellOccludedRatio: [0, 0.38]
-      shellMinimumScale: [0.04, 0.65]
-      shellMaximumScale: [0.08, 0.85]
+      shellMinimumScale: [0.035, 0.5]
+      shellMaximumScale: [0.06, 0.7]
+      shellMinimumWidthRatio: [0.67, 1.1]
+      shellMaximumWidthRatio: [0.9, 1.1]
+      shellMinimumOutwardRatio: [0.98, 1.45]
+      shellMaximumOutwardRatio: [1.25, 1.45]
+      shellMeanOutwardRatio: [1.13, 1.25]
+      shellMaximumColorDeviation: [0, 0.041]
       lobeMinimumExposure: [0, 1]
       lobeMeanExposure: [0.42, 1]
       lobeMaximumExposure: [0.5, 1]
-      shellSilhouetteContribution: [0.002, 0.4]
+      shellSilhouetteContribution: [0.01, 0.5]
       shellSilhouetteLargestComponentRatio: [0.992, 1]
       shellSilhouetteHoleRatio: [0, 0.035]
 
   profiles:
     round:
-      minimumVerticalBandCounts: [2, 3, 2]
+      minimumVerticalBandCounts: [3, 5, 3]
       ranges:
         crownAspectRatio: [0.95, 1.6]
         widthDepthRatio: [0.62, 1.58]
-        silhouetteFillRatio: [0.56, 0.82]
-        targetCoverage: [0.67, 0.93]
-        silhouetteExcessRatio: [0, 0.18]
+        silhouetteFillRatio: [0.56, 0.86]
+        targetCoverage: [0.67, 0.96]
+        silhouetteExcessRatio: [0, 0.2]
         profileRmse: [0, 0.27]
         profileCorrelation: [0.15, 1]
-        envelopeCoverage: [0.3, 0.7]
-        unionSpillRatio: [0, 0.14]
+        envelopeCoverage: [0.3, 0.76]
+        unionSpillRatio: [0, 0.16]
         upperLowerWidthRatio: [0.65, 1.5]
         middleLowerWidthRatio: [0.85, 1.65]
         middleUpperWidthRatio: [0.85, 1.7]
 
     columnar:
-      minimumVerticalBandCounts: [3, 5, 3]
+      minimumVerticalBandCounts: [4, 7, 4]
       ranges:
-        crownAspectRatio: [2.25, 3.7]
+        crownAspectRatio: [2.2, 3.7]
         widthDepthRatio: [0.68, 1.38]
-        silhouetteFillRatio: [0.53, 0.78]
-        targetCoverage: [0.52, 0.76]
-        silhouetteExcessRatio: [0, 0.08]
+        silhouetteFillRatio: [0.53, 0.82]
+        targetCoverage: [0.52, 0.8]
+        silhouetteExcessRatio: [0, 0.1]
         profileRmse: [0, 0.35]
         profileCorrelation: [0.25, 1]
-        envelopeCoverage: [0.18, 0.38]
-        unionSpillRatio: [0, 0.07]
+        envelopeCoverage: [0.18, 0.44]
+        unionSpillRatio: [0, 0.09]
         upperLowerWidthRatio: [0.6, 1.55]
         middleLowerWidthRatio: [0.78, 1.75]
         middleUpperWidthRatio: [0.78, 1.75]
 
     vase:
-      minimumVerticalBandCounts: [3, 4, 3]
+      minimumVerticalBandCounts: [4, 6, 4]
       ranges:
         crownAspectRatio: [0.95, 1.9]
         widthDepthRatio: [0.55, 1.6]
-        silhouetteFillRatio: [0.5, 0.8]
-        targetCoverage: [0.64, 0.93]
-        silhouetteExcessRatio: [0, 0.23]
+        silhouetteFillRatio: [0.5, 0.84]
+        targetCoverage: [0.64, 0.96]
+        silhouetteExcessRatio: [0, 0.25]
         profileRmse: [0, 0.28]
         profileCorrelation: [0.45, 1]
-        envelopeCoverage: [0.28, 0.72]
-        unionSpillRatio: [0, 0.21]
+        envelopeCoverage: [0.28, 0.78]
+        unionSpillRatio: [0, 0.23]
         upperLowerWidthRatio: [0.8, 2.5]
         middleLowerWidthRatio: [0.9, 2.4]
         middleUpperWidthRatio: [0.65, 1.6]
@@ -109,6 +115,8 @@ report:
     - lobeComponentCount
     - shellMeanExposure
     - shellOccludedRatio
+    - shellMeanOutwardRatio
+    - shellMaximumColorDeviation
     - shellSilhouetteContribution
     - shellSilhouetteLargestComponentRatio
     - shellSilhouetteHoleRatio
@@ -126,6 +134,8 @@ report:
   worstSeedMetrics:
     - shellMeanExposure
     - shellOccludedRatio
+    - shellMeanOutwardRatio
+    - shellMaximumColorDeviation
     - shellSilhouetteContribution
     - shellSilhouetteLargestComponentRatio
     - shellSilhouetteHoleRatio
