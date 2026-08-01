@@ -66,6 +66,19 @@ const REQUIRED_LEAF_DETAIL_FIELDS = [
   'coreBrightness',
   'layerCount',
   'layerOffsetRatio',
+  'closure',
+];
+
+const REQUIRED_CLOSURE_FIELDS = [
+  'enabled',
+  'spineSlices',
+  'spineRingCount',
+  'bridgeSamples',
+  'capSamples',
+  'radiusRatio',
+  'clusterScaleRatio',
+  'colorDrop',
+  'axialJitter',
 ];
 
 const REQUIRED_SHELL_FIELDS = [
@@ -214,6 +227,32 @@ function validateVolumeTuning(id, volume) {
   );
 }
 
+function validateClosureTuning(id, closure) {
+  const path = `${id}.foliage.leafDetail.closure`;
+
+  if (typeof closure.enabled !== 'boolean') {
+    throw new Error(`Configuration '${path}.enabled' must be a boolean.`);
+  }
+
+  requirePositiveInteger(closure.spineSlices, `${path}.spineSlices`);
+  requireRange(closure.spineSlices, 4, 64, `${path}.spineSlices`);
+  requirePositiveInteger(closure.spineRingCount, `${path}.spineRingCount`);
+  requireRange(closure.spineRingCount, 2, 16, `${path}.spineRingCount`);
+  requirePositiveInteger(closure.bridgeSamples, `${path}.bridgeSamples`);
+  requireRange(closure.bridgeSamples, 1, 8, `${path}.bridgeSamples`);
+  requirePositiveInteger(closure.capSamples, `${path}.capSamples`);
+  requireRange(closure.capSamples, 4, 96, `${path}.capSamples`);
+  requireRange(closure.radiusRatio, 0.1, 0.8, `${path}.radiusRatio`);
+  requireRange(
+    closure.clusterScaleRatio,
+    0.04,
+    0.3,
+    `${path}.clusterScaleRatio`,
+  );
+  requireRange(closure.colorDrop, 0, 0.5, `${path}.colorDrop`);
+  requireRange(closure.axialJitter, 0, 0.5, `${path}.axialJitter`);
+}
+
 function validateLeafDetailTuning(id, leafDetail) {
   const path = `${id}.foliage.leafDetail`;
 
@@ -249,6 +288,7 @@ function validateLeafDetailTuning(id, leafDetail) {
     0.5,
     `${path}.layerOffsetRatio`,
   );
+  validateClosureTuning(id, leafDetail.closure);
 }
 
 function validateShellTuning(id, shell) {
@@ -297,6 +337,11 @@ function createFoliageConfig(id, foliage) {
     REQUIRED_LEAF_DETAIL_FIELDS,
     `${id}.foliage.leafDetail`,
   );
+  requireFields(
+    foliage.leafDetail.closure,
+    REQUIRED_CLOSURE_FIELDS,
+    `${id}.foliage.leafDetail.closure`,
+  );
   requireFields(foliage.shell, REQUIRED_SHELL_FIELDS, `${id}.foliage.shell`);
 
   const palette = freezeArray(foliage.palette, `${id}.foliage.palette`);
@@ -313,7 +358,10 @@ function createFoliageConfig(id, foliage) {
     ...foliage,
     palette,
     volume: Object.freeze({ ...foliage.volume }),
-    leafDetail: Object.freeze({ ...foliage.leafDetail }),
+    leafDetail: Object.freeze({
+      ...foliage.leafDetail,
+      closure: Object.freeze({ ...foliage.leafDetail.closure }),
+    }),
     shell: Object.freeze({
       ...foliage.shell,
       sizeRatio: validatePair(
