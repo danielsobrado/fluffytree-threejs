@@ -36,11 +36,11 @@ jobs:
       - name: Run desktop and mobile WebGL render smoke
         run: npm run qa:render
 
-      - name: Upload visual parity render evidence
+      - name: Upload unified canopy render evidence
         if: always() && hashFiles('qa-results/render-smoke/**') != ''
         uses: actions/upload-artifact@v7
         with:
-          name: phase-2-5-render-smoke
+          name: unified-canopy-render-smoke
           path: qa-results/render-smoke
           if-no-files-found: error
 
@@ -51,6 +51,6 @@ jobs:
         if: always() && hashFiles('qa-results/tree-shape/**') != ''
         uses: actions/upload-artifact@v7
         with:
-          name: phase-2-5-tree-shape-qa-report
+          name: unified-canopy-tree-shape-qa-report
           path: qa-results/tree-shape
           if-no-files-found: error
