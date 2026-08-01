@@ -1,10 +1,10 @@
-export function createDemoOverlay(container, presetLabels, releaseVersion) {
+export function createDemoOverlay(container, presetLabels, releaseTitle) {
   const overlay = document.createElement('section');
   const title = document.createElement('h1');
   const description = document.createElement('p');
 
   overlay.className = 'demo-overlay';
-  title.textContent = `Procedural fluffy trees — leaf detail · ${releaseVersion}`;
+  title.textContent = releaseTitle;
   description.textContent = `${presetLabels.join(' · ')}. Drag to orbit, scroll to zoom, press R to regenerate.`;
   overlay.append(title, description);
   container.appendChild(overlay);
