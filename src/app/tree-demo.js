@@ -29,7 +29,7 @@ export class TreeDemo {
     this.render = this.render.bind(this);
   }
 
-  start(container, sceneConfig, presetMap, releaseVersion) {
+  start(container, sceneConfig, presetMap, releaseVersion, overlayTitle) {
     this.container = container;
     this.sceneConfig = sceneConfig;
     this.presetMap = presetMap;
@@ -46,7 +46,7 @@ export class TreeDemo {
       return preset.label;
     });
 
-    createDemoOverlay(container, labels, releaseVersion);
+    createDemoOverlay(container, labels, overlayTitle);
     this.rebuildTrees();
     window.addEventListener('resize', this.handleResize);
     window.addEventListener('keydown', this.handleKeyDown);
