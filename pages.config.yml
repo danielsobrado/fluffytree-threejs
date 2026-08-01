@@ -3,4 +3,5 @@ sourceBranch: main
 publishBranch: gh-pages
 requiredFiles:
   - index.html
+  - config/release.yaml
   - .nojekyll

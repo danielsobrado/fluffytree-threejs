@@ -2,6 +2,7 @@ import { createTreePreset } from '../../src/domain/tree-preset.js';
 
 export function createTestPreset(overrides = {}) {
   const volumeOverrides = overrides.foliage?.volume ?? {};
+  const leafDetailOverrides = overrides.foliage?.leafDetail ?? {};
   const shellOverrides = overrides.foliage?.shell ?? {};
 
   return createTreePreset('test', {
@@ -56,6 +57,18 @@ export function createTestPreset(overrides = {}) {
         colorPatchScale: 0.5,
         colorPatchStrength: 0.08,
         ...volumeOverrides,
+      },
+      leafDetail: {
+        enabled: true,
+        density: 0.75,
+        scale: 1.3,
+        embedRatio: 0.1,
+        protrusionRatio: 0.16,
+        leavesPerCluster: 5,
+        colorLift: 0.07,
+        colorJitter: 0.04,
+        roughness: 0.9,
+        ...leafDetailOverrides,
       },
       shell: {
         instancesPerLobe: 12,

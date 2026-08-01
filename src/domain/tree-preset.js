@@ -37,6 +37,7 @@ const REQUIRED_FOLIAGE_FIELDS = [
   'cavityStrength',
   'heightLightStrength',
   'volume',
+  'leafDetail',
   'shell',
 ];
 
@@ -49,6 +50,18 @@ const REQUIRED_VOLUME_FIELDS = [
   'normalEpsilon',
   'colorPatchScale',
   'colorPatchStrength',
+];
+
+const REQUIRED_LEAF_DETAIL_FIELDS = [
+  'enabled',
+  'density',
+  'scale',
+  'embedRatio',
+  'protrusionRatio',
+  'leavesPerCluster',
+  'colorLift',
+  'colorJitter',
+  'roughness',
 ];
 
 const REQUIRED_SHELL_FIELDS = [
@@ -197,6 +210,28 @@ function validateVolumeTuning(id, volume) {
   );
 }
 
+function validateLeafDetailTuning(id, leafDetail) {
+  const path = `${id}.foliage.leafDetail`;
+
+  if (typeof leafDetail.enabled !== 'boolean') {
+    throw new Error(`Configuration '${path}.enabled' must be a boolean.`);
+  }
+
+  requireRange(leafDetail.density, 0, 1, `${path}.density`);
+  requireRange(leafDetail.scale, 0.1, 3, `${path}.scale`);
+  requireRange(leafDetail.embedRatio, 0, 0.5, `${path}.embedRatio`);
+  requireRange(
+    leafDetail.protrusionRatio,
+    0,
+    0.5,
+    `${path}.protrusionRatio`,
+  );
+  requirePositiveInteger(leafDetail.leavesPerCluster, `${path}.leavesPerCluster`);
+  requireRange(leafDetail.colorLift, -1, 1, `${path}.colorLift`);
+  requireRange(leafDetail.colorJitter, 0, 1, `${path}.colorJitter`);
+  requireRange(leafDetail.roughness, 0, 1, `${path}.roughness`);
+}
+
 function validateShellTuning(id, shell) {
   requirePositiveInteger(
     shell.instancesPerLobe,
@@ -238,6 +273,11 @@ function validateShellTuning(id, shell) {
 function createFoliageConfig(id, foliage) {
   requireFields(foliage, REQUIRED_FOLIAGE_FIELDS, `${id}.foliage`);
   requireFields(foliage.volume, REQUIRED_VOLUME_FIELDS, `${id}.foliage.volume`);
+  requireFields(
+    foliage.leafDetail,
+    REQUIRED_LEAF_DETAIL_FIELDS,
+    `${id}.foliage.leafDetail`,
+  );
   requireFields(foliage.shell, REQUIRED_SHELL_FIELDS, `${id}.foliage.shell`);
 
   const palette = freezeArray(foliage.palette, `${id}.foliage.palette`);
@@ -247,12 +287,14 @@ function createFoliageConfig(id, foliage) {
 
   validateFoliageTuning(id, foliage);
   validateVolumeTuning(id, foliage.volume);
+  validateLeafDetailTuning(id, foliage.leafDetail);
   validateShellTuning(id, foliage.shell);
 
   return Object.freeze({
     ...foliage,
     palette,
     volume: Object.freeze({ ...foliage.volume }),
+    leafDetail: Object.freeze({ ...foliage.leafDetail }),
     shell: Object.freeze({
       ...foliage.shell,
       sizeRatio: validatePair(

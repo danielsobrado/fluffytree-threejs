@@ -4,4 +4,5 @@ export const TREE_STRUCTURE_RENDERING_CONSTANTS = Object.freeze({
   branchCurveSamples: 10,
   taperExponent: 0.78,
   flareExponent: 4,
+  rootEmbedDepth: 0.14,
 });

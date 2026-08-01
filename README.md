@@ -13,6 +13,7 @@ The repository is a deterministic, configuration-driven procedural tree system s
 - Generated curved trunks and primary supporting branches.
 - Connected crown enforcement and branch-to-crown insertion.
 - Seamless tapered tube geometry with configurable trunk flare.
+- Trunks extend below the terrain and use a closed root cap so the base cannot appear cut open.
 
 ## Unified canopy
 
@@ -24,9 +25,17 @@ Control lobes define the crown but are no longer rendered as separate spheres.
 - Field-gradient normals remain smooth across former lobe boundaries.
 - Broad crown-space palette patches replace per-card color noise.
 - Opaque crown geometry avoids alpha overdraw and casts coherent shadows.
-- Foliage fins, surface stamps, and visible primitive intersections are not part of the active renderer.
 
-The volume resolution, union smoothing, surface displacement, normal sampling, and color patching are configured per preset in `config/tree-presets.yaml`.
+## Leaf detail
+
+The unified crown is covered by deterministic instanced leaf rosettes:
+
+- Surface samples are projected onto the final implicit crown rather than the hidden control lobes.
+- Each cluster contains several folded leaf shapes growing mostly along the crown tangent.
+- A small outward fold makes leaves readable without recreating the previous spike problem.
+- Per-cluster colors stay coherent with the seasonal crown palette.
+- One instanced draw call is used for each tree.
+- Density, size, embedding, protrusion, color variation, and roughness are configured per preset.
 
 Hierarchical wind and production distance LOD remain later phases.
 
@@ -41,7 +50,9 @@ Then open `http://localhost:8080`.
 
 ## Deploy to GitHub Pages
 
-GitHub Pages publishes the repository root from the `gh-pages` branch. After changes are committed and pushed to `main`, run:
+GitHub Pages publishes the repository root from the `gh-pages` branch. Before each upload, increment the release identifier in `config/release.yaml`. The exact identifier is rendered in both the browser title and the visible demo title so stale deployments are immediately obvious.
+
+After changes are committed and pushed to `main`, run:
 
 ```bash
 npm ci
@@ -80,7 +91,9 @@ The automated gates cover:
 - Deterministic unified crown extraction and seed uniqueness.
 - A single closed crown component with no boundary or non-manifold edges.
 - Finite crown vertices, normalized field-gradient normals, coincident-normal consistency, and maximum surface edge length.
-- Desktop and mobile WebGL compilation and screenshots.
+- Non-zero visible leaf-cluster and leaf counts in desktop and mobile WebGL renders.
+- One capped, terrain-embedded root for every rendered crown.
+- The exact uploaded release identifier in the browser and visible demo titles.
 
 ## Structure
 
