@@ -124,9 +124,6 @@ function deploy() {
 try {
   deploy();
 } catch (error) {
-  console.error(
-    `${LOG_PREFIX} Deployment failed:`,
-    error instanceof Error ? error.message : error,
-  );
+  console.error(`${LOG_PREFIX} Deployment failed:`, error instanceof Error ? error.message : error);
   process.exitCode = 1;
 }
