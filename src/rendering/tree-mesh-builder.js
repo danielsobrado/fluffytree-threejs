@@ -11,11 +11,7 @@ export class TreeMeshBuilder {
     this.crownVolumeBuilder = crownVolumeBuilder;
   }
 
-  build(treeData, { sunDirection }) {
-    if (!(sunDirection instanceof THREE.Vector3)) {
-      throw new Error('TreeMeshBuilder requires a Three.js sun direction vector.');
-    }
-
+  build(treeData) {
     const group = new THREE.Group();
     group.name = `tree-${treeData.presetId}`;
 
