@@ -1,0 +1,15 @@
+export const FOLIAGE_SHELL_CONSTANTS = Object.freeze({
+  tau: Math.PI * 2,
+  goldenAngle: Math.PI * (3 - Math.sqrt(5)),
+  clearanceOffset: 0.08,
+  clearanceRange: 0.6,
+  outwardBias: 0.25,
+  outwardRange: 1.25,
+  exposureWeight: 0.58,
+  outwardWeight: 0.34,
+  upwardWeight: 0.08,
+  selectionScoreWeight: 0.68,
+  selectionSeparationWeight: 0.32,
+  scoreJitter: 0.0001,
+  seedSalt: 0x9e3779b9,
+});
