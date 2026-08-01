@@ -59,6 +59,16 @@ presets:
         coreBrightness: 0.7
         layerCount: 4
         layerOffsetRatio: 0.16
+        closure:
+          enabled: true
+          spineSlices: 24
+          spineRingCount: 9
+          bridgeSamples: 4
+          capSamples: 36
+          radiusRatio: 0.42
+          clusterScaleRatio: 0.13
+          colorDrop: 0.14
+          axialJitter: 0.16
       shell:
         instancesPerLobe: 70
         candidateMultiplier: 4
@@ -135,6 +145,16 @@ presets:
         coreBrightness: 0.68
         layerCount: 4
         layerOffsetRatio: 0.17
+        closure:
+          enabled: true
+          spineSlices: 32
+          spineRingCount: 12
+          bridgeSamples: 5
+          capSamples: 48
+          radiusRatio: 0.52
+          clusterScaleRatio: 0.145
+          colorDrop: 0.16
+          axialJitter: 0.12
       shell:
         instancesPerLobe: 68
         candidateMultiplier: 4
@@ -211,6 +231,16 @@ presets:
         coreBrightness: 0.68
         layerCount: 4
         layerOffsetRatio: 0.17
+        closure:
+          enabled: true
+          spineSlices: 26
+          spineRingCount: 10
+          bridgeSamples: 4
+          capSamples: 40
+          radiusRatio: 0.45
+          clusterScaleRatio: 0.135
+          colorDrop: 0.15
+          axialJitter: 0.2
       shell:
         instancesPerLobe: 72
         candidateMultiplier: 4
