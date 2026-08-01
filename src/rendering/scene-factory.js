@@ -3,11 +3,13 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 function createRenderer(container, config) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, config.renderer.maxPixelRatio));
+  renderer.setPixelRatio(
+    Math.min(window.devicePixelRatio, config.renderer.maxPixelRatio),
+  );
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1;
+  renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
@@ -63,8 +65,9 @@ function createLights(config) {
   sun.shadow.camera.bottom = -8;
   sun.shadow.camera.near = 1;
   sun.shadow.camera.far = 48;
-  sun.shadow.bias = -0.00025;
-  sun.shadow.normalBias = 0.025;
+  sun.shadow.bias = -0.0002;
+  sun.shadow.normalBias = 0.035;
+  sun.shadow.radius = 2;
 
   return { hemisphere, sun };
 }
