@@ -1,6 +1,7 @@
 import { TreeDemo } from './app/tree-demo.js';
 import { YamlConfigLoader } from './config/yaml-config-loader.js';
 import { logger } from './core/logger.js';
+import { markRenderSmokeBootstrapFailure } from './diagnostics/render-smoke-probe.js';
 import { createTreePresetMap } from './domain/tree-preset.js';
 import { showFatalError } from './ui/demo-overlay.js';
 
@@ -27,6 +28,7 @@ async function bootstrap() {
     demo.start(container, sceneConfig, presetMap);
   } catch (error) {
     logger.error('Application bootstrap failed.', error);
+    markRenderSmokeBootstrapFailure(error);
     showFatalError(container, error);
   }
 }

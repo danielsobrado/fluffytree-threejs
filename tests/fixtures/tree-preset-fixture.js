@@ -1,6 +1,8 @@
 import { createTreePreset } from '../../src/domain/tree-preset.js';
 
 export function createTestPreset(overrides = {}) {
+  const shellOverrides = overrides.foliage?.shell ?? {};
+
   return createTreePreset('test', {
     label: 'Test',
     height: 7,
@@ -27,10 +29,28 @@ export function createTestPreset(overrides = {}) {
       ...overrides.trunk,
     },
     foliage: {
-      baseColor: '#335533',
-      lightColor: '#88aa66',
+      palette: ['#23382d', '#335533', '#668855', '#aacc77'],
       variation: 0.2,
+      paletteBase: 0.48,
+      heightPaletteShift: 0.18,
+      exposurePaletteShift: 0.12,
+      radialNormalStrength: 0.78,
+      wrapLight: 0.5,
+      skyLightStrength: 0.2,
+      cavityStrength: 0.34,
+      heightLightStrength: 0.14,
       ...overrides.foliage,
+      shell: {
+        instancesPerLobe: 12,
+        candidateMultiplier: 3,
+        sizeRatio: [0.15, 0.24],
+        radialOffsetRatio: 0.045,
+        exposureThreshold: 0.08,
+        alphaTest: 0.46,
+        planesPerCluster: 3,
+        shadowProxyScale: 0.97,
+        ...shellOverrides,
+      },
     },
     ...overrides.root,
   });

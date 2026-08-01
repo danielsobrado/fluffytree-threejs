@@ -1,4 +1,5 @@
 import { CrownEnvelope } from '../generation/crown-envelope.js';
+import { analyzeFoliageShell } from './foliage-shell-analyzer.js';
 import { analyzeSilhouette } from './silhouette-analyzer.js';
 import { analyzeTopology } from './tree-topology-analyzer.js';
 import { analyzeVolume } from './volume-analyzer.js';
@@ -144,6 +145,7 @@ export class TreeShapeAnalyzer {
       ...analyzeTopology(tree),
       ...combineProjections(front, side),
       ...analyzeVolume(tree.lobes, envelope, this.volumeResolution),
+      ...analyzeFoliageShell(tree, preset, this.silhouetteResolution),
     };
   }
 }

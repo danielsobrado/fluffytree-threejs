@@ -1,15 +1,31 @@
-const DIRECTIONS = Object.freeze([
+const CARDINAL_DIRECTIONS = Object.freeze([
   [1, 0],
   [-1, 0],
   [0, 1],
   [0, -1],
 ]);
 
+const DIAGONAL_DIRECTIONS = Object.freeze([
+  ...CARDINAL_DIRECTIONS,
+  [1, 1],
+  [1, -1],
+  [-1, 1],
+  [-1, -1],
+]);
+
 function indexOf(x, y, width) {
   return y * width + x;
 }
 
-export function countComponents(mask, width, height) {
+export function countComponents(
+  mask,
+  width,
+  height,
+  { includeDiagonals = false } = {},
+) {
+  const directions = includeDiagonals
+    ? DIAGONAL_DIRECTIONS
+    : CARDINAL_DIRECTIONS;
   const visited = new Uint8Array(mask.length);
   let count = 0;
   let largest = 0;
@@ -28,7 +44,7 @@ export function countComponents(mask, width, height) {
       const y = Math.floor(current / width);
       size += 1;
 
-      for (const [dx, dy] of DIRECTIONS) {
+      for (const [dx, dy] of directions) {
         const nextX = x + dx;
         const nextY = y + dy;
 
@@ -77,7 +93,7 @@ export function calculateHoleRatio(mask, width, height, occupiedCount) {
     const x = current % width;
     const y = Math.floor(current / width);
 
-    for (const [dx, dy] of DIRECTIONS) {
+    for (const [dx, dy] of CARDINAL_DIRECTIONS) {
       const nextX = x + dx;
       const nextY = y + dy;
 

@@ -20,6 +20,8 @@ const configuration = {
         missingBranchTargetCount: 0,
         nonMonotonicTrunkSegments: 0,
         silhouetteComponentCount: 1,
+        shellMissingSourceLobeCount: 0,
+        shellDuplicatePositionCount: 0,
       },
       ranges: {
         minimumBranchInsertion: [0.54, 0.56],
@@ -29,6 +31,24 @@ const configuration = {
         silhouetteHoleRatio: [0, 0.05],
         minimumColorMix: [0, 1],
         maximumColorMix: [0, 1],
+        shellMinimumSurfaceDistance: [1, 1.3],
+        shellMaximumSurfaceDistance: [1, 1.3],
+        shellMeanSurfaceDistance: [1, 1.3],
+        shellMaximumNormalLengthError: [0, 0.00000001],
+        shellMinimumOutwardAlignment: [0, 1],
+        shellMeanOutwardAlignment: [0, 1],
+        shellMinimumExposure: [0, 1],
+        shellMeanExposure: [0, 1],
+        shellMaximumExposure: [0, 1],
+        shellOccludedRatio: [0, 1],
+        shellMinimumScale: [0, 1],
+        shellMaximumScale: [0, 1],
+        lobeMinimumExposure: [0, 1],
+        lobeMeanExposure: [0, 1],
+        lobeMaximumExposure: [0, 1],
+        shellSilhouetteContribution: [0, 1],
+        shellSilhouetteLargestComponentRatio: [0.98, 1],
+        shellSilhouetteHoleRatio: [0, 0.1],
       },
     },
     profiles: {
@@ -53,7 +73,7 @@ const configuration = {
   },
   report: {
     maximumFailureExamples: 5,
-    worstSeedMetrics: ['crownAspectRatio'],
+    worstSeedMetrics: ['crownAspectRatio', 'shellMeanExposure'],
   },
 };
 
@@ -64,7 +84,11 @@ test('shape QA report is deterministic and passes a healthy preset', () => {
   const second = runner.run(presets, configuration);
 
   assert.deepEqual(first, second);
-  assert.equal(first.passed, true);
+  assert.equal(
+    first.passed,
+    true,
+    JSON.stringify(first.presets.test.failureExamples, null, 2),
+  );
   assert.equal(first.summary.treesAnalyzed, 16);
   assert.equal(first.presets.test.uniqueTreeCount, 16);
 });

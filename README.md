@@ -4,21 +4,35 @@ Procedural stylized trees built with Three.js.
 
 **Live demo:** https://danielsobrado.github.io/fluffytree-threejs/
 
-The repository started as a shader-enhanced authored scene. It is now organized as a small procedural tree system with deterministic generation and configuration-driven presets.
+The repository started as a shader-enhanced authored scene. It is now a deterministic, configuration-driven procedural tree system split into small generation, rendering, animation, diagnostics, and QA modules.
 
-## Phase 1
-
-Phase 1 provides:
+## Phase 1: procedural structure
 
 - Rounded orchard, columnar, and irregular vase-shaped crown envelopes.
 - Deterministic foliage-lobe placement from a seed.
 - Generated bent trunks and primary branches.
-- Instanced opaque foliage cores.
-- Shared scene, renderer, generation, rendering, animation, and UI modules.
-- YAML scene and tree-preset configuration.
-- Numeric shape gates across thousands of deterministic trees.
+- Connected crown enforcement and branch-to-foliage insertion.
 
-The fuzzy outer foliage shell, lobe-aware stylized shading, seasonal palette textures, and production LOD system belong to later phases.
+## Phase 2: stylized foliage
+
+- Opaque instanced crown cores that keep the canopy visually solid.
+- Deterministic exposed foliage shells generated around every crown lobe.
+- Alpha-tested crossed-plane shell clusters without transparent volume overdraw.
+- Lobe-aware radial normals instead of camera-facing foliage normals.
+- Wrapped sunlight, sky contribution, height lighting, and cavity darkening.
+- Configurable four-stop seasonal palette textures.
+- Low-detail invisible crown proxies for stable, inexpensive cast shadows.
+- Headless WebGL shader compilation and screenshot smoke testing.
+
+Current shell budgets are intentionally explicit:
+
+| Preset | Shell clusters | Leaf cards |
+|---|---:|---:|
+| Round orchard | 198 | 594 |
+| Columnar | 221 | 663 |
+| Irregular autumn | 240 | 720 |
+
+A production distance LOD and impostor system is not part of Phase 2.
 
 ## Run locally
 
@@ -40,47 +54,58 @@ npm ci
 npm run deploy:pages
 ```
 
-The command runs the standard checks, fetches the remote `main` branch, verifies the required static-site files, and updates `gh-pages` using force-with-lease. Deployment settings are stored in `pages.config.yml`.
+The command runs all release checks, fetches remote `main`, verifies the required static-site files, and updates `gh-pages` using force-with-lease. Deployment settings are stored in `pages.config.yml`.
 
 Configure the repository Pages source as **Deploy from a branch**, using `gh-pages` and `/(root)`.
 
-## Tests
+## Verification
+
+Run source checks and unit tests:
 
 ```bash
-npm test
+npm run check
 ```
 
-## Deterministic shape QA
+Compile and render the actual foliage shaders in headless Chrome:
 
-The expensive QA run generates 2,048 seeded trees for each preset: 6,144 trees in total. Every tree is generated twice to verify exact replay determinism.
+```bash
+npm run qa:render
+```
+
+Run the expensive deterministic shape and foliage QA:
 
 ```bash
 npm run qa:shape
 ```
 
-A smaller local run is available while changing the generator:
+Run every release gate:
+
+```bash
+npm run verify
+```
+
+A smaller local shape run is available while changing the generator:
 
 ```bash
 npm run qa:shape:quick
 ```
 
-Reports are written to `qa-results/tree-shape/report.json` and `report.md`. The accepted Phase 1 baseline is stored in `qa/baselines/`.
+The full shape run generates 2,048 seeded trees for each preset: 6,144 trees in total. Every tree is generated twice to verify exact replay determinism. Reports are written to `qa-results/tree-shape/report.json` and `report.md`. Accepted Phase 1 and Phase 2 baselines are stored in `qa/baselines/`.
 
 The QA gates measure:
 
-- Exact foliage-lobe, branch, and trunk-point counts.
-- Finite numeric output and seed uniqueness.
+- Exact lobe, shell-cluster, leaf-card, branch, and trunk-point counts.
+- Finite numeric output, deterministic replay, and seed uniqueness.
 - Connected 3D foliage and connected front/side silhouettes.
 - Crown height-to-width and width-to-depth ratios.
-- Foliage density inside the silhouette bounding box.
-- Coverage of the configured crown envelope and foliage spill outside it.
-- Similarity between the generated silhouette and the requested round, columnar, or vase profile.
+- Crown-envelope coverage, profile similarity, and foliage spill.
 - Empty silhouette holes and disconnected foliage islands.
+- Shell surface attachment, normal length, outward alignment, scale, and exposure.
+- Hidden-shell ratio and measurable shell silhouette contribution.
 - Lobe distribution across lower, middle, and upper crown bands.
-- Trunk penetration into the crown.
-- Branch endpoints embedded inside their target foliage lobes.
+- Trunk penetration and branch endpoints embedded inside target lobes.
 
-The baseline run passes all gates with zero failed trees, zero deterministic mismatches, and 100% unique tree hashes for every preset.
+The accepted Phase 2 baseline passes all gates with zero failed trees, zero deterministic mismatches, and 100% unique hashes for every preset.
 
 ## Structure
 
@@ -91,13 +116,14 @@ src/app/                Application orchestration
 src/animation/          Runtime animation controllers
 src/config/             Configuration loading
 src/core/               Cross-cutting utilities
+src/diagnostics/        Browser and rendering diagnostics
 src/domain/             Validated domain configuration
 src/generation/         Renderer-independent procedural generation
-src/qa/                 Numeric topology, silhouette, and volume analysis
-src/rendering/          Three.js scene and mesh construction
+src/qa/                 Numeric topology, silhouette, shell, and volume analysis
+src/rendering/          Three.js scene, geometry, material, texture, and mesh construction
 src/ui/                 DOM presentation
 styles/                 Page styling
-tests/                  Deterministic generation and QA tests
+tests/                  Deterministic generation, shader, and QA tests
 tools/                  Command-line QA and deployment entry points
 ```
 

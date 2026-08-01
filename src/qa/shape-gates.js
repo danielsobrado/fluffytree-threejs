@@ -23,6 +23,31 @@ function checkConfiguredRanges(metrics, ranges, failures) {
   }
 }
 
+function checkFoliageCounts(metrics, preset, failures) {
+  const shellSettings = preset.foliage.shell;
+  const shellCount = preset.crown.lobeCount * shellSettings.instancesPerLobe;
+
+  checkExact(metrics, 'shellInstanceCount', shellCount, failures);
+  checkExact(
+    metrics,
+    'leafCardCount',
+    shellCount * shellSettings.planesPerCluster,
+    failures,
+  );
+  checkExact(
+    metrics,
+    'shellMinimumInstancesPerLobe',
+    shellSettings.instancesPerLobe,
+    failures,
+  );
+  checkExact(
+    metrics,
+    'shellMaximumInstancesPerLobe',
+    shellSettings.instancesPerLobe,
+    failures,
+  );
+}
+
 export function evaluateShapeGates(metrics, preset, thresholds) {
   const failures = [];
   const common = thresholds.common;
@@ -42,6 +67,7 @@ export function evaluateShapeGates(metrics, preset, thresholds) {
     preset.trunk.segments + 1,
     failures,
   );
+  checkFoliageCounts(metrics, preset, failures);
 
   for (const [metric, expected] of Object.entries(common.exact ?? {})) {
     checkExact(metrics, metric, expected, failures);
