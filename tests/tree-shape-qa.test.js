@@ -22,7 +22,6 @@ const configuration = {
         silhouetteComponentCount: 1,
         shellMissingSourceLobeCount: 0,
         shellDuplicatePositionCount: 0,
-        shellSilhouetteComponentCount: 1,
       },
       ranges: {
         minimumBranchInsertion: [0.54, 0.56],
@@ -48,6 +47,7 @@ const configuration = {
         lobeMeanExposure: [0, 1],
         lobeMaximumExposure: [0, 1],
         shellSilhouetteContribution: [0, 1],
+        shellSilhouetteLargestComponentRatio: [0.98, 1],
         shellSilhouetteHoleRatio: [0, 0.1],
       },
     },
