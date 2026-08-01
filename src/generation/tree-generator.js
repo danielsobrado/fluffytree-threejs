@@ -1,21 +1,25 @@
 import { BranchGenerator } from './branch-generator.js';
 import { CrownEnvelope } from './crown-envelope.js';
+import { LobeConnectivityEnforcer } from './lobe-connectivity-enforcer.js';
 import { LobeGenerator } from './lobe-generator.js';
 import { SeededRandom } from './seeded-random.js';
 
 export class TreeGenerator {
   constructor({
     lobeGenerator = new LobeGenerator(),
+    lobeConnectivityEnforcer = new LobeConnectivityEnforcer(),
     branchGenerator = new BranchGenerator(),
   } = {}) {
     this.lobeGenerator = lobeGenerator;
+    this.lobeConnectivityEnforcer = lobeConnectivityEnforcer;
     this.branchGenerator = branchGenerator;
   }
 
   generate(preset, seed) {
     const random = new SeededRandom(seed);
     const envelope = new CrownEnvelope(preset.crown);
-    const lobes = this.lobeGenerator.generate(preset, envelope, random);
+    const generatedLobes = this.lobeGenerator.generate(preset, envelope, random);
+    const lobes = this.lobeConnectivityEnforcer.enforce(generatedLobes);
     const structure = this.branchGenerator.generate(preset, lobes, random);
 
     return Object.freeze({
