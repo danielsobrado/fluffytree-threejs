@@ -1,7 +1,16 @@
 import * as THREE from 'three';
+import {
+  calculateRootCollarRadius,
+  getRootCollarMaximumHeight,
+  getRootCollarMinimumHeight,
+} from './root-collar-profile.js';
 import { TREE_STRUCTURE_RENDERING_CONSTANTS } from './tree-structure-rendering-constants.js';
 
 const TAU = Math.PI * 2;
+
+function clamp(value, minimum, maximum) {
+  return Math.min(maximum, Math.max(minimum, value));
+}
 
 function interpolate(left, right, ratio) {
   return left + (right - left) * ratio;
@@ -15,7 +24,7 @@ function pointAtHeight(path, height) {
     if (current.y < height) continue;
 
     const span = Math.max(1e-6, current.y - previous.y);
-    const ratio = THREE.MathUtils.clamp((height - previous.y) / span, 0, 1);
+    const ratio = clamp((height - previous.y) / span, 0, 1);
     return {
       x: interpolate(previous.x, current.x, ratio),
       y: height,
@@ -24,21 +33,11 @@ function pointAtHeight(path, height) {
   }
 
   const last = path.at(-1);
-  return { x: last.x, y: last.y, z: last.z };
+  return { x: last.x, y: height, z: last.z };
 }
 
 function createRingCenter(path, minimumY, maximumY, ratio) {
   return pointAtHeight(path, interpolate(minimumY, maximumY, ratio));
-}
-
-export function calculateRootCollarTopRadius(startRadius, flare) {
-  return startRadius * (1 + flare * 0.18);
-}
-
-function calculateRadius(startRadius, flare, ratio) {
-  const broadBase = startRadius * (1 + flare * 1.45);
-  const collarTop = calculateRootCollarTopRadius(startRadius, flare);
-  return interpolate(broadBase, collarTop, Math.pow(ratio, 0.72));
 }
 
 function calculateButtress(angle, ratio, seed) {
@@ -59,25 +58,39 @@ function calculateButtress(angle, ratio, seed) {
   );
 }
 
-function appendBottomCap(positions, indices, radialSegments) {
+function appendCap({
+  positions,
+  indices,
+  radialSegments,
+  ringStart,
+  normalUp,
+}) {
   let centerX = 0;
+  let centerY = 0;
   let centerZ = 0;
 
   for (let segment = 0; segment < radialSegments; segment += 1) {
-    const offset = segment * 3;
+    const offset = (ringStart + segment) * 3;
     centerX += positions[offset];
+    centerY += positions[offset + 1];
     centerZ += positions[offset + 2];
   }
 
   centerX /= radialSegments;
+  centerY /= radialSegments;
   centerZ /= radialSegments;
   const centerIndex = positions.length / 3;
-  const centerY = positions[1];
   positions.push(centerX, centerY, centerZ);
 
   for (let segment = 0; segment < radialSegments; segment += 1) {
-    const next = (segment + 1) % radialSegments;
-    indices.push(centerIndex, next, segment);
+    const current = ringStart + segment;
+    const next = ringStart + ((segment + 1) % radialSegments);
+
+    if (normalUp) {
+      indices.push(centerIndex, next, current);
+    } else {
+      indices.push(centerIndex, current, next);
+    }
   }
 }
 
@@ -101,22 +114,22 @@ export class RootCollarGeometryFactory {
 
     const radialSegments = TREE_STRUCTURE_RENDERING_CONSTANTS.radialSegments;
     const ringCount = TREE_STRUCTURE_RENDERING_CONSTANTS.rootCollarRings;
-    const minimumY = -TREE_STRUCTURE_RENDERING_CONSTANTS.rootEmbedDepth;
-    const maximumY = TREE_STRUCTURE_RENDERING_CONSTANTS.rootCollarHeight;
+    const minimumY = getRootCollarMinimumHeight();
+    const maximumY = getRootCollarMaximumHeight();
     const positions = [];
     const indices = [];
 
     for (let ring = 0; ring <= ringCount; ring += 1) {
       const ratio = ring / ringCount;
       const center = createRingCenter(path, minimumY, maximumY, ratio);
-      const radius = calculateRadius(startRadius, flare, ratio);
+      const radius = calculateRootCollarRadius(startRadius, flare, ratio);
 
       for (let segment = 0; segment < radialSegments; segment += 1) {
         const angle = (segment / radialSegments) * TAU;
         const localRadius = radius * calculateButtress(angle, ratio, seed);
         positions.push(
           center.x + Math.cos(angle) * localRadius,
-          interpolate(minimumY, maximumY, ratio),
+          center.y,
           center.z + Math.sin(angle) * localRadius,
         );
       }
@@ -139,7 +152,20 @@ export class RootCollarGeometryFactory {
       }
     }
 
-    appendBottomCap(positions, indices, radialSegments);
+    appendCap({
+      positions,
+      indices,
+      radialSegments,
+      ringStart: 0,
+      normalUp: false,
+    });
+    appendCap({
+      positions,
+      indices,
+      radialSegments,
+      ringStart: ringCount * radialSegments,
+      normalUp: true,
+    });
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
@@ -153,6 +179,7 @@ export class RootCollarGeometryFactory {
     geometry.userData.rootCollar = {
       embeddedDepth: TREE_STRUCTURE_RENDERING_CONSTANTS.rootEmbedDepth,
       collarHeight: TREE_STRUCTURE_RENDERING_CONSTANTS.rootCollarHeight,
+      overlap: TREE_STRUCTURE_RENDERING_CONSTANTS.rootCollarOverlap,
       capped: true,
     };
     return geometry;
