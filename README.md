@@ -50,7 +50,9 @@ Then open `http://localhost:8080`.
 
 ## Deploy to GitHub Pages
 
-GitHub Pages publishes the repository root from the `gh-pages` branch. After changes are committed and pushed to `main`, run:
+GitHub Pages publishes the repository root from the `gh-pages` branch. Before each upload, increment the release identifier in `config/release.yaml`. The exact identifier is rendered in both the browser title and the visible demo title so stale deployments are immediately obvious.
+
+After changes are committed and pushed to `main`, run:
 
 ```bash
 npm ci
@@ -91,6 +93,7 @@ The automated gates cover:
 - Finite crown vertices, normalized field-gradient normals, coincident-normal consistency, and maximum surface edge length.
 - Non-zero visible leaf-cluster and leaf counts in desktop and mobile WebGL renders.
 - One capped, terrain-embedded root for every rendered crown.
+- The exact uploaded release identifier in the browser and visible demo titles.
 
 ## Structure
 
