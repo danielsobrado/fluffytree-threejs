@@ -9,6 +9,9 @@ const REQUIRED_CROWN_FIELDS = [
   'radialBias',
   'asymmetry',
   'lean',
+  'surfaceTension',
+  'lobeScaleMultiplier',
+  'scaleVariation',
 ];
 
 const REQUIRED_TRUNK_FIELDS = [
@@ -27,6 +30,7 @@ const REQUIRED_FOLIAGE_FIELDS = [
   'heightPaletteShift',
   'exposurePaletteShift',
   'radialNormalStrength',
+  'crownNormalBlend',
   'wrapLight',
   'skyLightStrength',
   'cavityStrength',
@@ -38,8 +42,14 @@ const REQUIRED_SHELL_FIELDS = [
   'instancesPerLobe',
   'candidateMultiplier',
   'sizeRatio',
+  'widthRatio',
+  'outwardRatio',
   'radialOffsetRatio',
   'exposureThreshold',
+  'colorJitter',
+  'paletteLift',
+  'cavityScale',
+  'normalBlend',
   'alphaTest',
   'planesPerCluster',
   'shadowProxyScale',
@@ -90,13 +100,31 @@ function requirePositiveInteger(value, path) {
   }
 }
 
+function validatePair(value, path) {
+  const pair = freezeArray(value, path);
+
+  if (pair.length !== 2 || pair[0] <= 0 || pair[1] < pair[0]) {
+    throw new Error(`Configuration '${path}' must be [minimum, maximum].`);
+  }
+
+  return pair;
+}
+
+function validateCrownTuning(id, crown) {
+  requireRange(crown.surfaceTension, 0, 1, `${id}.crown.surfaceTension`);
+  requireRange(
+    crown.lobeScaleMultiplier,
+    0.5,
+    2,
+    `${id}.crown.lobeScaleMultiplier`,
+  );
+  requireRange(crown.scaleVariation, 0, 0.5, `${id}.crown.scaleVariation`);
+}
+
 function validateFoliageTuning(id, foliage) {
   requireRange(foliage.variation, 0, 1, `${id}.foliage.variation`);
   requireRange(foliage.paletteBase, 0, 1, `${id}.foliage.paletteBase`);
-  requireFinite(
-    foliage.heightPaletteShift,
-    `${id}.foliage.heightPaletteShift`,
-  );
+  requireFinite(foliage.heightPaletteShift, `${id}.foliage.heightPaletteShift`);
   requireFinite(
     foliage.exposurePaletteShift,
     `${id}.foliage.exposurePaletteShift`,
@@ -106,6 +134,12 @@ function validateFoliageTuning(id, foliage) {
     0,
     1,
     `${id}.foliage.radialNormalStrength`,
+  );
+  requireRange(
+    foliage.crownNormalBlend,
+    0,
+    1,
+    `${id}.foliage.crownNormalBlend`,
   );
   requireRange(foliage.wrapLight, 0, 1, `${id}.foliage.wrapLight`);
   requireRange(
@@ -153,12 +187,11 @@ function validateShellTuning(id, shell) {
     1,
     `${id}.foliage.shell.exposureThreshold`,
   );
-  requireRange(
-    shell.alphaTest,
-    0,
-    1,
-    `${id}.foliage.shell.alphaTest`,
-  );
+  requireRange(shell.colorJitter, 0, 1, `${id}.foliage.shell.colorJitter`);
+  requireRange(shell.paletteLift, -1, 1, `${id}.foliage.shell.paletteLift`);
+  requireRange(shell.cavityScale, 0, 1, `${id}.foliage.shell.cavityScale`);
+  requireRange(shell.normalBlend, 0, 1, `${id}.foliage.shell.normalBlend`);
+  requireRange(shell.alphaTest, 0, 1, `${id}.foliage.shell.alphaTest`);
   requireRange(
     shell.shadowProxyScale,
     0.5,
@@ -169,11 +202,7 @@ function validateShellTuning(id, shell) {
 
 function createFoliageConfig(id, foliage) {
   requireFields(foliage, REQUIRED_FOLIAGE_FIELDS, `${id}.foliage`);
-  requireFields(
-    foliage.shell,
-    REQUIRED_SHELL_FIELDS,
-    `${id}.foliage.shell`,
-  );
+  requireFields(foliage.shell, REQUIRED_SHELL_FIELDS, `${id}.foliage.shell`);
 
   const palette = freezeArray(foliage.palette, `${id}.foliage.palette`);
   if (!palette.every((color) => typeof color === 'string')) {
@@ -183,23 +212,23 @@ function createFoliageConfig(id, foliage) {
   validateFoliageTuning(id, foliage);
   validateShellTuning(id, foliage.shell);
 
-  const sizeRatio = freezeArray(
-    foliage.shell.sizeRatio,
-    `${id}.foliage.shell.sizeRatio`,
-  );
-
-  if (sizeRatio.length !== 2 || sizeRatio[0] <= 0 || sizeRatio[1] < sizeRatio[0]) {
-    throw new Error(
-      `Configuration '${id}.foliage.shell.sizeRatio' must be [minimum, maximum].`,
-    );
-  }
-
   return Object.freeze({
     ...foliage,
     palette,
     shell: Object.freeze({
       ...foliage.shell,
-      sizeRatio,
+      sizeRatio: validatePair(
+        foliage.shell.sizeRatio,
+        `${id}.foliage.shell.sizeRatio`,
+      ),
+      widthRatio: validatePair(
+        foliage.shell.widthRatio,
+        `${id}.foliage.shell.widthRatio`,
+      ),
+      outwardRatio: validatePair(
+        foliage.shell.outwardRatio,
+        `${id}.foliage.shell.outwardRatio`,
+      ),
     }),
   });
 }
@@ -211,6 +240,7 @@ export function createTreePreset(id, value) {
 
   requireFields(value.crown, REQUIRED_CROWN_FIELDS, `${id}.crown`);
   requireFields(value.trunk, REQUIRED_TRUNK_FIELDS, `${id}.trunk`);
+  validateCrownTuning(id, value.crown);
 
   const preset = {
     id,
