@@ -12,7 +12,7 @@
     "verify": "npm run check && npm run qa:shape"
   },
   "devDependencies": {
-    "js-yaml": "4.1.1"
+    "js-yaml": "4.3.0"
   },
   "engines": {
     "node": ">=20"
