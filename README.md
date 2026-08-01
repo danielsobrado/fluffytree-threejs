@@ -53,6 +53,14 @@ npm run deploy:pages
 
 The command runs all release checks, fetches remote `main`, verifies the required static-site files, and updates `gh-pages` using force-with-lease. Deployment settings are stored in `pages.config.yml`.
 
+For an explicit deployment of the already-pushed `main` commit without running QA, use:
+
+```bash
+npm run deploy:pages:no-qa
+```
+
+The no-QA command still fetches remote `main`, validates required Pages files, and updates `gh-pages` with force-with-lease; it only skips `npm run verify`.
+
 ## Verification
 
 ```bash
