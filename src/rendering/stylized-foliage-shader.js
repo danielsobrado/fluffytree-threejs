@@ -88,6 +88,18 @@ function createColorShader() {
   `;
 }
 
+function applyFragmentNormalOverride(fragmentShader, forceRadialFragmentNormal) {
+  if (!forceRadialFragmentNormal) return fragmentShader;
+
+  return fragmentShader.replace(
+    '#include <normal_fragment_begin>',
+    `
+      #include <normal_fragment_begin>
+      normal = normalize( mat3( viewMatrix ) * vFoliageRadialWorld );
+    `,
+  );
+}
+
 export function configureStylizedFoliageShader(
   material,
   {
@@ -96,6 +108,7 @@ export function configureStylizedFoliageShader(
     sunDirection,
     radialNormalExpression,
     heightExpression,
+    forceRadialFragmentNormal = false,
     cacheKey,
   },
 ) {
@@ -155,14 +168,16 @@ export function configureStylizedFoliageShader(
         `,
       );
 
-    shader.fragmentShader = `${createFragmentDeclarations()}\n${shader.fragmentShader}`
-      .replace(
-        '#include <color_fragment>',
-        `
-          #include <color_fragment>
-          ${createColorShader()}
-        `,
-      );
+    shader.fragmentShader = applyFragmentNormalOverride(
+      `${createFragmentDeclarations()}\n${shader.fragmentShader}`,
+      forceRadialFragmentNormal,
+    ).replace(
+      '#include <color_fragment>',
+      `
+        #include <color_fragment>
+        ${createColorShader()}
+      `,
+    );
 
     material.userData.shader = shader;
   };
