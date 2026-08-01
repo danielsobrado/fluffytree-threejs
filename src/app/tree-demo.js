@@ -2,21 +2,10 @@ import * as THREE from 'three';
 import { TreeWindController } from '../animation/tree-wind-controller.js';
 import { logger } from '../core/logger.js';
 import { TreeGenerator } from '../generation/tree-generator.js';
+import { disposeObject } from '../rendering/object-disposer.js';
 import { SceneFactory } from '../rendering/scene-factory.js';
 import { TreeMeshBuilder } from '../rendering/tree-mesh-builder.js';
 import { createDemoOverlay } from '../ui/demo-overlay.js';
-
-function disposeObject(root) {
-  root.traverse((object) => {
-    object.geometry?.dispose();
-
-    if (Array.isArray(object.material)) {
-      object.material.forEach((material) => material.dispose());
-    } else {
-      object.material?.dispose();
-    }
-  });
-}
 
 export class TreeDemo {
   constructor({
@@ -72,12 +61,13 @@ export class TreeDemo {
 
     this.treeRoots.length = 0;
     this.windController.clear();
+    const sunDirection = this.context.sun.position.clone().normalize();
 
     for (const entry of this.sceneConfig.layout) {
       const preset = this.presetMap.get(entry.preset);
       const seed = Number(entry.seed) + this.generation * 1009;
       const treeData = this.treeGenerator.generate(preset, seed);
-      const tree = this.treeMeshBuilder.build(treeData);
+      const tree = this.treeMeshBuilder.build(treeData, { sunDirection });
       tree.position.fromArray(entry.position);
       tree.rotation.y = Number(entry.rotationY ?? 0);
       this.context.scene.add(tree);
