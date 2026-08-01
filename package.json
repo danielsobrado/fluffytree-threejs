@@ -10,7 +10,8 @@
     "qa:render": "bash tools/run-render-smoke.sh",
     "qa:shape": "node tools/run-tree-shape-qa.js",
     "qa:shape:quick": "node tools/run-tree-shape-qa.js --seeds 64 --output qa-results/tree-shape-quick",
-    "verify": "npm run check && npm run qa:render && npm run qa:shape"
+    "verify": "npm run check && npm run qa:render && npm run qa:shape",
+    "deploy:pages": "npm run verify && node tools/deploy-pages.js"
   },
   "devDependencies": {
     "js-yaml": "4.3.0"
