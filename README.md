@@ -13,19 +13,22 @@ The repository is a deterministic, configuration-driven procedural tree system s
 - Generated curved trunks and primary supporting branches.
 - Connected crown enforcement and branch-to-crown insertion.
 - Seamless tapered tube geometry with configurable trunk flare.
-- A capped root collar extends below the terrain and overlaps the trunk tube.
-- Seeded buttresses broaden the trunk naturally without exposing a cut seam.
+- A terrain-embedded root collar overlaps the trunk tube.
+- The collar is capped below terrain and deliberately open at the hidden trunk join, preventing a visible horizontal cut face.
 
-## Leaf-only canopy
+## Closed leaf canopy
 
 Control lobes and the smooth implicit crown remain generation tools. They are not rendered as visible foliage.
 
 - The implicit crown mesh is color- and depth-disabled in the camera pass.
 - It remains available only as a slightly inset coherent shadow proxy.
-- Small dense instanced leaf tufts form the complete visible canopy.
-- Four radial layers extend from inside the crown to its silhouette.
-- Deterministic tangential jitter breaks rings and closes gaps between control regions.
-- Irregular golden-angle tufts avoid repeated flower-like rosettes.
+- Four surface layers provide the visible silhouette.
+- A deterministic interior closure system adds darker spine, bridge, and top-cap foliage.
+- Spine foliage hides the trunk and keeps columnar species continuous along height.
+- Bridge foliage closes gaps between neighboring procedural crown regions.
+- Top-cap foliage prevents open crown tips.
+- Interior samples are corrected into the implicit crown field, so closure does not restore a visible smooth blob.
+- Small irregular golden-angle leaf tufts provide the complete visible canopy.
 - Per-cluster colors remain coherent with each seasonal palette.
 
 Hierarchical wind and production distance LOD remain later phases.
@@ -83,8 +86,9 @@ The automated gates cover:
 - A single closed proxy component with no boundary or non-manifold edges.
 - Finite proxy vertices, normalized field-gradient normals, coincident-normal consistency, and maximum surface edge length.
 - No smooth crown mesh writing color or depth in the camera pass.
-- A minimum four-layer leaf density for every rendered tree.
-- A capped, terrain-embedded root collar with positive trunk overlap.
+- Minimum surface-shell density and four radial surface layers.
+- Minimum spine, bridge, and top-cap interior closure coverage for every tree.
+- A terrain-embedded root collar with positive trunk overlap and no visible top cap.
 - The exact uploaded release identifier in the browser and visible demo titles.
 
 ## Structure
