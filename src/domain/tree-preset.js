@@ -62,6 +62,10 @@ const REQUIRED_LEAF_DETAIL_FIELDS = [
   'colorLift',
   'colorJitter',
   'roughness',
+  'coreScale',
+  'coreBrightness',
+  'layerCount',
+  'layerOffsetRatio',
 ];
 
 const REQUIRED_SHELL_FIELDS = [
@@ -230,6 +234,21 @@ function validateLeafDetailTuning(id, leafDetail) {
   requireRange(leafDetail.colorLift, -1, 1, `${path}.colorLift`);
   requireRange(leafDetail.colorJitter, 0, 1, `${path}.colorJitter`);
   requireRange(leafDetail.roughness, 0, 1, `${path}.roughness`);
+  requireRange(leafDetail.coreScale, 0.55, 0.95, `${path}.coreScale`);
+  requireRange(
+    leafDetail.coreBrightness,
+    0.2,
+    1,
+    `${path}.coreBrightness`,
+  );
+  requirePositiveInteger(leafDetail.layerCount, `${path}.layerCount`);
+  requireRange(leafDetail.layerCount, 1, 4, `${path}.layerCount`);
+  requireRange(
+    leafDetail.layerOffsetRatio,
+    0,
+    0.5,
+    `${path}.layerOffsetRatio`,
+  );
 }
 
 function validateShellTuning(id, shell) {
