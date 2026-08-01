@@ -60,10 +60,19 @@ function calculateButtress(angle, ratio, seed) {
 }
 
 function appendBottomCap(positions, indices, radialSegments) {
+  let centerX = 0;
+  let centerZ = 0;
+
+  for (let segment = 0; segment < radialSegments; segment += 1) {
+    const offset = segment * 3;
+    centerX += positions[offset];
+    centerZ += positions[offset + 2];
+  }
+
+  centerX /= radialSegments;
+  centerZ /= radialSegments;
   const centerIndex = positions.length / 3;
-  const centerX = positions[0];
   const centerY = positions[1];
-  const centerZ = positions[2];
   positions.push(centerX, centerY, centerZ);
 
   for (let segment = 0; segment < radialSegments; segment += 1) {
