@@ -46,6 +46,10 @@ function collectSceneMetrics(scene) {
     crownVertices: 0,
     leafClusterCount: 0,
     leafCount: 0,
+    closureClusterCount: 0,
+    closureSpineCount: 0,
+    closureBridgeCount: 0,
+    closureCapCount: 0,
     minimumLeafLayers: Number.POSITIVE_INFINITY,
     rootCollarCount: 0,
     minimumRootCollarOverlap: Number.POSITIVE_INFINITY,
@@ -75,19 +79,28 @@ function collectSceneMetrics(scene) {
     }
 
     if (object.name === LEAF_DETAIL_NAME) {
-      metrics.leafClusterCount += Number(
-        object.userData?.leafDetail?.clusterCount ?? 0,
+      const leafDetail = object.userData?.leafDetail ?? {};
+      metrics.leafClusterCount += Number(leafDetail.clusterCount ?? 0);
+      metrics.leafCount += Number(leafDetail.leafCount ?? 0);
+      metrics.closureClusterCount += Number(
+        leafDetail.closureClusterCount ?? 0,
       );
-      metrics.leafCount += Number(object.userData?.leafDetail?.leafCount ?? 0);
+      metrics.closureSpineCount += Number(leafDetail.closureSpineCount ?? 0);
+      metrics.closureBridgeCount += Number(
+        leafDetail.closureBridgeCount ?? 0,
+      );
+      metrics.closureCapCount += Number(leafDetail.closureCapCount ?? 0);
       metrics.minimumLeafLayers = Math.min(
         metrics.minimumLeafLayers,
-        Number(object.userData?.leafDetail?.layerCount ?? 0),
+        Number(leafDetail.layerCount ?? 0),
       );
     }
 
     if (
       object.name === STRUCTURE_NAME &&
       object.userData?.structure?.rootCapped === true &&
+      object.userData?.structure?.rootBottomCapped === true &&
+      object.userData?.structure?.rootTopCapped === false &&
       object.userData?.structure?.rootCollar === true &&
       Number(object.userData?.structure?.rootEmbedDepth ?? 0) > 0 &&
       Number(object.userData?.structure?.rootCollarHeight ?? 0) > 0
@@ -117,6 +130,27 @@ function collectSceneMetrics(scene) {
     metrics.minimumLeafLayers < RENDER_SMOKE_CONSTANTS.minimumLeafLayers
   ) {
     throw new Error('Visible leaf shells are not dense enough to close canopy gaps.');
+  }
+
+  const minimumClosureClusters =
+    metrics.treeCount * RENDER_SMOKE_CONSTANTS.minimumClosureClustersPerTree;
+  const minimumSpineClusters =
+    metrics.treeCount *
+    RENDER_SMOKE_CONSTANTS.minimumSpineClosureClustersPerTree;
+  const minimumBridgeClusters =
+    metrics.treeCount *
+    RENDER_SMOKE_CONSTANTS.minimumBridgeClosureClustersPerTree;
+  const minimumCapClusters =
+    metrics.treeCount *
+    RENDER_SMOKE_CONSTANTS.minimumCapClosureClustersPerTree;
+
+  if (
+    metrics.closureClusterCount < minimumClosureClusters ||
+    metrics.closureSpineCount < minimumSpineClusters ||
+    metrics.closureBridgeCount < minimumBridgeClusters ||
+    metrics.closureCapCount < minimumCapClusters
+  ) {
+    throw new Error('Interior canopy closure is incomplete.');
   }
 
   if (
@@ -179,6 +213,18 @@ export class RenderSmokeProbe {
           sceneMetrics.leafClusterCount,
         );
         this.root.dataset.leafCount = String(sceneMetrics.leafCount);
+        this.root.dataset.closureClusterCount = String(
+          sceneMetrics.closureClusterCount,
+        );
+        this.root.dataset.closureSpineCount = String(
+          sceneMetrics.closureSpineCount,
+        );
+        this.root.dataset.closureBridgeCount = String(
+          sceneMetrics.closureBridgeCount,
+        );
+        this.root.dataset.closureCapCount = String(
+          sceneMetrics.closureCapCount,
+        );
         this.root.dataset.minimumLeafLayers = String(
           sceneMetrics.minimumLeafLayers,
         );
