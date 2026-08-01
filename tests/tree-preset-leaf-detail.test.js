@@ -10,6 +10,8 @@ test('leaf detail configuration is validated and frozen', () => {
   assert.equal(preset.foliage.leafDetail.coreScale, 0.8);
   assert.equal(preset.foliage.leafDetail.layerCount, 4);
   assert.equal(preset.foliage.leafDetail.layerOffsetRatio, 0.16);
+  assert.equal(preset.foliage.leafDetail.closure.spineSlices, 12);
+  assert.equal(Object.isFrozen(preset.foliage.leafDetail.closure), true);
   assert.equal(Object.isFrozen(preset.foliage.leafDetail), true);
 });
 
@@ -58,5 +60,33 @@ test('leaf detail limits shell layering', () => {
         },
       }),
     /layerCount/,
+  );
+});
+
+test('canopy closure rejects insufficient spine coverage', () => {
+  assert.throws(
+    () =>
+      createTestPreset({
+        foliage: {
+          leafDetail: {
+            closure: { spineSlices: 2 },
+          },
+        },
+      }),
+    /spineSlices/,
+  );
+});
+
+test('canopy closure rejects excessive center radius', () => {
+  assert.throws(
+    () =>
+      createTestPreset({
+        foliage: {
+          leafDetail: {
+            closure: { radiusRatio: 0.9 },
+          },
+        },
+      }),
+    /radiusRatio/,
   );
 });
