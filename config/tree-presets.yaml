@@ -48,25 +48,25 @@ presets:
       leafDetail:
         enabled: true
         density: 1.0
-        scale: 1.95
+        scale: 2.08
         embedRatio: 0.14
         protrusionRatio: 0.22
-        leavesPerCluster: 7
+        leavesPerCluster: 8
         colorLift: 0.08
         colorJitter: 0.04
         roughness: 0.9
         coreScale: 0.79
         coreBrightness: 0.7
-        layerCount: 2
-        layerOffsetRatio: 0.14
+        layerCount: 4
+        layerOffsetRatio: 0.16
       shell:
-        instancesPerLobe: 44
+        instancesPerLobe: 52
         candidateMultiplier: 4
         sizeRatio: [0.14, 0.22]
         widthRatio: [0.72, 1.05]
         outwardRatio: [1.0, 1.35]
         radialOffsetRatio: 0.008
-        exposureThreshold: 0.08
+        exposureThreshold: 0.06
         colorJitter: 0.035
         paletteLift: 0.035
         cavityScale: 0.35
@@ -124,25 +124,25 @@ presets:
       leafDetail:
         enabled: true
         density: 1.0
-        scale: 1.85
+        scale: 2.0
         embedRatio: 0.13
         protrusionRatio: 0.2
-        leavesPerCluster: 7
+        leavesPerCluster: 8
         colorLift: 0.06
         colorJitter: 0.035
         roughness: 0.92
         coreScale: 0.77
         coreBrightness: 0.68
-        layerCount: 2
-        layerOffsetRatio: 0.14
+        layerCount: 4
+        layerOffsetRatio: 0.17
       shell:
-        instancesPerLobe: 42
+        instancesPerLobe: 50
         candidateMultiplier: 4
         sizeRatio: [0.13, 0.2]
         widthRatio: [0.68, 1.0]
         outwardRatio: [1.0, 1.32]
         radialOffsetRatio: 0.007
-        exposureThreshold: 0.09
+        exposureThreshold: 0.06
         colorJitter: 0.03
         paletteLift: 0.03
         cavityScale: 0.32
@@ -200,25 +200,25 @@ presets:
       leafDetail:
         enabled: true
         density: 1.0
-        scale: 2.0
+        scale: 2.12
         embedRatio: 0.14
         protrusionRatio: 0.23
-        leavesPerCluster: 7
+        leavesPerCluster: 8
         colorLift: 0.07
         colorJitter: 0.05
         roughness: 0.9
         coreScale: 0.79
         coreBrightness: 0.68
-        layerCount: 2
-        layerOffsetRatio: 0.15
+        layerCount: 4
+        layerOffsetRatio: 0.17
       shell:
-        instancesPerLobe: 46
+        instancesPerLobe: 54
         candidateMultiplier: 4
         sizeRatio: [0.14, 0.23]
         widthRatio: [0.72, 1.08]
         outwardRatio: [1.02, 1.42]
         radialOffsetRatio: 0.009
-        exposureThreshold: 0.08
+        exposureThreshold: 0.05
         colorJitter: 0.04
         paletteLift: 0.04
         cavityScale: 0.34
