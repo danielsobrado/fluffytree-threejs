@@ -1,23 +1,18 @@
 import * as THREE from 'three';
-
-const CROWN_MATERIAL_CONSTANTS = Object.freeze({
-  roughness: 0.97,
-  emissiveScale: 0.22,
-  emissiveIntensity: 0.42,
-});
+import { CROWN_VOLUME_RENDERING_CONSTANTS } from './crown-volume-rendering-constants.js';
 
 export class CrownVolumeMaterialFactory {
   create(foliage) {
     const emissive = new THREE.Color(foliage.palette[1]).multiplyScalar(
-      CROWN_MATERIAL_CONSTANTS.emissiveScale,
+      CROWN_VOLUME_RENDERING_CONSTANTS.emissiveScale,
     );
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       vertexColors: true,
-      roughness: CROWN_MATERIAL_CONSTANTS.roughness,
+      roughness: CROWN_VOLUME_RENDERING_CONSTANTS.roughness,
       metalness: 0,
       emissive,
-      emissiveIntensity: CROWN_MATERIAL_CONSTANTS.emissiveIntensity,
+      emissiveIntensity: CROWN_VOLUME_RENDERING_CONSTANTS.emissiveIntensity,
       flatShading: false,
     });
     material.name = 'unified-crown-material';
