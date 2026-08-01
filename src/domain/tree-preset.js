@@ -18,6 +18,7 @@ const REQUIRED_TRUNK_FIELDS = [
   'baseRadius',
   'topRadius',
   'bend',
+  'flare',
   'segments',
   'branchCount',
   'color',
@@ -35,7 +36,19 @@ const REQUIRED_FOLIAGE_FIELDS = [
   'skyLightStrength',
   'cavityStrength',
   'heightLightStrength',
+  'volume',
   'shell',
+];
+
+const REQUIRED_VOLUME_FIELDS = [
+  'resolution',
+  'smoothing',
+  'padding',
+  'noiseAmplitude',
+  'noiseFrequency',
+  'normalEpsilon',
+  'colorPatchScale',
+  'colorPatchStrength',
 ];
 
 const REQUIRED_SHELL_FIELDS = [
@@ -121,6 +134,10 @@ function validateCrownTuning(id, crown) {
   requireRange(crown.scaleVariation, 0, 0.5, `${id}.crown.scaleVariation`);
 }
 
+function validateTrunkTuning(id, trunk) {
+  requireRange(trunk.flare, 0, 1.5, `${id}.trunk.flare`);
+}
+
 function validateFoliageTuning(id, foliage) {
   requireRange(foliage.variation, 0, 1, `${id}.foliage.variation`);
   requireRange(foliage.paletteBase, 0, 1, `${id}.foliage.paletteBase`);
@@ -159,6 +176,24 @@ function validateFoliageTuning(id, foliage) {
     0,
     1,
     `${id}.foliage.heightLightStrength`,
+  );
+}
+
+function validateVolumeTuning(id, volume) {
+  const path = `${id}.foliage.volume`;
+  requirePositiveInteger(volume.resolution, `${path}.resolution`);
+  requireRange(volume.resolution, 12, 64, `${path}.resolution`);
+  requireRange(volume.smoothing, 0.05, 1.5, `${path}.smoothing`);
+  requireRange(volume.padding, 0.05, 1, `${path}.padding`);
+  requireRange(volume.noiseAmplitude, 0, 0.25, `${path}.noiseAmplitude`);
+  requireRange(volume.noiseFrequency, 0.1, 4, `${path}.noiseFrequency`);
+  requireRange(volume.normalEpsilon, 0.001, 0.1, `${path}.normalEpsilon`);
+  requireRange(volume.colorPatchScale, 0.05, 4, `${path}.colorPatchScale`);
+  requireRange(
+    volume.colorPatchStrength,
+    0,
+    0.35,
+    `${path}.colorPatchStrength`,
   );
 }
 
@@ -202,6 +237,7 @@ function validateShellTuning(id, shell) {
 
 function createFoliageConfig(id, foliage) {
   requireFields(foliage, REQUIRED_FOLIAGE_FIELDS, `${id}.foliage`);
+  requireFields(foliage.volume, REQUIRED_VOLUME_FIELDS, `${id}.foliage.volume`);
   requireFields(foliage.shell, REQUIRED_SHELL_FIELDS, `${id}.foliage.shell`);
 
   const palette = freezeArray(foliage.palette, `${id}.foliage.palette`);
@@ -210,11 +246,13 @@ function createFoliageConfig(id, foliage) {
   }
 
   validateFoliageTuning(id, foliage);
+  validateVolumeTuning(id, foliage.volume);
   validateShellTuning(id, foliage.shell);
 
   return Object.freeze({
     ...foliage,
     palette,
+    volume: Object.freeze({ ...foliage.volume }),
     shell: Object.freeze({
       ...foliage.shell,
       sizeRatio: validatePair(
@@ -241,6 +279,7 @@ export function createTreePreset(id, value) {
   requireFields(value.crown, REQUIRED_CROWN_FIELDS, `${id}.crown`);
   requireFields(value.trunk, REQUIRED_TRUNK_FIELDS, `${id}.trunk`);
   validateCrownTuning(id, value.crown);
+  validateTrunkTuning(id, value.trunk);
 
   const preset = {
     id,
