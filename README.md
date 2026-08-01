@@ -13,29 +13,20 @@ The repository is a deterministic, configuration-driven procedural tree system s
 - Generated curved trunks and primary supporting branches.
 - Connected crown enforcement and branch-to-crown insertion.
 - Seamless tapered tube geometry with configurable trunk flare.
-- Trunks extend below the terrain and use a closed root cap so the base cannot appear cut open.
+- A terrain-embedded root collar replaces the visibly sliced cylindrical base.
+- Seeded buttresses broaden the trunk naturally at ground level.
 
-## Unified canopy
+## Leaf-only canopy
 
-Control lobes define the crown but are no longer rendered as separate spheres.
+Control lobes and the smooth implicit crown remain generation tools. They are not rendered as visible foliage.
 
-- Rotated ellipsoid distance fields are combined with a smooth union.
-- Marching tetrahedra extracts one continuous crown mesh.
-- Low-frequency field displacement breaks the silhouette without producing spikes.
-- Field-gradient normals remain smooth across former lobe boundaries.
-- Broad crown-space palette patches replace per-card color noise.
-- Opaque crown geometry avoids alpha overdraw and casts coherent shadows.
-
-## Leaf detail
-
-The unified crown is covered by deterministic instanced leaf rosettes:
-
-- Surface samples are projected onto the final implicit crown rather than the hidden control lobes.
-- Each cluster contains several folded leaf shapes growing mostly along the crown tangent.
-- A small outward fold makes leaves readable without recreating the previous spike problem.
-- Per-cluster colors stay coherent with the seasonal crown palette.
-- One instanced draw call is used for each tree.
-- Density, size, embedding, protrusion, color variation, and roughness are configured per preset.
+- The implicit crown mesh is color- and depth-disabled in the camera pass.
+- It remains available only as a slightly inset coherent shadow proxy.
+- Dense instanced leaf tufts form the complete visible canopy.
+- Multiple shell layers cross the crown surface to create depth and hide the procedural support volume.
+- Irregular golden-angle tufts replace the repeated flower-like rosettes.
+- Per-cluster colors remain coherent with each seasonal palette.
+- Leaf shell density, scale, embedding, layering, color variation, and roughness are configured per preset.
 
 Hierarchical wind and production distance LOD remain later phases.
 
@@ -80,7 +71,7 @@ npm run qa:crown:quick
 
 The full control-shape run generates 2,048 seeded trees for each preset: 6,144 trees in total. Every tree is generated twice to verify exact replay determinism. Reports are written to `qa-results/tree-shape/report.json` and `report.md`.
 
-The crown-volume battery extracts 16 unified meshes per preset and repeats each extraction. Its reports are written to `qa-results/crown-volume/report.json` and `report.md`.
+The crown-volume battery extracts 16 proxy meshes per preset and repeats each extraction. Its reports are written to `qa-results/crown-volume/report.json` and `report.md`.
 
 The automated gates cover:
 
@@ -88,11 +79,12 @@ The automated gates cover:
 - Connected control volumes and front/side silhouettes.
 - Crown aspect, density, envelope coverage, profile similarity, and spill.
 - Branch insertion and monotonic trunk structure.
-- Deterministic unified crown extraction and seed uniqueness.
-- A single closed crown component with no boundary or non-manifold edges.
-- Finite crown vertices, normalized field-gradient normals, coincident-normal consistency, and maximum surface edge length.
-- Non-zero visible leaf-cluster and leaf counts in desktop and mobile WebGL renders.
-- One capped, terrain-embedded root for every rendered crown.
+- Deterministic shadow-proxy extraction and seed uniqueness.
+- A single closed proxy component with no boundary or non-manifold edges.
+- Finite proxy vertices, normalized field-gradient normals, coincident-normal consistency, and maximum surface edge length.
+- No smooth crown mesh writing color or depth in the camera pass.
+- Non-zero visible leaf-shell counts in desktop and mobile WebGL renders.
+- One capped, terrain-embedded root collar for every rendered tree.
 - The exact uploaded release identifier in the browser and visible demo titles.
 
 ## Structure
