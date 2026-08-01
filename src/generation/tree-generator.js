@@ -11,6 +11,13 @@ function createShellSeed(seed) {
   return (Number(seed) ^ FOLIAGE_SHELL_CONSTANTS.seedSalt) >>> 0;
 }
 
+function createEmptySurfaceSamples(lobes) {
+  return {
+    instances: [],
+    lobeExposure: lobes.map(() => 1),
+  };
+}
+
 export class TreeGenerator {
   constructor({
     lobeGenerator = new LobeGenerator(),
@@ -24,18 +31,20 @@ export class TreeGenerator {
     this.foliageShellGenerator = foliageShellGenerator;
   }
 
-  generate(preset, seed) {
+  generate(preset, seed, { includeSurfaceSamples = true } = {}) {
     const random = new SeededRandom(seed);
     const envelope = new CrownEnvelope(preset.crown);
     const generatedLobes = this.lobeGenerator.generate(preset, envelope, random);
     const lobes = this.lobeConnectivityEnforcer.enforce(generatedLobes);
     const crown = createCrownSummary(lobes);
     const structure = this.branchGenerator.generate(preset, lobes, random);
-    const shell = this.foliageShellGenerator.generate(
-      preset,
-      lobes,
-      new SeededRandom(createShellSeed(seed)),
-    );
+    const shell = includeSurfaceSamples
+      ? this.foliageShellGenerator.generate(
+          preset,
+          lobes,
+          new SeededRandom(createShellSeed(seed)),
+        )
+      : createEmptySurfaceSamples(lobes);
 
     return Object.freeze({
       presetId: preset.id,
