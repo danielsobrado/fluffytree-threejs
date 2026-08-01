@@ -1,17 +1,18 @@
 name: One-shot repository verification
 
 on:
-  issues:
+  issue_comment:
     types:
-      - opened
+      - created
 
 permissions:
   contents: read
   issues: write
+  pull-requests: write
 
 jobs:
   verify:
-    if: github.event.issue.title == '[QA] Phase 2.5 verification'
+    if: github.event.issue.pull_request && github.event.comment.body == '/verify-phase-2-5'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main
