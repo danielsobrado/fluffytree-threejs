@@ -70,7 +70,6 @@ export class TreeDemo {
 
     this.treeRoots.length = 0;
     this.windController.clear();
-    const sunDirection = this.context.sun.position.clone().normalize();
 
     for (const entry of this.sceneConfig.layout) {
       const preset = this.presetMap.get(entry.preset);
@@ -78,7 +77,7 @@ export class TreeDemo {
       const treeData = this.treeGenerator.generate(preset, seed, {
         includeSurfaceSamples: false,
       });
-      const tree = this.treeMeshBuilder.build(treeData, { sunDirection });
+      const tree = this.treeMeshBuilder.build(treeData);
       tree.position.fromArray(entry.position);
       tree.rotation.y = Number(entry.rotationY ?? 0);
       this.context.scene.add(tree);
