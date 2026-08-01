@@ -30,6 +30,13 @@ function normalize(vector, fallback = { x: 0, y: 1, z: 0 }) {
   };
 }
 
+function distanceSquared(left, right) {
+  const x = left.x - right.x;
+  const y = left.y - right.y;
+  const z = left.z - right.z;
+  return x * x + y * y + z * z;
+}
+
 function minimumLobeScale(lobe) {
   return Math.min(lobe.scale.x, lobe.scale.y, lobe.scale.z);
 }
@@ -76,6 +83,29 @@ function calculateWeightedSlice(lobes, height) {
   };
 }
 
+function findInteriorTarget(field, preferred, lobes) {
+  if (field.sample(preferred) <= -CANOPY_CLOSURE_CONSTANTS.minimumFieldInset) {
+    return preferred;
+  }
+
+  const nearest = [...lobes].sort(
+    (left, right) =>
+      distanceSquared(left.position, preferred) -
+      distanceSquared(right.position, preferred),
+  );
+
+  for (const lobe of nearest) {
+    if (
+      field.sample(lobe.position) <=
+      -CANOPY_CLOSURE_CONSTANTS.minimumFieldInset
+    ) {
+      return lobe.position;
+    }
+  }
+
+  return nearest[0]?.position ?? preferred;
+}
+
 function moveInside(field, candidate, target) {
   let position = { ...candidate };
 
@@ -120,6 +150,11 @@ function createSpineSamples(treeData, field, settings, startId) {
     const height = interpolate(minimumY, maximumY, heightRatio);
     const sliceData = calculateWeightedSlice(treeData.lobes, height);
     const sliceRadius = sliceData.radius * settings.radiusRatio;
+    const interiorTarget = findInteriorTarget(
+      field,
+      sliceData.center,
+      treeData.lobes,
+    );
     const baseId = startId + samples.length;
     const axisAngle =
       hashUnit(treeData.seed, baseId, 0x6d2b79f5) * Math.PI * 2;
@@ -127,7 +162,7 @@ function createSpineSamples(treeData, field, settings, startId) {
     samples.push(
       createSample({
         id: baseId,
-        position: moveInside(field, sliceData.center, sliceData.center),
+        position: moveInside(field, sliceData.center, interiorTarget),
         normal: {
           x: Math.cos(axisAngle),
           y: 0.2,
@@ -147,11 +182,16 @@ function createSpineSamples(treeData, field, settings, startId) {
       const angle =
         ring * CANOPY_CLOSURE_CONSTANTS.goldenAngle +
         hashUnit(treeData.seed, id, 0x9e3779b1) * 0.35;
-      const radialJitter = interpolate(
-        0.72,
-        1.08,
-        hashUnit(treeData.seed, id, 0x85ebca6b),
+      const radialBand = Math.sqrt(
+        (ring + 0.5) / settings.spineRingCount,
       );
+      const radialJitter =
+        radialBand *
+        interpolate(
+          0.76,
+          1.04,
+          hashUnit(treeData.seed, id, 0x85ebca6b),
+        );
       const candidate = {
         x: sliceData.center.x + Math.cos(angle) * sliceRadius * radialJitter,
         y:
@@ -161,7 +201,7 @@ function createSpineSamples(treeData, field, settings, startId) {
             settings.axialJitter,
         z: sliceData.center.z + Math.sin(angle) * sliceRadius * radialJitter,
       };
-      const position = moveInside(field, candidate, sliceData.center);
+      const position = moveInside(field, candidate, interiorTarget);
 
       samples.push(
         createSample({
@@ -203,6 +243,7 @@ function createBridgeSamples(treeData, field, settings, startId) {
       const ratio = (bridge + 1) / (settings.bridgeSamples + 1);
       const id = startId + samples.length;
       const target = interpolatePoint(lower.position, upper.position, ratio);
+      const interiorTarget = findInteriorTarget(field, target, [lower, upper]);
       const angle =
         id * CANOPY_CLOSURE_CONSTANTS.goldenAngle +
         hashUnit(treeData.seed, id, 0x165667b1) * 0.5;
@@ -213,7 +254,7 @@ function createBridgeSamples(treeData, field, settings, startId) {
         y: target.y,
         z: target.z + Math.sin(angle) * radius,
       };
-      const position = moveInside(field, candidate, target);
+      const position = moveInside(field, candidate, interiorTarget);
 
       samples.push(
         createSample({
