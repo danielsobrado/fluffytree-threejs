@@ -26,15 +26,12 @@ function validateReleaseTitles(root) {
   if (!releaseVersion) {
     throw new Error('The uploaded release version was not published to the page.');
   }
-
   if (!document.title.includes(releaseVersion)) {
     throw new Error('The browser title does not contain the uploaded release version.');
   }
-
   if (!overlayTitle.includes(releaseVersion)) {
     throw new Error('The visible demo title does not contain the uploaded release version.');
   }
-
   return releaseVersion;
 }
 
@@ -47,18 +44,18 @@ function collectSceneMetrics(scene) {
     leafClusterCount: 0,
     leafCount: 0,
     closureClusterCount: 0,
-    closureSpineCount: 0,
-    closureBridgeCount: 0,
+    closureVolumeCount: 0,
+    closureTrunkCount: 0,
+    closureSaddleCount: 0,
     closureCapCount: 0,
+    minimumClosureLayers: Number.POSITIVE_INFINITY,
     minimumLeafLayers: Number.POSITIVE_INFINITY,
     rootCollarCount: 0,
     minimumRootCollarOverlap: Number.POSITIVE_INFINITY,
   };
 
   scene.traverse((object) => {
-    if (object.userData?.tree) {
-      metrics.treeCount += 1;
-    }
+    if (object.userData?.tree) metrics.treeCount += 1;
 
     if (object.name === CROWN_PROXY_NAME) {
       metrics.shadowProxyCount += 1;
@@ -85,11 +82,20 @@ function collectSceneMetrics(scene) {
       metrics.closureClusterCount += Number(
         leafDetail.closureClusterCount ?? 0,
       );
-      metrics.closureSpineCount += Number(leafDetail.closureSpineCount ?? 0);
-      metrics.closureBridgeCount += Number(
-        leafDetail.closureBridgeCount ?? 0,
+      metrics.closureVolumeCount += Number(
+        leafDetail.closureVolumeCount ?? 0,
+      );
+      metrics.closureTrunkCount += Number(
+        leafDetail.closureTrunkCount ?? 0,
+      );
+      metrics.closureSaddleCount += Number(
+        leafDetail.closureSaddleCount ?? 0,
       );
       metrics.closureCapCount += Number(leafDetail.closureCapCount ?? 0);
+      metrics.minimumClosureLayers = Math.min(
+        metrics.minimumClosureLayers,
+        Number(leafDetail.closureLayerCount ?? 0),
+      );
       metrics.minimumLeafLayers = Math.min(
         metrics.minimumLeafLayers,
         Number(leafDetail.layerCount ?? 0),
@@ -122,35 +128,31 @@ function collectSceneMetrics(scene) {
     throw new Error('Invisible crown shadow proxies are incomplete.');
   }
 
-  const minimumLeafClusters =
-    metrics.treeCount * RENDER_SMOKE_CONSTANTS.minimumLeafClustersPerTree;
+  const perTree = (value) => metrics.treeCount * value;
   if (
-    metrics.leafClusterCount < minimumLeafClusters ||
+    metrics.leafClusterCount <
+      perTree(RENDER_SMOKE_CONSTANTS.minimumLeafClustersPerTree) ||
     metrics.leafCount === 0 ||
     metrics.minimumLeafLayers < RENDER_SMOKE_CONSTANTS.minimumLeafLayers
   ) {
-    throw new Error('Visible leaf shells are not dense enough to close canopy gaps.');
+    throw new Error('Visible leaf geometry is not dense enough.');
   }
 
-  const minimumClosureClusters =
-    metrics.treeCount * RENDER_SMOKE_CONSTANTS.minimumClosureClustersPerTree;
-  const minimumSpineClusters =
-    metrics.treeCount *
-    RENDER_SMOKE_CONSTANTS.minimumSpineClosureClustersPerTree;
-  const minimumBridgeClusters =
-    metrics.treeCount *
-    RENDER_SMOKE_CONSTANTS.minimumBridgeClosureClustersPerTree;
-  const minimumCapClusters =
-    metrics.treeCount *
-    RENDER_SMOKE_CONSTANTS.minimumCapClosureClustersPerTree;
-
   if (
-    metrics.closureClusterCount < minimumClosureClusters ||
-    metrics.closureSpineCount < minimumSpineClusters ||
-    metrics.closureBridgeCount < minimumBridgeClusters ||
-    metrics.closureCapCount < minimumCapClusters
+    metrics.closureClusterCount <
+      perTree(RENDER_SMOKE_CONSTANTS.minimumClosureClustersPerTree) ||
+    metrics.closureVolumeCount <
+      perTree(RENDER_SMOKE_CONSTANTS.minimumVolumeClosureClustersPerTree) ||
+    metrics.closureTrunkCount <
+      perTree(RENDER_SMOKE_CONSTANTS.minimumTrunkClosureClustersPerTree) ||
+    metrics.closureSaddleCount <
+      perTree(RENDER_SMOKE_CONSTANTS.minimumSaddleClosureClustersPerTree) ||
+    metrics.closureCapCount <
+      perTree(RENDER_SMOKE_CONSTANTS.minimumCapClosureClustersPerTree) ||
+    metrics.minimumClosureLayers <
+      RENDER_SMOKE_CONSTANTS.minimumClosureLayers
   ) {
-    throw new Error('Interior canopy closure is incomplete.');
+    throw new Error('Volumetric canopy occupancy is incomplete.');
   }
 
   if (
@@ -203,37 +205,10 @@ export class RenderSmokeProbe {
         this.root.dataset.releaseVersion = releaseVersion;
         this.root.dataset.renderCalls = String(renderer.info.render.calls);
         this.root.dataset.renderTriangles = String(renderer.info.render.triangles);
-        this.root.dataset.treeCount = String(sceneMetrics.treeCount);
-        this.root.dataset.shadowProxyCount = String(
-          sceneMetrics.shadowProxyCount,
-        );
-        this.root.dataset.crownTriangles = String(sceneMetrics.crownTriangles);
-        this.root.dataset.crownVertices = String(sceneMetrics.crownVertices);
-        this.root.dataset.leafClusterCount = String(
-          sceneMetrics.leafClusterCount,
-        );
-        this.root.dataset.leafCount = String(sceneMetrics.leafCount);
-        this.root.dataset.closureClusterCount = String(
-          sceneMetrics.closureClusterCount,
-        );
-        this.root.dataset.closureSpineCount = String(
-          sceneMetrics.closureSpineCount,
-        );
-        this.root.dataset.closureBridgeCount = String(
-          sceneMetrics.closureBridgeCount,
-        );
-        this.root.dataset.closureCapCount = String(
-          sceneMetrics.closureCapCount,
-        );
-        this.root.dataset.minimumLeafLayers = String(
-          sceneMetrics.minimumLeafLayers,
-        );
-        this.root.dataset.rootCollarCount = String(
-          sceneMetrics.rootCollarCount,
-        );
-        this.root.dataset.minimumRootCollarOverlap = String(
-          sceneMetrics.minimumRootCollarOverlap,
-        );
+
+        for (const [key, value] of Object.entries(sceneMetrics)) {
+          this.root.dataset[key] = String(value);
+        }
       }
     } catch (error) {
       this.fail(error);
