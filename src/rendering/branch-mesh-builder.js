@@ -1,34 +1,43 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import {
+  calculateRootCollarTopRadius,
+  RootCollarGeometryFactory,
+  trimPathAboveHeight,
+} from './root-collar-geometry-factory.js';
 import { TaperedCurveGeometryFactory } from './tapered-curve-geometry-factory.js';
 import { TREE_STRUCTURE_RENDERING_CONSTANTS } from './tree-structure-rendering-constants.js';
 
-function createEmbeddedRootPath(points) {
-  const first = points[0];
-  return [
-    {
-      x: first.x,
-      y: first.y - TREE_STRUCTURE_RENDERING_CONSTANTS.rootEmbedDepth,
-      z: first.z,
-    },
-    ...points.map((point) => ({ ...point })),
-  ];
-}
-
 export class BranchMeshBuilder {
-  constructor({ geometryFactory = new TaperedCurveGeometryFactory() } = {}) {
+  constructor({
+    geometryFactory = new TaperedCurveGeometryFactory(),
+    rootCollarGeometryFactory = new RootCollarGeometryFactory(),
+  } = {}) {
     this.geometryFactory = geometryFactory;
+    this.rootCollarGeometryFactory = rootCollarGeometryFactory;
   }
 
   build(treeData) {
+    const trunkPath = trimPathAboveHeight(
+      treeData.trunk.points,
+      TREE_STRUCTURE_RENDERING_CONSTANTS.rootCollarHeight,
+    );
+    const trunkStartRadius = calculateRootCollarTopRadius(
+      treeData.trunk.startRadius,
+      treeData.trunk.flare,
+    );
     const geometries = [
-      this.geometryFactory.create({
-        path: createEmbeddedRootPath(treeData.trunk.points),
+      this.rootCollarGeometryFactory.create({
+        path: treeData.trunk.points,
         startRadius: treeData.trunk.startRadius,
+        flare: treeData.trunk.flare,
+        seed: treeData.seed,
+      }),
+      this.geometryFactory.create({
+        path: trunkPath,
+        startRadius: trunkStartRadius,
         endRadius: treeData.trunk.endRadius,
         sampleCount: TREE_STRUCTURE_RENDERING_CONSTANTS.trunkCurveSamples,
-        flare: treeData.trunk.flare,
-        capStart: true,
       }),
       ...treeData.branches.map((branch) =>
         this.geometryFactory.create({
@@ -57,7 +66,9 @@ export class BranchMeshBuilder {
     mesh.receiveShadow = true;
     mesh.userData.structure = {
       rootCapped: true,
+      rootCollar: true,
       rootEmbedDepth: TREE_STRUCTURE_RENDERING_CONSTANTS.rootEmbedDepth,
+      rootCollarHeight: TREE_STRUCTURE_RENDERING_CONSTANTS.rootCollarHeight,
     };
     return mesh;
   }
