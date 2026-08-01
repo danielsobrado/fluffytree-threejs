@@ -36,11 +36,11 @@ jobs:
       - name: Run desktop and mobile WebGL render smoke
         run: npm run qa:render
 
-      - name: Upload unified canopy render evidence
+      - name: Upload volumetric canopy render evidence
         if: always() && hashFiles('qa-results/render-smoke/**') != ''
         uses: actions/upload-artifact@v7
         with:
-          name: unified-canopy-render-smoke
+          name: volumetric-canopy-render-smoke
           path: qa-results/render-smoke
           if-no-files-found: error
 
@@ -51,7 +51,7 @@ jobs:
         if: always() && hashFiles('qa-results/tree-shape/**') != ''
         uses: actions/upload-artifact@v7
         with:
-          name: unified-canopy-tree-shape-qa-report
+          name: volumetric-canopy-tree-shape-qa-report
           path: qa-results/tree-shape
           if-no-files-found: error
 
@@ -62,6 +62,17 @@ jobs:
         if: always() && hashFiles('qa-results/crown-volume/**') != ''
         uses: actions/upload-artifact@v7
         with:
-          name: unified-canopy-volume-qa-report
+          name: volumetric-canopy-volume-qa-report
           path: qa-results/crown-volume
+          if-no-files-found: error
+
+      - name: Run deterministic canopy occupancy QA
+        run: npm run qa:occupancy
+
+      - name: Upload canopy occupancy report
+        if: always() && hashFiles('qa-results/canopy-occupancy/**') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: volumetric-canopy-occupancy-qa-report
+          path: qa-results/canopy-occupancy
           if-no-files-found: error
