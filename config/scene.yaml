@@ -1,9 +1,9 @@
 scene:
-  backgroundColor: '#a9c8d9'
-  fogColor: '#a9c8d9'
+  backgroundColor: '#b7d0dc'
+  fogColor: '#b7d0dc'
   fogNear: 24
   fogFar: 62
-  groundColor: '#6f8f4f'
+  groundColor: '#789958'
   groundSize: 72
 
 camera:
@@ -18,11 +18,11 @@ renderer:
   shadowMapSize: 2048
 
 lighting:
-  hemisphereSkyColor: '#e9f4ff'
-  hemisphereGroundColor: '#64734e'
-  hemisphereIntensity: 1.55
-  sunColor: '#fff1cf'
-  sunIntensity: 3.1
+  hemisphereSkyColor: '#f0f7ff'
+  hemisphereGroundColor: '#71805c'
+  hemisphereIntensity: 1.85
+  sunColor: '#fff0d2'
+  sunIntensity: 2.15
   sunPosition: [11, 17, 9]
 
 layout:
