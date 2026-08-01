@@ -17,6 +17,25 @@ function serializeError(error) {
   return String(error);
 }
 
+function validateReleaseTitles(root) {
+  const releaseVersion = root.dataset.releaseVersion;
+  const overlayTitle = document.querySelector('.demo-overlay h1')?.textContent ?? '';
+
+  if (!releaseVersion) {
+    throw new Error('The uploaded release version was not published to the page.');
+  }
+
+  if (!document.title.includes(releaseVersion)) {
+    throw new Error('The browser title does not contain the uploaded release version.');
+  }
+
+  if (!overlayTitle.includes(releaseVersion)) {
+    throw new Error('The visible demo title does not contain the uploaded release version.');
+  }
+
+  return releaseVersion;
+}
+
 function collectSceneMetrics(scene) {
   const metrics = {
     crownCount: 0,
@@ -98,6 +117,7 @@ export class RenderSmokeProbe {
     if (!this.enabled) return;
 
     try {
+      const releaseVersion = validateReleaseTitles(this.root);
       const sceneMetrics = collectSceneMetrics(scene);
 
       if (typeof renderer.compileAsync === 'function') {
@@ -108,6 +128,7 @@ export class RenderSmokeProbe {
 
       if (!this.failed) {
         this.root.dataset[STATUS_ATTRIBUTE] = 'ready';
+        this.root.dataset.releaseVersion = releaseVersion;
         this.root.dataset.renderCalls = String(renderer.info.render.calls);
         this.root.dataset.renderTriangles = String(renderer.info.render.triangles);
         this.root.dataset.crownCount = String(sceneMetrics.crownCount);
