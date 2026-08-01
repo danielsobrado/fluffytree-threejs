@@ -2,15 +2,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createTestPreset } from './fixtures/tree-preset-fixture.js';
 
-test('leaf detail configuration is validated and frozen', () => {
+test('leaf detail and volumetric closure configuration are validated and frozen', () => {
   const preset = createTestPreset();
 
   assert.equal(preset.foliage.leafDetail.enabled, true);
   assert.equal(preset.foliage.leafDetail.leavesPerCluster, 5);
   assert.equal(preset.foliage.leafDetail.coreScale, 0.8);
   assert.equal(preset.foliage.leafDetail.layerCount, 4);
-  assert.equal(preset.foliage.leafDetail.layerOffsetRatio, 0.16);
-  assert.equal(preset.foliage.leafDetail.closure.spineSlices, 12);
+  assert.equal(preset.foliage.leafDetail.closure.volumeSlices, 12);
+  assert.equal(preset.foliage.leafDetail.closure.microLayerCount, 2);
   assert.equal(Object.isFrozen(preset.foliage.leafDetail.closure), true);
   assert.equal(Object.isFrozen(preset.foliage.leafDetail), true);
 });
@@ -39,54 +39,26 @@ test('leaf detail requires a positive leaf count', () => {
   );
 });
 
-test('leaf detail rejects a full-size visible core', () => {
+test('closure rejects an unsafe trunk radius', () => {
   assert.throws(
     () =>
       createTestPreset({
         foliage: {
-          leafDetail: { coreScale: 1 },
+          leafDetail: { closure: { trunkRadiusRatio: 0.8 } },
         },
       }),
-    /coreScale/,
+    /trunkRadiusRatio/,
   );
 });
 
-test('leaf detail limits shell layering', () => {
+test('closure requires at least one micro layer', () => {
   assert.throws(
     () =>
       createTestPreset({
         foliage: {
-          leafDetail: { layerCount: 5 },
+          leafDetail: { closure: { microLayerCount: 0 } },
         },
       }),
-    /layerCount/,
-  );
-});
-
-test('canopy closure rejects insufficient spine coverage', () => {
-  assert.throws(
-    () =>
-      createTestPreset({
-        foliage: {
-          leafDetail: {
-            closure: { spineSlices: 2 },
-          },
-        },
-      }),
-    /spineSlices/,
-  );
-});
-
-test('canopy closure rejects excessive center radius', () => {
-  assert.throws(
-    () =>
-      createTestPreset({
-        foliage: {
-          leafDetail: {
-            closure: { radiusRatio: 0.9 },
-          },
-        },
-      }),
-    /radiusRatio/,
+    /microLayerCount/,
   );
 });
