@@ -31,9 +31,13 @@ function createRingCenter(path, minimumY, maximumY, ratio) {
   return pointAtHeight(path, interpolate(minimumY, maximumY, ratio));
 }
 
+export function calculateRootCollarTopRadius(startRadius, flare) {
+  return startRadius * (1 + flare * 0.18);
+}
+
 function calculateRadius(startRadius, flare, ratio) {
   const broadBase = startRadius * (1 + flare * 1.45);
-  const collarTop = startRadius * (1 + flare * 0.18);
+  const collarTop = calculateRootCollarTopRadius(startRadius, flare);
   return interpolate(broadBase, collarTop, Math.pow(ratio, 0.72));
 }
 
