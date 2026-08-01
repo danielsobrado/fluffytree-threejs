@@ -29,7 +29,6 @@ function appendCap({
   curve,
   frames,
   frameIndex,
-  radius,
   reverse,
   positions,
   normals,
@@ -43,24 +42,10 @@ function appendCap({
     .multiplyScalar(reverse ? -1 : 1)
     .normalize();
   const centerIndex = positions.length / 3;
+  const ringStart = frameIndex * radialSegments;
+
   positions.push(center.x, center.y, center.z);
   normals.push(capNormal.x, capNormal.y, capNormal.z);
-  const ringStart = positions.length / 3;
-  const radial = new THREE.Vector3();
-
-  for (let segment = 0; segment < radialSegments; segment += 1) {
-    const angle = (segment / radialSegments) * Math.PI * 2;
-    radial
-      .copy(frames.normals[frameIndex])
-      .multiplyScalar(Math.cos(angle))
-      .addScaledVector(frames.binormals[frameIndex], Math.sin(angle));
-    positions.push(
-      center.x + radial.x * radius,
-      center.y + radial.y * radius,
-      center.z + radial.z * radius,
-    );
-    normals.push(capNormal.x, capNormal.y, capNormal.z);
-  }
 
   for (let segment = 0; segment < radialSegments; segment += 1) {
     const current = ringStart + segment;
@@ -140,7 +125,6 @@ export class TaperedCurveGeometryFactory {
         curve,
         frames,
         frameIndex: 0,
-        radius: calculateRadius(startRadius, endRadius, flare, 0),
         reverse: true,
         positions,
         normals,
@@ -154,7 +138,6 @@ export class TaperedCurveGeometryFactory {
         curve,
         frames,
         frameIndex: sampleCount,
-        radius: calculateRadius(startRadius, endRadius, flare, 1),
         reverse: false,
         positions,
         normals,
