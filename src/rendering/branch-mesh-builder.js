@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { RootCollarGeometryFactory, trimPathAboveHeight } from './root-collar-geometry-factory.js';
 import {
-  calculateRootCollarTopRadius,
-  RootCollarGeometryFactory,
-  trimPathAboveHeight,
-} from './root-collar-geometry-factory.js';
+  calculateRootCollarRadiusAtHeight,
+  getRootCollarJoinHeight,
+} from './root-collar-profile.js';
 import { TaperedCurveGeometryFactory } from './tapered-curve-geometry-factory.js';
 import { TREE_STRUCTURE_RENDERING_CONSTANTS } from './tree-structure-rendering-constants.js';
+
+const TRUNK_INSIDE_COLLAR_RATIO = 0.9;
 
 export class BranchMeshBuilder {
   constructor({
@@ -18,14 +20,14 @@ export class BranchMeshBuilder {
   }
 
   build(treeData) {
-    const trunkPath = trimPathAboveHeight(
-      treeData.trunk.points,
-      TREE_STRUCTURE_RENDERING_CONSTANTS.rootCollarHeight,
-    );
-    const trunkStartRadius = calculateRootCollarTopRadius(
-      treeData.trunk.startRadius,
-      treeData.trunk.flare,
-    );
+    const joinHeight = getRootCollarJoinHeight();
+    const trunkPath = trimPathAboveHeight(treeData.trunk.points, joinHeight);
+    const trunkStartRadius =
+      calculateRootCollarRadiusAtHeight(
+        treeData.trunk.startRadius,
+        treeData.trunk.flare,
+        joinHeight,
+      ) * TRUNK_INSIDE_COLLAR_RATIO;
     const geometries = [
       this.rootCollarGeometryFactory.create({
         path: treeData.trunk.points,
@@ -69,6 +71,7 @@ export class BranchMeshBuilder {
       rootCollar: true,
       rootEmbedDepth: TREE_STRUCTURE_RENDERING_CONSTANTS.rootEmbedDepth,
       rootCollarHeight: TREE_STRUCTURE_RENDERING_CONSTANTS.rootCollarHeight,
+      rootCollarOverlap: TREE_STRUCTURE_RENDERING_CONSTANTS.rootCollarOverlap,
     };
     return mesh;
   }
