@@ -56,16 +56,20 @@ The command runs all release checks, fetches remote `main`, verifies the require
 npm run check
 npm run qa:render
 npm run qa:shape
+npm run qa:crown
 npm run verify
 ```
 
-A smaller local shape run is available while changing the generator:
+Smaller development runs are available:
 
 ```bash
 npm run qa:shape:quick
+npm run qa:crown:quick
 ```
 
 The full control-shape run generates 2,048 seeded trees for each preset: 6,144 trees in total. Every tree is generated twice to verify exact replay determinism. Reports are written to `qa-results/tree-shape/report.json` and `report.md`.
+
+The crown-volume battery extracts 16 unified meshes per preset and repeats each extraction. Its reports are written to `qa-results/crown-volume/report.json` and `report.md`.
 
 The automated gates cover:
 
@@ -73,7 +77,8 @@ The automated gates cover:
 - Connected control volumes and front/side silhouettes.
 - Crown aspect, density, envelope coverage, profile similarity, and spill.
 - Branch insertion and monotonic trunk structure.
-- Deterministic unified crown extraction.
+- Deterministic unified crown extraction and seed uniqueness.
+- A single closed crown component with no boundary or non-manifold edges.
 - Finite crown vertices, normalized field-gradient normals, coincident-normal consistency, and maximum surface edge length.
 - Desktop and mobile WebGL compilation and screenshots.
 
