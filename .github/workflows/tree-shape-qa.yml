@@ -30,8 +30,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run unit tests
-        run: npm test
+      - name: Check source and unit tests
+        run: npm run check
+
+      - name: Run headless WebGL render smoke
+        run: npm run qa:render
+
+      - name: Upload render smoke evidence
+        if: always() && hashFiles('qa-results/render-smoke/**') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-2-render-smoke
+          path: qa-results/render-smoke
+          if-no-files-found: error
 
       - name: Run deterministic shape QA
         run: npm run qa:shape
