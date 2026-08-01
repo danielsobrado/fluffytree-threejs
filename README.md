@@ -45,6 +45,19 @@ python -m http.server 8080
 
 Then open `http://localhost:8080`.
 
+## Deploy to GitHub Pages
+
+GitHub Pages publishes the repository root from the `gh-pages` branch. After changes are committed and pushed to `main`, run:
+
+```bash
+npm ci
+npm run deploy:pages
+```
+
+The command runs all Phase 2 release gates, fetches remote `main`, verifies the required static-site files, and updates `gh-pages` using force-with-lease. Deployment settings are stored in `pages.config.yml`.
+
+Configure the repository Pages source as **Deploy from a branch**, using `gh-pages` and `/(root)`.
+
 ## Verification
 
 Run source checks and unit tests:
@@ -111,7 +124,7 @@ src/rendering/          Three.js scene, geometry, material, texture, and mesh co
 src/ui/                 DOM presentation
 styles/                 Page styling
 tests/                  Deterministic generation, shader, and QA tests
-tools/                  Command-line and browser QA entry points
+tools/                  Command-line QA and deployment entry points
 ```
 
 ## Attribution
