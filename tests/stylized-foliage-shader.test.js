@@ -32,6 +32,7 @@ function createShader() {
     `,
     fragmentShader: `
       void main() {
+        #include <normal_fragment_begin>
         #include <color_fragment>
       }
     `,
@@ -50,17 +51,22 @@ const foliage = Object.freeze({
   heightLightStrength: 0.1,
 });
 
-test('stylized foliage shader installs attributes uniforms and lighting', () => {
-  const material = createMaterial();
-  const paletteTexture = { name: 'palette' };
+function configure(material, overrides = {}) {
   configureStylizedFoliageShader(material, {
     foliage,
-    paletteTexture,
+    paletteTexture: { name: 'palette' },
     sunDirection: createDirection(),
     radialNormalExpression: 'normalize( position )',
     heightExpression: 'position.y * 0.5 + 0.5',
     cacheKey: 'test-shader',
+    ...overrides,
   });
+}
+
+test('stylized foliage shader installs attributes uniforms and lighting', () => {
+  const material = createMaterial();
+  const paletteTexture = { name: 'palette' };
+  configure(material, { paletteTexture });
 
   const shader = createShader();
   material.onBeforeCompile(shader);
@@ -76,4 +82,17 @@ test('stylized foliage shader installs attributes uniforms and lighting', () => 
   assert.equal(material.customProgramCacheKey(), 'test-shader');
   assert.equal(material.needsUpdate, true);
   assert.deepEqual(material.userData.disposables, [paletteTexture]);
+});
+
+test('shell shader replaces double-sided back-face normals with radial normals', () => {
+  const material = createMaterial();
+  configure(material, { forceRadialFragmentNormal: true });
+
+  const shader = createShader();
+  material.onBeforeCompile(shader);
+
+  assert.match(
+    shader.fragmentShader,
+    /normal = normalize\( mat3\( viewMatrix \) \* vFoliageRadialWorld \)/,
+  );
 });
