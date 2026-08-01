@@ -68,6 +68,10 @@ export function createTestPreset(overrides = {}) {
         colorLift: 0.07,
         colorJitter: 0.04,
         roughness: 0.9,
+        coreScale: 0.8,
+        coreBrightness: 0.7,
+        layerCount: 2,
+        layerOffsetRatio: 0.14,
         ...leafDetailOverrides,
       },
       shell: {
