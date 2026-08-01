@@ -3,6 +3,7 @@ import { createTreePreset } from '../../src/domain/tree-preset.js';
 export function createTestPreset(overrides = {}) {
   const volumeOverrides = overrides.foliage?.volume ?? {};
   const leafDetailOverrides = overrides.foliage?.leafDetail ?? {};
+  const closureOverrides = overrides.foliage?.leafDetail?.closure ?? {};
   const shellOverrides = overrides.foliage?.shell ?? {};
 
   return createTreePreset('test', {
@@ -73,6 +74,18 @@ export function createTestPreset(overrides = {}) {
         layerCount: 4,
         layerOffsetRatio: 0.16,
         ...leafDetailOverrides,
+        closure: {
+          enabled: true,
+          spineSlices: 12,
+          spineRingCount: 6,
+          bridgeSamples: 2,
+          capSamples: 16,
+          radiusRatio: 0.4,
+          clusterScaleRatio: 0.12,
+          colorDrop: 0.14,
+          axialJitter: 0.15,
+          ...closureOverrides,
+        },
       },
       shell: {
         instancesPerLobe: 12,
