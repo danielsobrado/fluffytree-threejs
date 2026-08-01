@@ -1,5 +1,6 @@
 import {
   applyDocumentTitle,
+  formatOverlayTitle,
   formatReleaseVersion,
 } from './app/release-title.js';
 import { TreeDemo } from './app/tree-demo.js';
@@ -30,10 +31,17 @@ async function bootstrap() {
       loader.load(CONFIG_URLS.trees),
     ]);
     const releaseVersion = formatReleaseVersion(releaseConfig);
+    const overlayTitle = formatOverlayTitle(releaseConfig);
     applyDocumentTitle(releaseConfig);
     const presetMap = createTreePresetMap(treeConfig);
     const demo = new TreeDemo();
-    demo.start(container, sceneConfig, presetMap, releaseVersion);
+    demo.start(
+      container,
+      sceneConfig,
+      presetMap,
+      releaseVersion,
+      overlayTitle,
+    );
   } catch (error) {
     logger.error('Application bootstrap failed.', error);
     markRenderSmokeBootstrapFailure(error);
