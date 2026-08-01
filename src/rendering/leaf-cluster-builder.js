@@ -1,14 +1,9 @@
 import * as THREE from 'three';
 import { CrownVolumeField } from '../generation/crown-volume-field.js';
-import { CanopyClosureSampler } from './canopy-closure-sampler.js';
 import { hashUnit } from './canopy-closure-math.js';
 import { LeafClusterGeometryFactory } from './leaf-cluster-geometry-factory.js';
 import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constants.js';
-import {
-  countClosureRoles,
-  createClosureRecords,
-  createSurfaceRecords,
-} from './leaf-cluster-record-factory.js';
+import { createSurfaceRecords } from './leaf-cluster-record-factory.js';
 import {
   calculateInstanceScale,
   getInnerInsetRatio,
@@ -31,31 +26,22 @@ function selectSamples(treeData, density) {
 export class LeafClusterBuilder {
   constructor({
     geometryFactory = new LeafClusterGeometryFactory(),
-    closureSampler = new CanopyClosureSampler(),
   } = {}) {
     this.geometryFactory = geometryFactory;
-    this.closureSampler = closureSampler;
   }
 
   build(treeData) {
-    const settings = treeData.palette.leafDetail;
+    const settings = treeData.palette.heroLeaves;
     const selected = settings.enabled
       ? selectSamples(treeData, settings.density)
       : [];
     const field = new CrownVolumeField(treeData);
-    const closureSamples = settings.enabled
-      ? this.closureSampler.generate(treeData, field)
-      : [];
     const surfaceRecords = createSurfaceRecords(selected, settings.layerCount);
-    const closureRecords = createClosureRecords(
-      closureSamples,
-      settings.closure.microLayerCount,
-    );
-    const records = [...surfaceRecords, ...closureRecords];
+    const records = surfaceRecords;
 
     if (records.length === 0) {
       const empty = new THREE.Group();
-      empty.name = 'leaf-detail-shell';
+      empty.name = 'hero-leaf-shell';
       return empty;
     }
 
@@ -117,20 +103,13 @@ export class LeafClusterBuilder {
     mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-    mesh.name = 'leaf-detail-shell';
-    mesh.castShadow = true;
+    mesh.name = 'hero-leaf-shell';
+    mesh.castShadow = false;
     mesh.receiveShadow = true;
 
-    const closureRoles = countClosureRoles(closureRecords);
-    mesh.userData.leafDetail = {
+    mesh.userData.heroLeaves = {
       clusterCount: records.length,
       surfaceClusterCount: surfaceRecords.length,
-      closureClusterCount: closureRecords.length,
-      closureVolumeCount: closureRoles.volume,
-      closureTrunkCount: closureRoles.trunk,
-      closureSaddleCount: closureRoles.saddle,
-      closureCapCount: closureRoles.cap,
-      closureLayerCount: settings.closure.microLayerCount,
       sourceSampleCount: selected.length,
       layerCount: settings.layerCount,
       leafCount: records.length * settings.leavesPerCluster,

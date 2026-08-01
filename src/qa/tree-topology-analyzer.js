@@ -45,13 +45,31 @@ function countComponents(adjacency) {
 function analyzeBranches(tree) {
   const distances = [];
   const targets = new Set();
+  const branchIds = new Set(tree.branches.map((branch) => branch.id));
   let missingTargets = 0;
+  let invalidParentCount = 0;
+  let branchTaperViolationCount = 0;
+  let primaryBranchCount = 0;
+  let exposedBranchCount = 0;
 
   for (const branch of tree.branches) {
     const target = tree.lobes.find(
       (lobe) => lobe.id === branch.targetLobeId,
     );
     const endpoint = branch.points.at(-1);
+
+    if (branch.parentId === null) {
+      primaryBranchCount += 1;
+    } else {
+      const parent = tree.branches.find((candidate) => candidate.id === branch.parentId);
+      if (!branchIds.has(branch.parentId) || !parent || parent.order >= branch.order) {
+        invalidParentCount += 1;
+      }
+      if (parent && branch.startRadius >= parent.startRadius) {
+        branchTaperViolationCount += 1;
+      }
+    }
+    if (branch.exposed) exposedBranchCount += 1;
 
     if (!target || !endpoint) {
       missingTargets += 1;
@@ -64,6 +82,14 @@ function analyzeBranches(tree) {
 
   return {
     branchTargetCount: targets.size,
+    primaryBranchCount,
+    exposedBranchCount,
+    maximumBranchOrder: Math.max(0, ...tree.branches.map((branch) => branch.order)),
+    invalidParentCount,
+    branchTaperViolationCount,
+    unsupportedLobeCount: tree.lobes.filter(
+      (lobe) => lobe.branchId === null || !branchIds.has(lobe.branchId),
+    ).length,
     missingBranchTargetCount: missingTargets,
     minimumBranchInsertion:
       distances.length === 0 ? 0 : Math.min(...distances),

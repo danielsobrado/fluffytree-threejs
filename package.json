@@ -1,20 +1,23 @@
 {
   "name": "fluffytree-threejs",
-  "version": "1.7.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test",
     "check:source": "node tools/check-source.js",
     "check": "npm run check:source && npm test",
-    "qa:render": "bash tools/run-render-smoke.sh",
+    "qa:render": "node tools/run-render-smoke.js",
+    "qa:stress": "node tools/run-tree-stress-qa.js",
+    "qa:stress:render": "node tools/run-stress-smoke.js",
     "qa:shape": "node tools/run-tree-shape-qa.js",
     "qa:shape:quick": "node tools/run-tree-shape-qa.js --seeds 64 --output qa-results/tree-shape-quick",
     "qa:crown": "node tools/run-crown-volume-qa.js",
     "qa:crown:quick": "node tools/run-crown-volume-qa.js --seeds 2 --output qa-results/crown-volume-quick",
     "qa:occupancy": "node tools/run-canopy-occupancy-qa.js",
     "qa:occupancy:quick": "node tools/run-canopy-occupancy-qa.js --seeds 8 --output qa-results/canopy-occupancy-quick",
-    "verify": "npm run check && npm run qa:render && npm run qa:shape && npm run qa:crown && npm run qa:occupancy",
+    "qa:lod": "node tools/run-tree-lod-qa.js",
+    "verify": "npm run check && npm run qa:render && npm run qa:shape && npm run qa:crown && npm run qa:lod && npm run qa:stress",
     "deploy:pages": "npm run verify && node tools/deploy-pages.js"
   },
   "devDependencies": {

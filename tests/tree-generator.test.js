@@ -23,13 +23,24 @@ test('tree generation changes with the seed', () => {
 test('generated tree respects requested topology counts', () => {
   const tree = new TreeGenerator().generate(preset, 44);
   assert.equal(tree.lobes.length, preset.crown.lobeCount);
-  assert.equal(tree.branches.length, preset.trunk.branchCount);
+  assert.ok(tree.branches.length >= preset.crown.lobeCount);
+  assert.equal(
+    tree.branches.filter((branch) => branch.parentId === null).length,
+    preset.trunk.branching.primaryCount,
+  );
   assert.equal(tree.trunk.points.length, preset.trunk.segments + 1);
   assert.equal(
     tree.shell.length,
     preset.crown.lobeCount * preset.foliage.shell.instancesPerLobe,
   );
   assert.equal(tree.lobeExposure.length, preset.crown.lobeCount);
+  assert.ok(tree.lobes.every((lobe) => Number.isInteger(lobe.macroClumpId)));
+  assert.ok(tree.lobes.every((lobe) => Number.isInteger(lobe.branchId)));
+  assert.equal(tree.branchGraph.branches, tree.branches);
+  assert.equal(tree.clumps.length, preset.crown.clumps.macroCount);
+  assert.equal(tree.sprayRecords, tree.shell);
+  assert.ok(tree.bounds.minimum.y <= 0);
+  assert.equal(tree.lodCostSummaries.lodTriangles.length, 4);
 });
 
 test('runtime generation omits obsolete foliage surface samples', () => {
@@ -43,5 +54,6 @@ test('runtime generation omits obsolete foliage surface samples', () => {
     Array.from({ length: preset.crown.lobeCount }, () => 1),
   );
   assert.equal(tree.lobes.length, preset.crown.lobeCount);
-  assert.equal(tree.branches.length, preset.trunk.branchCount);
+  assert.ok(tree.branches.length >= preset.crown.lobeCount);
+  assert.equal(tree.lodCostSummaries.heroLeafClusters, 0);
 });

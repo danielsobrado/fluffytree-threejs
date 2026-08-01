@@ -18,6 +18,9 @@ const configuration = {
         lobeComponentCount: 1,
         isolatedLobeCount: 0,
         missingBranchTargetCount: 0,
+        invalidParentCount: 0,
+        branchTaperViolationCount: 0,
+        unsupportedLobeCount: 0,
         nonMonotonicTrunkSegments: 0,
         silhouetteComponentCount: 1,
         shellMissingSourceLobeCount: 0,
@@ -25,8 +28,10 @@ const configuration = {
       },
       ranges: {
         minimumBranchInsertion: [0.54, 0.56],
-        maximumBranchInsertion: [0.54, 0.56],
-        trunkTopFoliageDistance: [0, 1],
+        maximumBranchInsertion: [0.54, 1.19],
+        primaryBranchCount: [4, 4],
+        maximumBranchOrder: [2, 3],
+        trunkTopFoliageDistance: [0, 1.15],
         silhouetteLargestComponentRatio: [0.99, 1],
         silhouetteHoleRatio: [0, 0.05],
         minimumColorMix: [0, 1],
@@ -53,9 +58,9 @@ const configuration = {
     },
     profiles: {
       round: {
-        minimumVerticalBandCounts: [2, 2, 2],
+        minimumVerticalBandCounts: [1, 2, 1],
         ranges: {
-          crownAspectRatio: [0.8, 1.8],
+          crownAspectRatio: [0.8, 1.9],
           widthDepthRatio: [0.5, 1.8],
           silhouetteFillRatio: [0.45, 0.9],
           targetCoverage: [0.5, 1],

@@ -2,10 +2,10 @@ import * as THREE from 'three';
 import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js';
 
 export class FoliageCoreGeometryFactory {
-  create() {
+  create(detail = 1) {
     const geometry = new THREE.IcosahedronGeometry(
       1,
-      FOLIAGE_RENDERING_CONSTANTS.coreLobeDetail,
+      detail,
     );
     const positions = geometry.attributes.position;
     const vertex = new THREE.Vector3();

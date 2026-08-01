@@ -88,7 +88,7 @@ export class LeafClusterGeometryFactory {
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
     geometry.name = 'leaf-cluster-geometry';
-    geometry.userData.leafDetail = {
+    geometry.userData.heroLeaves = {
       leavesPerCluster: leafCount,
       triangleCount: leafCount * 4,
     };

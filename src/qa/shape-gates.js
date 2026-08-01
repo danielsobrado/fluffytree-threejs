@@ -60,7 +60,6 @@ export function evaluateShapeGates(metrics, preset, thresholds) {
   }
 
   checkExact(metrics, 'lobeCount', preset.crown.lobeCount, failures);
-  checkExact(metrics, 'branchCount', preset.trunk.branchCount, failures);
   checkExact(
     metrics,
     'trunkPointCount',

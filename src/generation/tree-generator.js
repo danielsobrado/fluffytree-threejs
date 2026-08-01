@@ -6,6 +6,7 @@ import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
 import { LobeConnectivityEnforcer } from './lobe-connectivity-enforcer.js';
 import { LobeGenerator } from './lobe-generator.js';
 import { SeededRandom } from './seeded-random.js';
+import { analyzeTreeLodBudgets } from '../qa/tree-lod-budget-analyzer.js';
 
 function createShellSeed(seed) {
   return (Number(seed) ^ FOLIAGE_SHELL_CONSTANTS.seedSalt) >>> 0;
@@ -16,6 +17,53 @@ function createEmptySurfaceSamples(lobes) {
     instances: [],
     lobeExposure: lobes.map(() => 1),
   };
+}
+
+function createClumpRecords(lobes, branches) {
+  const records = new Map();
+  for (const lobe of lobes) {
+    if (!records.has(lobe.macroClumpId)) {
+      records.set(lobe.macroClumpId, {
+        id: lobe.macroClumpId,
+        lobeIds: [],
+        branchIds: [],
+      });
+    }
+    const record = records.get(lobe.macroClumpId);
+    record.lobeIds.push(lobe.id);
+    if (!record.branchIds.includes(lobe.branchId)) record.branchIds.push(lobe.branchId);
+  }
+  return Object.freeze(
+    [...records.values()].map((record) =>
+      Object.freeze({
+        ...record,
+        lobeIds: Object.freeze(record.lobeIds),
+        branchIds: Object.freeze(record.branchIds),
+        terminalBranchIds: Object.freeze(
+          branches
+            .filter((branch) => branch.macroClumpId === record.id)
+            .map((branch) => branch.id),
+        ),
+      }),
+    ),
+  );
+}
+
+function createBounds(height, lobes) {
+  const minimum = { x: 0, y: 0, z: 0 };
+  const maximum = { x: 0, y: height, z: 0 };
+  for (const lobe of lobes) {
+    minimum.x = Math.min(minimum.x, lobe.position.x - lobe.scale.x);
+    minimum.y = Math.min(minimum.y, lobe.position.y - lobe.scale.y);
+    minimum.z = Math.min(minimum.z, lobe.position.z - lobe.scale.z);
+    maximum.x = Math.max(maximum.x, lobe.position.x + lobe.scale.x);
+    maximum.y = Math.max(maximum.y, lobe.position.y + lobe.scale.y);
+    maximum.z = Math.max(maximum.z, lobe.position.z + lobe.scale.z);
+  }
+  return Object.freeze({
+    minimum: Object.freeze(minimum),
+    maximum: Object.freeze(maximum),
+  });
 }
 
 export class TreeGenerator {
@@ -35,9 +83,10 @@ export class TreeGenerator {
     const random = new SeededRandom(seed);
     const envelope = new CrownEnvelope(preset.crown);
     const generatedLobes = this.lobeGenerator.generate(preset, envelope, random);
-    const lobes = this.lobeConnectivityEnforcer.enforce(generatedLobes);
+    const connectedLobes = this.lobeConnectivityEnforcer.enforce(generatedLobes);
+    const structure = this.branchGenerator.generate(preset, connectedLobes, random);
+    const lobes = structure.lobes;
     const crown = createCrownSummary(lobes);
-    const structure = this.branchGenerator.generate(preset, lobes, random);
     const shell = includeSurfaceSamples
       ? this.foliageShellGenerator.generate(
           preset,
@@ -46,7 +95,7 @@ export class TreeGenerator {
         )
       : createEmptySurfaceSamples(lobes);
 
-    return Object.freeze({
+    const tree = {
       presetId: preset.id,
       seed,
       height: preset.height,
@@ -56,8 +105,18 @@ export class TreeGenerator {
       shell: Object.freeze(shell.instances),
       trunk: Object.freeze(structure.trunk),
       branches: Object.freeze(structure.branches),
+      branchGraph: Object.freeze({
+        trunk: Object.freeze(structure.trunk),
+        branches: Object.freeze(structure.branches),
+      }),
+      clumps: createClumpRecords(lobes, structure.branches),
+      sprayRecords: Object.freeze(shell.instances),
+      bounds: createBounds(preset.height, lobes),
       palette: preset.foliage,
       trunkColor: preset.trunk.color,
-    });
+      barkPalette: preset.trunk.barkPalette,
+    };
+    tree.lodCostSummaries = analyzeTreeLodBudgets(tree);
+    return Object.freeze(tree);
   }
 }

@@ -58,7 +58,7 @@ function calculateButtress(angle, ratio, seed) {
   );
 }
 
-function appendBottomCap(positions, indices, radialSegments) {
+function appendBottomCap(positions, uvs, indices, radialSegments) {
   let centerX = 0;
   let centerY = 0;
   let centerZ = 0;
@@ -75,6 +75,7 @@ function appendBottomCap(positions, indices, radialSegments) {
   centerZ /= radialSegments;
   const centerIndex = positions.length / 3;
   positions.push(centerX, centerY, centerZ);
+  uvs.push(0.5, 0);
 
   for (let segment = 0; segment < radialSegments; segment += 1) {
     const current = segment;
@@ -106,6 +107,7 @@ export class RootCollarGeometryFactory {
     const minimumY = getRootCollarMinimumHeight();
     const maximumY = getRootCollarMaximumHeight();
     const positions = [];
+    const uvs = [];
     const indices = [];
 
     for (let ring = 0; ring <= ringCount; ring += 1) {
@@ -121,6 +123,7 @@ export class RootCollarGeometryFactory {
           center.y,
           center.z + Math.sin(angle) * localRadius,
         );
+        uvs.push(segment / radialSegments, ratio);
       }
     }
 
@@ -141,13 +144,14 @@ export class RootCollarGeometryFactory {
       }
     }
 
-    appendBottomCap(positions, indices, radialSegments);
+    appendBottomCap(positions, uvs, indices, radialSegments);
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
       'position',
       new THREE.Float32BufferAttribute(positions, 3),
     );
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
     geometry.computeBoundingBox();

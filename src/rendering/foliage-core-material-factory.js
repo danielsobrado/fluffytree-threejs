@@ -4,6 +4,15 @@ import { configureStylizedFoliageShader } from './stylized-foliage-shader.js';
 
 export class FoliageCoreMaterialFactory {
   create({ foliage, paletteTexture, sunDirection }) {
+    const coreFoliage = Object.freeze({
+      ...foliage,
+      paletteBase: Math.max(
+        0,
+        foliage.paletteBase - (1 - foliage.core.brightness) * 0.12,
+      ),
+      cavityStrength: Math.min(1, foliage.cavityStrength + 0.06),
+      heightLightStrength: foliage.heightLightStrength * 0.72,
+    });
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       roughness: FOLIAGE_RENDERING_CONSTANTS.coreRoughness,
@@ -12,7 +21,7 @@ export class FoliageCoreMaterialFactory {
     material.name = 'foliage-core-material';
 
     return configureStylizedFoliageShader(material, {
-      foliage,
+      foliage: coreFoliage,
       paletteTexture,
       sunDirection,
       radialNormalExpression: 'normalize( position )',

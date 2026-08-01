@@ -1,11 +1,9 @@
 export const RENDER_SMOKE_CONSTANTS = Object.freeze({
-  minimumLeafClustersPerTree: 5200,
-  minimumLeafLayers: 4,
-  minimumClosureClustersPerTree: 1900,
-  minimumVolumeClosureClustersPerTree: 1300,
-  minimumTrunkClosureClustersPerTree: 300,
-  minimumSaddleClosureClustersPerTree: 80,
-  minimumCapClosureClustersPerTree: 120,
-  minimumClosureLayers: 2,
+  minimumHeroLeafClustersPerTree: 24,
+  minimumFoliageCoresPerTree: 3,
+  minimumFoliageShellsPerTree: 2,
+  maximumShadowTrianglesPerTree: 2000,
+  maximumLodTriangles: Object.freeze([25000, 8000, 2000, 2]),
+  maximumLodDrawCalls: Object.freeze([5, 4, 2, 1]),
   minimumRootCollarOverlap: 0.2,
 });

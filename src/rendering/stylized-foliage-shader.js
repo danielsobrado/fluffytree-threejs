@@ -11,12 +11,16 @@ function createVertexDeclarations() {
     varying float vFoliageExposure;
     varying float vFoliageHeight;
     varying vec3 vFoliageRadialWorld;
+    varying float vFoliagePatch;
     uniform float uFoliageVariation;
     uniform float uFoliagePaletteBase;
     uniform float uFoliageHeightPaletteShift;
     uniform float uFoliageExposurePaletteShift;
     uniform float uFoliageRadialNormalStrength;
     uniform float uFoliageCrownNormalBlend;
+    uniform float uTreeWindTime;
+    uniform float uTreeWindPhase;
+    uniform float uTreeWindStrength;
   `;
 }
 
@@ -26,6 +30,7 @@ function createFragmentDeclarations() {
     varying float vFoliageExposure;
     varying float vFoliageHeight;
     varying vec3 vFoliageRadialWorld;
+    varying float vFoliagePatch;
     uniform sampler2D uFoliagePalette;
     uniform vec3 uFoliageSunDirection;
     uniform float uFoliageWrapLight;
@@ -69,7 +74,7 @@ function createColorShader() {
   return `
     vec3 foliagePaletteColor = texture2D(
       uFoliagePalette,
-      vec2( clamp( vFoliagePaletteCoordinate, 0.0, 1.0 ), 0.5 )
+      vec2( clamp( vFoliagePaletteCoordinate + vFoliagePatch * 0.055, 0.0, 1.0 ), 0.5 )
     ).rgb;
     vec3 foliageRadial = normalize( vFoliageRadialWorld );
     float foliageWrappedLight = clamp(
@@ -124,6 +129,8 @@ export function configureStylizedFoliageShader(
     cacheKey,
   },
 ) {
+  const windState = { time: 0, phase: 0, strength: 0.055 };
+  material.userData.windState = windState;
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, {
       uFoliagePalette: { value: paletteTexture },
@@ -144,6 +151,21 @@ export function configureStylizedFoliageShader(
       uFoliageSkyLightStrength: { value: foliage.skyLightStrength },
       uFoliageCavityStrength: { value: foliage.cavityStrength },
       uFoliageHeightLightStrength: { value: foliage.heightLightStrength },
+      uTreeWindTime: {
+        get value() {
+          return windState.time;
+        },
+      },
+      uTreeWindPhase: {
+        get value() {
+          return windState.phase;
+        },
+      },
+      uTreeWindStrength: {
+        get value() {
+          return windState.strength;
+        },
+      },
     });
 
     shader.vertexShader = `${createVertexDeclarations()}\n${shader.vertexShader}`
@@ -163,6 +185,20 @@ export function configureStylizedFoliageShader(
         '#include <begin_vertex>',
         `
           #include <begin_vertex>
+          float treeWindInstancePhase = uTreeWindPhase;
+          #ifdef USE_INSTANCING
+            treeWindInstancePhase +=
+              instanceMatrix[ 3 ].x * 0.73 + instanceMatrix[ 3 ].z * 0.51;
+          #endif
+          float treeWindWeight = clamp( ${heightExpression}, 0.0, 1.0 );
+          float treeWindPrimary = sin(
+            uTreeWindTime * 0.78 + treeWindInstancePhase
+          );
+          float treeWindSecondary = sin(
+            uTreeWindTime * 1.31 + treeWindInstancePhase * 1.7
+          );
+          transformed.x += treeWindPrimary * uTreeWindStrength * treeWindWeight;
+          transformed.z += treeWindSecondary * uTreeWindStrength * treeWindWeight * 0.46;
           vFoliageHeight = clamp( ${heightExpression}, 0.0, 1.0 );
           vFoliageExposure = instanceExposure;
           vFoliagePaletteCoordinate = clamp(
@@ -173,6 +209,9 @@ export function configureStylizedFoliageShader(
             0.0,
             1.0
           );
+          vFoliagePatch =
+            sin(position.x * 5.3 + position.y * 3.7) * 0.55 +
+            sin(position.z * 6.1 - position.y * 4.9) * 0.45;
         `,
       )
       .replace(

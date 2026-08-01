@@ -17,6 +17,16 @@ renderer:
   maxPixelRatio: 2
   shadowMapSize: 2048
 
+lod:
+  nearPixels: 300
+  mediumPixels: 110
+  farPixels: 35
+  cullPixels: 12
+  hysteresis: 0.12
+  fadeBand: 0.15
+  shadowPixels: 90
+  generationBudgetMs: 8
+
 lighting:
   hemisphereSkyColor: '#f0f7ff'
   hemisphereGroundColor: '#71805c'

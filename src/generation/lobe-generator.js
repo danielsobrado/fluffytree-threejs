@@ -1,109 +1,134 @@
 import { GENERATION_CONSTANTS } from './generation-constants.js';
 
-function lerp(min, max, t) {
-  return min + (max - min) * t;
+function lerp(minimum, maximum, ratio) {
+  return minimum + (maximum - minimum) * ratio;
 }
 
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function createAnchorLobe(envelope, crown, t, scaleMultiplier, id) {
-  const center = envelope.centerAt(t);
-  const radius = envelope.radiusAt(t);
-  const horizontalScale = Math.max(
-    GENERATION_CONSTANTS.minimumLobeScale,
-    radius * scaleMultiplier * crown.lobeScaleMultiplier,
-  );
-
-  return {
-    id,
-    position: center,
-    scale: {
-      x: horizontalScale,
-      y: horizontalScale * 0.94,
-      z: horizontalScale,
-    },
-    rotation: { x: 0, y: 0, z: 0 },
-    colorMix: clamp(0.38 + t * 0.3, 0, 1),
-  };
+function clamp(value, minimum, maximum) {
+  return Math.min(maximum, Math.max(minimum, value));
 }
 
 function createColorMix(height, angle, random) {
-  const broadPatch = Math.sin(angle * 0.74 + height * 3.2) * 0.5 + 0.5;
-  return clamp(height * 0.42 + broadPatch * 0.42 + random.next() * 0.16, 0, 1);
+  const patch = Math.sin(angle * 0.74 + height * 3.2) * 0.5 + 0.5;
+  return clamp(height * 0.42 + patch * 0.42 + random.next() * 0.16, 0, 1);
+}
+
+function allocateLobes(lobeCount, macroCount) {
+  const allocations = Array.from({ length: macroCount }, () => 0);
+  for (let index = 0; index < lobeCount; index += 1) {
+    allocations[index % macroCount] += 1;
+  }
+  return allocations;
+}
+
+function createMacroAnchor(envelope, crown, random, index, count) {
+  const sequence = (index + 0.5) / count;
+  const heightRange =
+    crown.profile === 'columnar'
+      ? [0.08, 0.92]
+      : crown.profile === 'vase'
+        ? [0.2, 0.9]
+        : [0.2, 0.82];
+  const height = clamp(
+    lerp(heightRange[0], heightRange[1], sequence) +
+      random.signed() * 0.045 * (1 - crown.surfaceTension * 0.35),
+    0.08,
+    0.94,
+  );
+  const center = envelope.centerAt(height);
+  const radius = envelope.radiusAt(height);
+  const angle = index * GENERATION_CONSTANTS.goldenAngle + random.signed() * 0.2;
+  const radialRatio =
+    crown.clumps.separation *
+    lerp(0.58, 0.88, random.next()) *
+    lerp(0.82, 1, crown.radialBias);
+
+  return {
+    height,
+    angle,
+    radius,
+    position: {
+      x: center.x + Math.cos(angle) * radius * radialRatio,
+      y: center.y + random.signed() * crown.height * 0.035,
+      z: center.z + Math.sin(angle) * radius * radialRatio,
+    },
+  };
+}
+
+function createSubClump(preset, random, macro, macroId, subIndex, subCount, id) {
+  const { crown } = preset;
+  const lobeScale = lerp(crown.lobeScale[0], crown.lobeScale[1], random.next());
+  const verticalScale = lerp(
+    crown.verticalScale[0],
+    crown.verticalScale[1],
+    random.next(),
+  );
+  const baseScale = Math.max(
+    GENERATION_CONSTANTS.minimumLobeScale,
+    macro.radius * 0.43 * lobeScale * crown.lobeScaleMultiplier,
+  );
+  const localAngle =
+    macro.angle + subIndex * GENERATION_CONSTANTS.goldenAngle + random.signed() * 0.3;
+  const localRatio =
+    subIndex === 0
+      ? 0
+      : Math.sqrt(subIndex / Math.max(1, subCount - 1)) *
+        (0.42 + crown.clumps.silhouetteBreakup * 1.2) *
+        baseScale;
+  const verticalBreakup =
+    subIndex === 0
+      ? 0
+      : random.signed() *
+        baseScale *
+        (0.24 + crown.clumps.silhouetteBreakup * 0.55);
+  const scaleVariation = crown.scaleVariation + crown.clumps.silhouetteBreakup * 0.08;
+
+  return {
+    id,
+    macroClumpId: macroId,
+    position: {
+      x: macro.position.x + Math.cos(localAngle) * localRatio,
+      y: macro.position.y + verticalBreakup,
+      z: macro.position.z + Math.sin(localAngle) * localRatio,
+    },
+    scale: {
+      x: baseScale * random.range(1 - scaleVariation, 1 + scaleVariation),
+      y: baseScale * verticalScale,
+      z: baseScale * random.range(1 - scaleVariation, 1 + scaleVariation),
+    },
+    rotation: {
+      x: random.signed() * 0.2,
+      y: random.range(0, Math.PI * 2),
+      z: random.signed() * 0.18,
+    },
+    colorMix: createColorMix(macro.height, localAngle, random),
+  };
 }
 
 export class LobeGenerator {
   generate(preset, envelope, random) {
     const { crown } = preset;
-    const lobes = [
-      createAnchorLobe(envelope, crown, 0.32, 0.5, 0),
-      createAnchorLobe(envelope, crown, 0.59, 0.47, 1),
-      createAnchorLobe(envelope, crown, 0.78, 0.38, 2),
-    ];
+    const macroCount = Math.min(crown.lobeCount, crown.clumps.macroCount);
+    const allocations = allocateLobes(crown.lobeCount, macroCount);
+    const lobes = [];
 
-    const generatedCount = Math.max(0, crown.lobeCount - lobes.length);
-    const tension = crown.surfaceTension;
-    const radialContraction = 1 - tension * 0.34;
-    const heightJitterScale = 1 - tension * 0.48;
+    for (let macroId = 0; macroId < macroCount; macroId += 1) {
+      const macro = createMacroAnchor(envelope, crown, random, macroId, macroCount);
+      const subCount = allocations[macroId];
 
-    for (let index = 0; index < generatedCount; index += 1) {
-      const sequence = (index + 0.5) / generatedCount;
-      const jitteredHeight = clamp(
-        sequence +
-          random.signed() *
-            (0.32 / Math.max(3, generatedCount)) *
-            heightJitterScale,
-        0.06,
-        0.94,
-      );
-      const center = envelope.centerAt(jitteredHeight);
-      const envelopeRadius = envelope.radiusAt(jitteredHeight);
-      const angle = index * GENERATION_CONSTANTS.goldenAngle + random.signed() * 0.3;
-      const radialAmount =
-        lerp(0.16, crown.radialBias, Math.pow(random.next(), 0.78)) *
-        radialContraction;
-      const lobeScale = lerp(crown.lobeScale[0], crown.lobeScale[1], random.next());
-      const verticalScale = lerp(
-        crown.verticalScale[0],
-        crown.verticalScale[1],
-        random.next(),
-      );
-      const baseScale = Math.max(
-        GENERATION_CONSTANTS.minimumLobeScale,
-        envelopeRadius * 0.47 * lobeScale * crown.lobeScaleMultiplier,
-      );
-      const asymmetryOffset = crown.asymmetry * jitteredHeight;
-      const scaleVariation = crown.scaleVariation;
-
-      lobes.push({
-        id: lobes.length,
-        position: {
-          x:
-            center.x +
-            Math.cos(angle) * envelopeRadius * radialAmount +
-            asymmetryOffset * 0.42,
-          y:
-            center.y +
-            random.signed() * crown.height * 0.03 * heightJitterScale,
-          z:
-            center.z +
-            Math.sin(angle) * envelopeRadius * radialAmount +
-            random.signed() * asymmetryOffset * 0.22,
-        },
-        scale: {
-          x: baseScale * random.range(1 - scaleVariation, 1 + scaleVariation),
-          y: baseScale * verticalScale,
-          z: baseScale * random.range(1 - scaleVariation, 1 + scaleVariation),
-        },
-        rotation: {
-          x: random.signed() * 0.16,
-          y: random.range(0, Math.PI * 2),
-          z: random.signed() * 0.14,
-        },
-        colorMix: createColorMix(jitteredHeight, angle, random),
-      });
+      for (let subIndex = 0; subIndex < subCount; subIndex += 1) {
+        lobes.push(
+          createSubClump(
+            preset,
+            random,
+            macro,
+            macroId,
+            subIndex,
+            subCount,
+            lobes.length,
+          ),
+        );
+      }
     }
 
     return lobes;

@@ -4,7 +4,7 @@ const RENDER_SMOKE_QUERY_VALUE = 'render-smoke';
 const STATUS_ATTRIBUTE = 'renderStatus';
 const ERROR_ATTRIBUTE = 'renderError';
 const CROWN_PROXY_NAME = 'crown-shadow-proxy';
-const LEAF_DETAIL_NAME = 'leaf-detail-shell';
+const HERO_LEAF_NAME = 'hero-leaf-shell';
 const STRUCTURE_NAME = 'tree-structure';
 
 function isRenderSmokeRequested() {
@@ -17,6 +17,14 @@ function isRenderSmokeRequested() {
 function serializeError(error) {
   if (error instanceof Error) return `${error.name}: ${error.message}`;
   return String(error);
+}
+
+function reportStatus(status, error = '') {
+  const query = new URLSearchParams({ status, error });
+  void fetch(`/__render-smoke-status?${query}`, {
+    cache: 'no-store',
+    keepalive: true,
+  }).catch(() => {});
 }
 
 function validateReleaseTitles(root) {
@@ -40,16 +48,13 @@ function collectSceneMetrics(scene) {
     treeCount: 0,
     shadowProxyCount: 0,
     crownTriangles: 0,
-    crownVertices: 0,
     leafClusterCount: 0,
     leafCount: 0,
-    closureClusterCount: 0,
-    closureVolumeCount: 0,
-    closureTrunkCount: 0,
-    closureSaddleCount: 0,
-    closureCapCount: 0,
-    minimumClosureLayers: Number.POSITIVE_INFINITY,
-    minimumLeafLayers: Number.POSITIVE_INFINITY,
+    foliageCoreCount: 0,
+    foliageShellCount: 0,
+    lodCounts: [0, 0, 0, 0],
+    maximumLodTriangles: [0, 0, 0, 0],
+    maximumLodDrawCalls: [0, 0, 0, 0],
     rootCollarCount: 0,
     minimumRootCollarOverlap: Number.POSITIVE_INFINITY,
   };
@@ -60,10 +65,7 @@ function collectSceneMetrics(scene) {
     if (object.name === CROWN_PROXY_NAME) {
       metrics.shadowProxyCount += 1;
       metrics.crownTriangles += Number(
-        object.geometry?.userData?.volume?.triangleCount ?? 0,
-      );
-      metrics.crownVertices += Number(
-        object.geometry?.userData?.volume?.vertexCount ?? 0,
+        object.userData?.shadowProxy?.triangleCount ?? 0,
       );
 
       if (
@@ -75,30 +77,24 @@ function collectSceneMetrics(scene) {
       }
     }
 
-    if (object.name === LEAF_DETAIL_NAME) {
-      const leafDetail = object.userData?.leafDetail ?? {};
-      metrics.leafClusterCount += Number(leafDetail.clusterCount ?? 0);
-      metrics.leafCount += Number(leafDetail.leafCount ?? 0);
-      metrics.closureClusterCount += Number(
-        leafDetail.closureClusterCount ?? 0,
+    if (object.name === HERO_LEAF_NAME) {
+      const heroLeaves = object.userData?.heroLeaves ?? {};
+      metrics.leafClusterCount += Number(heroLeaves.clusterCount ?? 0);
+      metrics.leafCount += Number(heroLeaves.leafCount ?? 0);
+    }
+
+    if (object.userData?.foliageCore) metrics.foliageCoreCount += 1;
+    if (object.userData?.foliageShell) metrics.foliageShellCount += 1;
+    const lod = object.userData?.lod;
+    if (Number.isInteger(lod?.index)) {
+      metrics.lodCounts[lod.index] += 1;
+      metrics.maximumLodTriangles[lod.index] = Math.max(
+        metrics.maximumLodTriangles[lod.index],
+        Number(lod.triangles ?? 0),
       );
-      metrics.closureVolumeCount += Number(
-        leafDetail.closureVolumeCount ?? 0,
-      );
-      metrics.closureTrunkCount += Number(
-        leafDetail.closureTrunkCount ?? 0,
-      );
-      metrics.closureSaddleCount += Number(
-        leafDetail.closureSaddleCount ?? 0,
-      );
-      metrics.closureCapCount += Number(leafDetail.closureCapCount ?? 0);
-      metrics.minimumClosureLayers = Math.min(
-        metrics.minimumClosureLayers,
-        Number(leafDetail.closureLayerCount ?? 0),
-      );
-      metrics.minimumLeafLayers = Math.min(
-        metrics.minimumLeafLayers,
-        Number(leafDetail.layerCount ?? 0),
+      metrics.maximumLodDrawCalls[lod.index] = Math.max(
+        metrics.maximumLodDrawCalls[lod.index],
+        Number(lod.drawCalls ?? 0),
       );
     }
 
@@ -123,7 +119,8 @@ function collectSceneMetrics(scene) {
     metrics.treeCount === 0 ||
     metrics.shadowProxyCount !== metrics.treeCount ||
     metrics.crownTriangles === 0 ||
-    metrics.crownVertices === 0
+    metrics.crownTriangles >
+      metrics.treeCount * RENDER_SMOKE_CONSTANTS.maximumShadowTrianglesPerTree
   ) {
     throw new Error('Invisible crown shadow proxies are incomplete.');
   }
@@ -131,28 +128,26 @@ function collectSceneMetrics(scene) {
   const perTree = (value) => metrics.treeCount * value;
   if (
     metrics.leafClusterCount <
-      perTree(RENDER_SMOKE_CONSTANTS.minimumLeafClustersPerTree) ||
+      perTree(RENDER_SMOKE_CONSTANTS.minimumHeroLeafClustersPerTree) ||
     metrics.leafCount === 0 ||
-    metrics.minimumLeafLayers < RENDER_SMOKE_CONSTANTS.minimumLeafLayers
+    metrics.foliageCoreCount <
+      perTree(RENDER_SMOKE_CONSTANTS.minimumFoliageCoresPerTree) ||
+    metrics.foliageShellCount <
+      perTree(RENDER_SMOKE_CONSTANTS.minimumFoliageShellsPerTree)
   ) {
     throw new Error('Visible leaf geometry is not dense enough.');
   }
 
-  if (
-    metrics.closureClusterCount <
-      perTree(RENDER_SMOKE_CONSTANTS.minimumClosureClustersPerTree) ||
-    metrics.closureVolumeCount <
-      perTree(RENDER_SMOKE_CONSTANTS.minimumVolumeClosureClustersPerTree) ||
-    metrics.closureTrunkCount <
-      perTree(RENDER_SMOKE_CONSTANTS.minimumTrunkClosureClustersPerTree) ||
-    metrics.closureSaddleCount <
-      perTree(RENDER_SMOKE_CONSTANTS.minimumSaddleClosureClustersPerTree) ||
-    metrics.closureCapCount <
-      perTree(RENDER_SMOKE_CONSTANTS.minimumCapClosureClustersPerTree) ||
-    metrics.minimumClosureLayers <
-      RENDER_SMOKE_CONSTANTS.minimumClosureLayers
-  ) {
-    throw new Error('Volumetric canopy occupancy is incomplete.');
+  for (let index = 0; index < 4; index += 1) {
+    if (
+      metrics.lodCounts[index] !== metrics.treeCount ||
+      metrics.maximumLodTriangles[index] >
+        RENDER_SMOKE_CONSTANTS.maximumLodTriangles[index] ||
+      metrics.maximumLodDrawCalls[index] >
+        RENDER_SMOKE_CONSTANTS.maximumLodDrawCalls[index]
+    ) {
+      throw new Error(`Tree LOD ${index} is incomplete or over budget.`);
+    }
   }
 
   if (
@@ -209,6 +204,7 @@ export class RenderSmokeProbe {
         for (const [key, value] of Object.entries(sceneMetrics)) {
           this.root.dataset[key] = String(value);
         }
+        reportStatus('ready');
       }
     } catch (error) {
       this.fail(error);
@@ -221,6 +217,7 @@ export class RenderSmokeProbe {
     this.failed = true;
     this.root.dataset[STATUS_ATTRIBUTE] = 'error';
     this.root.dataset[ERROR_ATTRIBUTE] = serializeError(error);
+    reportStatus('error', serializeError(error));
     console.error('Render smoke probe failed.', error);
   }
 }
@@ -230,4 +227,5 @@ export function markRenderSmokeBootstrapFailure(error) {
 
   document.documentElement.dataset[STATUS_ATTRIBUTE] = 'error';
   document.documentElement.dataset[ERROR_ATTRIBUTE] = serializeError(error);
+  reportStatus('error', serializeError(error));
 }

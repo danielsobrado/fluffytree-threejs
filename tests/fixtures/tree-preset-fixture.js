@@ -2,8 +2,8 @@ import { createTreePreset } from '../../src/domain/tree-preset.js';
 
 export function createTestPreset(overrides = {}) {
   const volumeOverrides = overrides.foliage?.volume ?? {};
-  const leafDetailOverrides = overrides.foliage?.leafDetail ?? {};
-  const closureOverrides = overrides.foliage?.leafDetail?.closure ?? {};
+  const heroLeafOverrides = overrides.foliage?.heroLeaves ?? {};
+  const coreOverrides = overrides.foliage?.core ?? {};
   const shellOverrides = overrides.foliage?.shell ?? {};
 
   return createTreePreset('test', {
@@ -23,6 +23,13 @@ export function createTestPreset(overrides = {}) {
       surfaceTension: 0.7,
       lobeScaleMultiplier: 1.08,
       scaleVariation: 0.07,
+      clumps: {
+        macroCount: 4,
+        subClumpCount: [2, 3],
+        separation: 0.55,
+        anchoring: 0.72,
+        silhouetteBreakup: 0.2,
+      },
       ...overrides.crown,
     },
     trunk: {
@@ -33,6 +40,18 @@ export function createTestPreset(overrides = {}) {
       segments: 7,
       branchCount: 5,
       color: '#554433',
+      branching: {
+        depth: 3,
+        primaryCount: 4,
+        childCount: [1, 2],
+        lengthDecay: 0.64,
+        radiusDecay: 0.62,
+        upwardBias: 0.66,
+        gnarl: 0.22,
+        twist: 0.28,
+        exposedTipRatio: 0.16,
+      },
+      barkPalette: ['#3f3028', '#665044', '#9b8774'],
       ...overrides.trunk,
     },
     foliage: {
@@ -59,7 +78,12 @@ export function createTestPreset(overrides = {}) {
         colorPatchStrength: 0.08,
         ...volumeOverrides,
       },
-      leafDetail: {
+      core: {
+        scale: 0.8,
+        brightness: 0.7,
+        ...coreOverrides,
+      },
+      heroLeaves: {
         enabled: true,
         density: 0.75,
         scale: 1.3,
@@ -69,29 +93,9 @@ export function createTestPreset(overrides = {}) {
         colorLift: 0.07,
         colorJitter: 0.04,
         roughness: 0.9,
-        coreScale: 0.8,
-        coreBrightness: 0.7,
         layerCount: 4,
         layerOffsetRatio: 0.16,
-        ...leafDetailOverrides,
-        closure: {
-          enabled: true,
-          volumeSlices: 12,
-          samplesPerSlice: 18,
-          trunkSlices: 12,
-          trunkRingCount: 4,
-          saddleSamples: 3,
-          capLayers: 2,
-          capSamplesPerLayer: 12,
-          microLayerCount: 2,
-          radiusRatio: 0.86,
-          trunkRadiusRatio: 0.28,
-          clusterScaleRatio: 0.09,
-          colorDrop: 0.14,
-          axialJitter: 0.15,
-          depthJitterRatio: 0.18,
-          ...closureOverrides,
-        },
+        ...heroLeafOverrides,
       },
       shell: {
         instancesPerLobe: 12,

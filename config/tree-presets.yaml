@@ -16,6 +16,12 @@ presets:
       surfaceTension: 0.72
       lobeScaleMultiplier: 1.12
       scaleVariation: 0.06
+      clumps:
+        macroCount: 5
+        subClumpCount: [3, 4]
+        separation: 0.58
+        anchoring: 0.74
+        silhouetteBreakup: 0.2
     trunk:
       baseRadius: 0.36
       topRadius: 0.14
@@ -24,8 +30,19 @@ presets:
       segments: 8
       branchCount: 6
       color: '#554133'
+      branching:
+        depth: 3
+        primaryCount: 4
+        childCount: [1, 2]
+        lengthDecay: 0.64
+        radiusDecay: 0.62
+        upwardBias: 0.66
+        gnarl: 0.22
+        twist: 0.28
+        exposedTipRatio: 0.34
+      barkPalette: ['#3f3028', '#665044', '#9b8774']
     foliage:
-      palette: ['#24382d', '#4f754c', '#7fa45b', '#c2d982']
+      palette: ['#30483b', '#587957', '#87aa70', '#bfd59b']
       variation: 0.1
       paletteBase: 0.52
       heightPaletteShift: 0.14
@@ -45,38 +62,23 @@ presets:
         normalEpsilon: 0.025
         colorPatchScale: 0.55
         colorPatchStrength: 0.08
-      leafDetail:
+      core:
+        scale: 0.82
+        brightness: 0.84
+      heroLeaves:
         enabled: true
-        density: 1.0
-        scale: 1.65
+        density: 0.06
+        scale: 1.45
         embedRatio: 0.14
         protrusionRatio: 0.22
-        leavesPerCluster: 8
+        leavesPerCluster: 6
         colorLift: 0.08
         colorJitter: 0.04
         roughness: 0.9
-        coreScale: 0.79
-        coreBrightness: 0.7
-        layerCount: 4
+        layerCount: 1
         layerOffsetRatio: 0.16
-        closure:
-          enabled: true
-          volumeSlices: 30
-          samplesPerSlice: 24
-          trunkSlices: 28
-          trunkRingCount: 5
-          saddleSamples: 5
-          capLayers: 3
-          capSamplesPerLayer: 22
-          microLayerCount: 2
-          radiusRatio: 0.9
-          trunkRadiusRatio: 0.3
-          clusterScaleRatio: 0.09
-          colorDrop: 0.16
-          axialJitter: 0.16
-          depthJitterRatio: 0.2
       shell:
-        instancesPerLobe: 70
+        instancesPerLobe: 120
         candidateMultiplier: 4
         sizeRatio: [0.1, 0.16]
         widthRatio: [0.72, 1.05]
@@ -84,10 +86,10 @@ presets:
         radialOffsetRatio: 0.008
         exposureThreshold: 0.05
         colorJitter: 0.035
-        paletteLift: 0.035
+        paletteLift: 0.06
         cavityScale: 0.35
         normalBlend: 0.25
-        alphaTest: 0.52
+        alphaTest: 0.46
         planesPerCluster: 3
         shadowProxyScale: 0.98
 
@@ -108,6 +110,12 @@ presets:
       surfaceTension: 0.8
       lobeScaleMultiplier: 1.12
       scaleVariation: 0.05
+      clumps:
+        macroCount: 6
+        subClumpCount: [3, 4]
+        separation: 0.46
+        anchoring: 0.8
+        silhouetteBreakup: 0.16
     trunk:
       baseRadius: 0.3
       topRadius: 0.11
@@ -116,8 +124,19 @@ presets:
       segments: 9
       branchCount: 5
       color: '#4c3b30'
+      branching:
+        depth: 3
+        primaryCount: 4
+        childCount: [1, 2]
+        lengthDecay: 0.6
+        radiusDecay: 0.6
+        upwardBias: 0.76
+        gnarl: 0.16
+        twist: 0.2
+        exposedTipRatio: 0.24
+      barkPalette: ['#342923', '#59473d', '#8b7667']
     foliage:
-      palette: ['#19352e', '#315c4c', '#5e8d68', '#a1c99a']
+      palette: ['#29443a', '#426653', '#72977a', '#afd0aa']
       variation: 0.08
       paletteBase: 0.5
       heightPaletteShift: 0.12
@@ -137,38 +156,23 @@ presets:
         normalEpsilon: 0.022
         colorPatchScale: 0.48
         colorPatchStrength: 0.07
-      leafDetail:
+      core:
+        scale: 0.82
+        brightness: 0.82
+      heroLeaves:
         enabled: true
-        density: 1.0
-        scale: 1.6
+        density: 0.055
+        scale: 1.4
         embedRatio: 0.13
         protrusionRatio: 0.2
-        leavesPerCluster: 8
+        leavesPerCluster: 6
         colorLift: 0.06
         colorJitter: 0.035
         roughness: 0.92
-        coreScale: 0.77
-        coreBrightness: 0.68
-        layerCount: 4
+        layerCount: 1
         layerOffsetRatio: 0.17
-        closure:
-          enabled: true
-          volumeSlices: 44
-          samplesPerSlice: 24
-          trunkSlices: 44
-          trunkRingCount: 6
-          saddleSamples: 6
-          capLayers: 4
-          capSamplesPerLayer: 24
-          microLayerCount: 2
-          radiusRatio: 0.94
-          trunkRadiusRatio: 0.4
-          clusterScaleRatio: 0.095
-          colorDrop: 0.18
-          axialJitter: 0.12
-          depthJitterRatio: 0.2
       shell:
-        instancesPerLobe: 68
+        instancesPerLobe: 112
         candidateMultiplier: 4
         sizeRatio: [0.09, 0.15]
         widthRatio: [0.68, 1.0]
@@ -176,10 +180,10 @@ presets:
         radialOffsetRatio: 0.007
         exposureThreshold: 0.05
         colorJitter: 0.03
-        paletteLift: 0.03
+        paletteLift: 0.055
         cavityScale: 0.32
         normalBlend: 0.28
-        alphaTest: 0.53
+        alphaTest: 0.47
         planesPerCluster: 3
         shadowProxyScale: 0.98
 
@@ -200,6 +204,12 @@ presets:
       surfaceTension: 0.65
       lobeScaleMultiplier: 1.12
       scaleVariation: 0.08
+      clumps:
+        macroCount: 5
+        subClumpCount: [3, 5]
+        separation: 0.7
+        anchoring: 0.68
+        silhouetteBreakup: 0.3
     trunk:
       baseRadius: 0.4
       topRadius: 0.13
@@ -208,8 +218,19 @@ presets:
       segments: 9
       branchCount: 7
       color: '#5a3d2e'
+      branching:
+        depth: 3
+        primaryCount: 5
+        childCount: [1, 2]
+        lengthDecay: 0.67
+        radiusDecay: 0.61
+        upwardBias: 0.58
+        gnarl: 0.34
+        twist: 0.4
+        exposedTipRatio: 0.42
+      barkPalette: ['#432d25', '#715040', '#aa8063']
     foliage:
-      palette: ['#5b2d24', '#9b4c2d', '#d77b3c', '#f0b968']
+      palette: ['#644235', '#9f6547', '#d18b58', '#edbd78']
       variation: 0.12
       paletteBase: 0.56
       heightPaletteShift: 0.16
@@ -229,38 +250,23 @@ presets:
         normalEpsilon: 0.025
         colorPatchScale: 0.5
         colorPatchStrength: 0.12
-      leafDetail:
+      core:
+        scale: 0.82
+        brightness: 0.82
+      heroLeaves:
         enabled: true
-        density: 1.0
-        scale: 1.7
+        density: 0.065
+        scale: 1.5
         embedRatio: 0.14
         protrusionRatio: 0.23
-        leavesPerCluster: 8
+        leavesPerCluster: 6
         colorLift: 0.07
         colorJitter: 0.05
         roughness: 0.9
-        coreScale: 0.79
-        coreBrightness: 0.68
-        layerCount: 4
+        layerCount: 1
         layerOffsetRatio: 0.17
-        closure:
-          enabled: true
-          volumeSlices: 36
-          samplesPerSlice: 28
-          trunkSlices: 34
-          trunkRingCount: 5
-          saddleSamples: 8
-          capLayers: 4
-          capSamplesPerLayer: 26
-          microLayerCount: 2
-          radiusRatio: 0.92
-          trunkRadiusRatio: 0.32
-          clusterScaleRatio: 0.092
-          colorDrop: 0.17
-          axialJitter: 0.2
-          depthJitterRatio: 0.22
       shell:
-        instancesPerLobe: 72
+        instancesPerLobe: 124
         candidateMultiplier: 4
         sizeRatio: [0.1, 0.17]
         widthRatio: [0.72, 1.08]
@@ -268,9 +274,9 @@ presets:
         radialOffsetRatio: 0.009
         exposureThreshold: 0.04
         colorJitter: 0.04
-        paletteLift: 0.04
+        paletteLift: 0.065
         cavityScale: 0.34
         normalBlend: 0.22
-        alphaTest: 0.51
+        alphaTest: 0.45
         planesPerCluster: 3
         shadowProxyScale: 0.98

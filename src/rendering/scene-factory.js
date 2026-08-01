@@ -12,6 +12,8 @@ function createRenderer(container, config) {
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
   container.appendChild(renderer.domElement);
   return renderer;
 }
@@ -88,7 +90,7 @@ export class SceneFactory {
     controls.enableDamping = true;
     controls.enablePan = false;
     controls.minDistance = 7;
-    controls.maxDistance = 34;
+    controls.maxDistance = config.camera.controlsMaxDistance ?? 34;
     controls.maxPolarAngle = Math.PI * 0.48;
     controls.target.fromArray(config.camera.target);
     controls.update();

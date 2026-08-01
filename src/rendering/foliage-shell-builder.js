@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { FoliageShellGeometryFactory } from './foliage-shell-geometry-factory.js';
 import { FoliageShellMaterialFactory } from './foliage-shell-material-factory.js';
 import { addFoliageInstanceAttributes } from './instanced-foliage-attributes.js';
+import { hashUnit } from './canopy-closure-math.js';
 
 const LOCAL_OUTWARD = new THREE.Vector3(0, 0, 1);
 
@@ -27,11 +28,25 @@ export class FoliageShellBuilder {
     this.materialFactory = materialFactory;
   }
 
-  build(treeData, { paletteTexture, alphaTexture, sunDirection }) {
-    const geometry = this.geometryFactory.create(
-      treeData.palette.shell.planesPerCluster,
+  build(
+    treeData,
+    {
+      paletteTexture,
+      alphaTexture,
+      sunDirection,
+      density = 1,
+      planesPerCluster = treeData.palette.shell.planesPerCluster,
+      scaleMultiplier = 1,
+      name = 'foliage-shell',
+    },
+  ) {
+    const instances = treeData.shell.filter(
+      (instance) => hashUnit(treeData.seed, instance.id, 0x517cc1b7) <= density,
     );
-    addFoliageInstanceAttributes(geometry, treeData.shell, {
+    const geometry = this.geometryFactory.create(
+      planesPerCluster,
+    );
+    addFoliageInstanceAttributes(geometry, instances, {
       getExposure: (instance) => instance.exposure,
       getCrownDirection: (instance) =>
         crownDirection(instance.position, treeData.crownCenter),
@@ -46,7 +61,7 @@ export class FoliageShellBuilder {
     const shell = new THREE.InstancedMesh(
       geometry,
       material,
-      treeData.shell.length,
+      instances.length,
     );
     const matrix = new THREE.Matrix4();
     const position = new THREE.Vector3();
@@ -55,7 +70,7 @@ export class FoliageShellBuilder {
     const twist = new THREE.Quaternion();
     const scale = new THREE.Vector3();
 
-    treeData.shell.forEach((instance, index) => {
+    instances.forEach((instance, index) => {
       position.set(
         instance.position.x,
         instance.position.y,
@@ -68,9 +83,9 @@ export class FoliageShellBuilder {
       twist.setFromAxisAngle(LOCAL_OUTWARD, instance.rotation);
       quaternion.multiply(twist);
       scale.set(
-        instance.scale * instance.widthRatio,
-        instance.scale * instance.widthRatio,
-        instance.scale * instance.outwardRatio,
+        instance.scale * instance.widthRatio * scaleMultiplier,
+        instance.scale * instance.widthRatio * scaleMultiplier,
+        instance.scale * instance.outwardRatio * scaleMultiplier,
       );
       matrix.compose(position, quaternion, scale);
       shell.setMatrixAt(index, matrix);
@@ -78,12 +93,17 @@ export class FoliageShellBuilder {
 
     shell.instanceMatrix.setUsage(THREE.StaticDrawUsage);
     shell.instanceMatrix.needsUpdate = true;
-    shell.name = 'foliage-shell';
+    shell.name = name;
     shell.castShadow = false;
     shell.receiveShadow = true;
     shell.renderOrder = 1;
     shell.computeBoundingBox();
     shell.computeBoundingSphere();
+    shell.userData.foliageShell = {
+      instanceCount: instances.length,
+      planesPerCluster,
+      density,
+    };
     return shell;
   }
 }

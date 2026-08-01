@@ -25,8 +25,11 @@ export class FoliageCoreBuilder {
     this.materialFactory = materialFactory;
   }
 
-  build(treeData, { paletteTexture, sunDirection }) {
-    const geometry = this.geometryFactory.create();
+  build(
+    treeData,
+    { paletteTexture, sunDirection, detail = 1, scaleMultiplier = 1, name = 'foliage-core' },
+  ) {
+    const geometry = this.geometryFactory.create(detail);
     addFoliageInstanceAttributes(geometry, treeData.lobes, {
       getExposure: (lobe) => treeData.lobeExposure[lobe.id] ?? 1,
       getCrownDirection: (lobe) =>
@@ -53,18 +56,27 @@ export class FoliageCoreBuilder {
       position.set(lobe.position.x, lobe.position.y, lobe.position.z);
       rotation.set(lobe.rotation.x, lobe.rotation.y, lobe.rotation.z);
       quaternion.setFromEuler(rotation);
-      scale.set(lobe.scale.x, lobe.scale.y, lobe.scale.z);
+      const coreScale = treeData.palette.core.scale * scaleMultiplier;
+      scale.set(
+        lobe.scale.x * coreScale,
+        lobe.scale.y * coreScale,
+        lobe.scale.z * coreScale,
+      );
       matrix.compose(position, quaternion, scale);
       foliage.setMatrixAt(index, matrix);
     });
 
     foliage.instanceMatrix.setUsage(THREE.StaticDrawUsage);
     foliage.instanceMatrix.needsUpdate = true;
-    foliage.name = 'foliage-core';
+    foliage.name = name;
     foliage.castShadow = false;
     foliage.receiveShadow = true;
     foliage.computeBoundingBox();
     foliage.computeBoundingSphere();
+    foliage.userData.foliageCore = {
+      instanceCount: treeData.lobes.length,
+      detail,
+    };
     return foliage;
   }
 }

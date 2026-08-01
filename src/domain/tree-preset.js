@@ -1,5 +1,3 @@
-import { createCanopyClosureConfig } from './canopy-closure-config.js';
-
 const REQUIRED_CROWN_FIELDS = [
   'profile',
   'baseHeight',
@@ -14,6 +12,7 @@ const REQUIRED_CROWN_FIELDS = [
   'surfaceTension',
   'lobeScaleMultiplier',
   'scaleVariation',
+  'clumps',
 ];
 
 const REQUIRED_TRUNK_FIELDS = [
@@ -24,6 +23,28 @@ const REQUIRED_TRUNK_FIELDS = [
   'segments',
   'branchCount',
   'color',
+  'branching',
+  'barkPalette',
+];
+
+const REQUIRED_CLUMP_FIELDS = [
+  'macroCount',
+  'subClumpCount',
+  'separation',
+  'anchoring',
+  'silhouetteBreakup',
+];
+
+const REQUIRED_BRANCHING_FIELDS = [
+  'depth',
+  'primaryCount',
+  'childCount',
+  'lengthDecay',
+  'radiusDecay',
+  'upwardBias',
+  'gnarl',
+  'twist',
+  'exposedTipRatio',
 ];
 
 const REQUIRED_FOLIAGE_FIELDS = [
@@ -39,7 +60,8 @@ const REQUIRED_FOLIAGE_FIELDS = [
   'cavityStrength',
   'heightLightStrength',
   'volume',
-  'leafDetail',
+  'core',
+  'heroLeaves',
   'shell',
 ];
 
@@ -54,7 +76,9 @@ const REQUIRED_VOLUME_FIELDS = [
   'colorPatchStrength',
 ];
 
-const REQUIRED_LEAF_DETAIL_FIELDS = [
+const REQUIRED_CORE_FIELDS = ['scale', 'brightness'];
+
+const REQUIRED_HERO_LEAF_FIELDS = [
   'enabled',
   'density',
   'scale',
@@ -64,11 +88,8 @@ const REQUIRED_LEAF_DETAIL_FIELDS = [
   'colorLift',
   'colorJitter',
   'roughness',
-  'coreScale',
-  'coreBrightness',
   'layerCount',
   'layerOffsetRatio',
-  'closure',
 ];
 
 const REQUIRED_SHELL_FIELDS = [
@@ -154,10 +175,43 @@ function validateCrownTuning(id, crown) {
     `${id}.crown.lobeScaleMultiplier`,
   );
   requireRange(crown.scaleVariation, 0, 0.5, `${id}.crown.scaleVariation`);
+  requireFields(crown.clumps, REQUIRED_CLUMP_FIELDS, `${id}.crown.clumps`);
+  requirePositiveInteger(crown.clumps.macroCount, `${id}.crown.clumps.macroCount`);
+  validatePair(crown.clumps.subClumpCount, `${id}.crown.clumps.subClumpCount`);
+  requireRange(crown.clumps.separation, 0, 1, `${id}.crown.clumps.separation`);
+  requireRange(crown.clumps.anchoring, 0, 1, `${id}.crown.clumps.anchoring`);
+  requireRange(
+    crown.clumps.silhouetteBreakup,
+    0,
+    1,
+    `${id}.crown.clumps.silhouetteBreakup`,
+  );
 }
 
 function validateTrunkTuning(id, trunk) {
   requireRange(trunk.flare, 0, 1.5, `${id}.trunk.flare`);
+  requireFields(trunk.branching, REQUIRED_BRANCHING_FIELDS, `${id}.trunk.branching`);
+  requirePositiveInteger(trunk.branching.depth, `${id}.trunk.branching.depth`);
+  requirePositiveInteger(
+    trunk.branching.primaryCount,
+    `${id}.trunk.branching.primaryCount`,
+  );
+  validatePair(trunk.branching.childCount, `${id}.trunk.branching.childCount`);
+  requireRange(trunk.branching.lengthDecay, 0.35, 0.9, `${id}.trunk.branching.lengthDecay`);
+  requireRange(trunk.branching.radiusDecay, 0.35, 0.9, `${id}.trunk.branching.radiusDecay`);
+  requireRange(trunk.branching.upwardBias, 0, 1, `${id}.trunk.branching.upwardBias`);
+  requireRange(trunk.branching.gnarl, 0, 1, `${id}.trunk.branching.gnarl`);
+  requireRange(trunk.branching.twist, 0, 1, `${id}.trunk.branching.twist`);
+  requireRange(
+    trunk.branching.exposedTipRatio,
+    0,
+    0.8,
+    `${id}.trunk.branching.exposedTipRatio`,
+  );
+  const barkPalette = freezeArray(trunk.barkPalette, `${id}.trunk.barkPalette`, 3);
+  if (!barkPalette.every((color) => typeof color === 'string')) {
+    throw new Error(`Configuration '${id}.trunk.barkPalette' must contain colors.`);
+  }
 }
 
 function validateFoliageTuning(id, foliage) {
@@ -219,41 +273,39 @@ function validateVolumeTuning(id, volume) {
   );
 }
 
-function validateLeafDetailTuning(id, leafDetail) {
-  const path = `${id}.foliage.leafDetail`;
+function validateHeroLeafTuning(id, heroLeaves) {
+  const path = `${id}.foliage.heroLeaves`;
 
-  if (typeof leafDetail.enabled !== 'boolean') {
+  if (typeof heroLeaves.enabled !== 'boolean') {
     throw new Error(`Configuration '${path}.enabled' must be a boolean.`);
   }
 
-  requireRange(leafDetail.density, 0, 1, `${path}.density`);
-  requireRange(leafDetail.scale, 0.1, 3, `${path}.scale`);
-  requireRange(leafDetail.embedRatio, 0, 0.5, `${path}.embedRatio`);
+  requireRange(heroLeaves.density, 0, 1, `${path}.density`);
+  requireRange(heroLeaves.scale, 0.1, 3, `${path}.scale`);
+  requireRange(heroLeaves.embedRatio, 0, 0.5, `${path}.embedRatio`);
   requireRange(
-    leafDetail.protrusionRatio,
+    heroLeaves.protrusionRatio,
     0,
     0.5,
     `${path}.protrusionRatio`,
   );
-  requirePositiveInteger(leafDetail.leavesPerCluster, `${path}.leavesPerCluster`);
-  requireRange(leafDetail.colorLift, -1, 1, `${path}.colorLift`);
-  requireRange(leafDetail.colorJitter, 0, 1, `${path}.colorJitter`);
-  requireRange(leafDetail.roughness, 0, 1, `${path}.roughness`);
-  requireRange(leafDetail.coreScale, 0.55, 0.95, `${path}.coreScale`);
+  requirePositiveInteger(heroLeaves.leavesPerCluster, `${path}.leavesPerCluster`);
+  requireRange(heroLeaves.colorLift, -1, 1, `${path}.colorLift`);
+  requireRange(heroLeaves.colorJitter, 0, 1, `${path}.colorJitter`);
+  requireRange(heroLeaves.roughness, 0, 1, `${path}.roughness`);
+  requirePositiveInteger(heroLeaves.layerCount, `${path}.layerCount`);
+  requireRange(heroLeaves.layerCount, 1, 4, `${path}.layerCount`);
   requireRange(
-    leafDetail.coreBrightness,
-    0.2,
-    1,
-    `${path}.coreBrightness`,
-  );
-  requirePositiveInteger(leafDetail.layerCount, `${path}.layerCount`);
-  requireRange(leafDetail.layerCount, 1, 4, `${path}.layerCount`);
-  requireRange(
-    leafDetail.layerOffsetRatio,
+    heroLeaves.layerOffsetRatio,
     0,
     0.5,
     `${path}.layerOffsetRatio`,
   );
+}
+
+function validateCoreTuning(id, core) {
+  requireRange(core.scale, 0.55, 1.15, `${id}.foliage.core.scale`);
+  requireRange(core.brightness, 0.2, 1, `${id}.foliage.core.brightness`);
 }
 
 function validateShellTuning(id, shell) {
@@ -298,9 +350,14 @@ function createFoliageConfig(id, foliage) {
   requireFields(foliage, REQUIRED_FOLIAGE_FIELDS, `${id}.foliage`);
   requireFields(foliage.volume, REQUIRED_VOLUME_FIELDS, `${id}.foliage.volume`);
   requireFields(
-    foliage.leafDetail,
-    REQUIRED_LEAF_DETAIL_FIELDS,
-    `${id}.foliage.leafDetail`,
+    foliage.core,
+    REQUIRED_CORE_FIELDS,
+    `${id}.foliage.core`,
+  );
+  requireFields(
+    foliage.heroLeaves,
+    REQUIRED_HERO_LEAF_FIELDS,
+    `${id}.foliage.heroLeaves`,
   );
   requireFields(foliage.shell, REQUIRED_SHELL_FIELDS, `${id}.foliage.shell`);
 
@@ -311,17 +368,16 @@ function createFoliageConfig(id, foliage) {
 
   validateFoliageTuning(id, foliage);
   validateVolumeTuning(id, foliage.volume);
-  validateLeafDetailTuning(id, foliage.leafDetail);
+  validateCoreTuning(id, foliage.core);
+  validateHeroLeafTuning(id, foliage.heroLeaves);
   validateShellTuning(id, foliage.shell);
 
   return Object.freeze({
     ...foliage,
     palette,
     volume: Object.freeze({ ...foliage.volume }),
-    leafDetail: Object.freeze({
-      ...foliage.leafDetail,
-      closure: createCanopyClosureConfig(id, foliage.leafDetail.closure),
-    }),
+    core: Object.freeze({ ...foliage.core }),
+    heroLeaves: Object.freeze({ ...foliage.heroLeaves }),
     shell: Object.freeze({
       ...foliage.shell,
       sizeRatio: validatePair(
@@ -362,8 +418,25 @@ export function createTreePreset(id, value) {
         `${id}.crown.verticalScale`,
       ),
       lean: freezeArray(value.crown.lean, `${id}.crown.lean`),
+      clumps: Object.freeze({
+        ...value.crown.clumps,
+        subClumpCount: validatePair(
+          value.crown.clumps.subClumpCount,
+          `${id}.crown.clumps.subClumpCount`,
+        ),
+      }),
     },
-    trunk: { ...value.trunk },
+    trunk: {
+      ...value.trunk,
+      branching: Object.freeze({
+        ...value.trunk.branching,
+        childCount: validatePair(
+          value.trunk.branching.childCount,
+          `${id}.trunk.branching.childCount`,
+        ),
+      }),
+      barkPalette: freezeArray(value.trunk.barkPalette, `${id}.trunk.barkPalette`, 3),
+    },
     foliage: createFoliageConfig(id, value.foliage),
   };
 

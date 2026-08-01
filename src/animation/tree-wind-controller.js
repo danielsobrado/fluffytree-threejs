@@ -1,32 +1,33 @@
-const DEFAULT_STRENGTH = 0.008;
-const DEFAULT_SPEED = 0.55;
-
 export class TreeWindController {
-  constructor({ strength = DEFAULT_STRENGTH, speed = DEFAULT_SPEED } = {}) {
+  constructor({ strength = 0.055, speed = 0.72 } = {}) {
     this.strength = strength;
     this.speed = speed;
-    this.entries = [];
+    this.states = [];
   }
 
   register(tree, seed) {
-    this.entries.push({
-      tree,
-      phase: ((Number(seed) % 997) / 997) * Math.PI * 2,
-      baseRotationX: tree.rotation.x,
-      baseRotationZ: tree.rotation.z,
+    const phase = ((Number(seed) % 997) / 997) * Math.PI * 2;
+    tree.traverse((object) => {
+      const materials = Array.isArray(object.material)
+        ? object.material
+        : object.material
+          ? [object.material]
+          : [];
+      for (const material of materials) {
+        const state = material.userData.windState;
+        if (!state || this.states.includes(state)) continue;
+        state.phase = phase;
+        state.strength = this.strength;
+        this.states.push(state);
+      }
     });
   }
 
   update(elapsedSeconds) {
-    for (const entry of this.entries) {
-      const wave = Math.sin(elapsedSeconds * this.speed + entry.phase);
-      const secondary = Math.sin(elapsedSeconds * this.speed * 0.63 + entry.phase * 1.7);
-      entry.tree.rotation.z = entry.baseRotationZ + wave * this.strength;
-      entry.tree.rotation.x = entry.baseRotationX + secondary * this.strength * 0.42;
-    }
+    for (const state of this.states) state.time = elapsedSeconds * this.speed;
   }
 
   clear() {
-    this.entries.length = 0;
+    this.states.length = 0;
   }
 }

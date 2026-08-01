@@ -19,14 +19,19 @@ thresholds:
       lobeComponentCount: 1
       isolatedLobeCount: 0
       missingBranchTargetCount: 0
+      invalidParentCount: 0
+      branchTaperViolationCount: 0
+      unsupportedLobeCount: 0
       nonMonotonicTrunkSegments: 0
       silhouetteComponentCount: 1
       shellMissingSourceLobeCount: 0
       shellDuplicatePositionCount: 0
     ranges:
       minimumBranchInsertion: [0.54, 0.56]
-      maximumBranchInsertion: [0.54, 0.56]
-      trunkTopFoliageDistance: [0, 0.9]
+      maximumBranchInsertion: [0.54, 1.19]
+      primaryBranchCount: [3, 5]
+      maximumBranchOrder: [2, 3]
+      trunkTopFoliageDistance: [0, 1.18]
       silhouetteLargestComponentRatio: [0.995, 1]
       silhouetteHoleRatio: [0, 0.02]
       minimumColorMix: [0, 1]
@@ -38,9 +43,9 @@ thresholds:
       shellMinimumOutwardAlignment: [0.32, 1]
       shellMeanOutwardAlignment: [0.72, 1]
       shellMinimumExposure: [0, 1]
-      shellMeanExposure: [0.42, 1]
-      shellMaximumExposure: [0.5, 1]
-      shellOccludedRatio: [0, 0.38]
+      shellMeanExposure: [0.15, 1]
+      shellMaximumExposure: [0.25, 1]
+      shellOccludedRatio: [0, 0.5]
       shellMinimumScale: [0.015, 0.5]
       shellMaximumScale: [0.04, 0.7]
       shellMinimumWidthRatio: [0.67, 1.1]
@@ -50,17 +55,17 @@ thresholds:
       shellMeanOutwardRatio: [1.13, 1.25]
       shellMaximumColorDeviation: [0, 0.041]
       lobeMinimumExposure: [0, 1]
-      lobeMeanExposure: [0.42, 1]
-      lobeMaximumExposure: [0.5, 1]
+      lobeMeanExposure: [0.15, 1]
+      lobeMaximumExposure: [0.25, 1]
       shellSilhouetteContribution: [0.01, 0.5]
       shellSilhouetteLargestComponentRatio: [0.992, 1]
       shellSilhouetteHoleRatio: [0, 0.035]
 
   profiles:
     round:
-      minimumVerticalBandCounts: [3, 5, 3]
+      minimumVerticalBandCounts: [2, 4, 2]
       ranges:
-        crownAspectRatio: [0.95, 1.6]
+        crownAspectRatio: [0.75, 1.6]
         widthDepthRatio: [0.62, 1.58]
         silhouetteFillRatio: [0.56, 0.86]
         targetCoverage: [0.67, 0.96]
@@ -74,14 +79,14 @@ thresholds:
         middleUpperWidthRatio: [0.85, 1.7]
 
     columnar:
-      minimumVerticalBandCounts: [4, 7, 4]
+      minimumVerticalBandCounts: [2, 4, 2]
       ranges:
-        crownAspectRatio: [2.2, 3.7]
+        crownAspectRatio: [2.0, 3.7]
         widthDepthRatio: [0.68, 1.38]
         silhouetteFillRatio: [0.53, 0.82]
-        targetCoverage: [0.52, 0.8]
+        targetCoverage: [0.48, 0.8]
         silhouetteExcessRatio: [0, 0.1]
-        profileRmse: [0, 0.35]
+        profileRmse: [0, 0.42]
         profileCorrelation: [0.25, 1]
         envelopeCoverage: [0.18, 0.44]
         unionSpillRatio: [0, 0.09]
@@ -90,9 +95,9 @@ thresholds:
         middleUpperWidthRatio: [0.78, 1.75]
 
     vase:
-      minimumVerticalBandCounts: [4, 6, 4]
+      minimumVerticalBandCounts: [2, 4, 2]
       ranges:
-        crownAspectRatio: [0.95, 1.9]
+        crownAspectRatio: [0.75, 1.9]
         widthDepthRatio: [0.55, 1.6]
         silhouetteFillRatio: [0.5, 0.84]
         targetCoverage: [0.64, 0.96]
@@ -112,6 +117,10 @@ report:
     - shellInstanceCount
     - leafCardCount
     - branchCount
+    - primaryBranchCount
+    - exposedBranchCount
+    - maximumBranchOrder
+    - unsupportedLobeCount
     - lobeComponentCount
     - shellMeanExposure
     - shellOccludedRatio

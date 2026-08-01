@@ -1,128 +1,268 @@
 import { GENERATION_CONSTANTS } from './generation-constants.js';
 import { ellipsoidSupportRadius, normalizeVector } from './lobe-geometry.js';
 
-function lerp(minimum, maximum, t) {
-  return minimum + (maximum - minimum) * t;
+function lerp(minimum, maximum, ratio) {
+  return minimum + (maximum - minimum) * ratio;
+}
+
+function distanceSquared(left, right) {
+  return (
+    (left.x - right.x) ** 2 +
+    (left.y - right.y) ** 2 +
+    (left.z - right.z) ** 2
+  );
 }
 
 function distanceFromAxis(lobe) {
   return Math.hypot(lobe.position.x, lobe.position.z);
 }
 
-function createTrunkPoint(preset, random, index) {
+function createTrunkPoints(preset, random) {
   const { trunk, crown } = preset;
-  const t = index / trunk.segments;
-  const y = lerp(0, crown.baseHeight + crown.height * 0.48, t);
-  const primaryBend = Math.sin(t * Math.PI * 0.92) * trunk.bend;
-  const secondaryBend = Math.sin(t * Math.PI * 2.15) * trunk.bend * 0.14;
+  const phase = random.range(0, Math.PI * 2);
+  const points = [];
 
-  return {
-    x:
-      crown.lean[0] * t +
-      primaryBend * (0.64 + random.signed() * 0.08) +
-      secondaryBend,
-    y,
-    z:
-      crown.lean[1] * t +
-      primaryBend * (0.28 + random.signed() * 0.07) -
-      secondaryBend * 0.55,
-    radius: lerp(trunk.baseRadius, trunk.topRadius, Math.pow(t, 0.78)),
-  };
+  for (let index = 0; index <= trunk.segments; index += 1) {
+    const t = index / trunk.segments;
+    const y = lerp(0, crown.baseHeight + crown.height * 0.66, t);
+    const bend = Math.sin(t * Math.PI * 0.9) * trunk.bend;
+    const gnarl =
+      Math.sin(t * Math.PI * 2.4 + phase) *
+      trunk.branching.gnarl *
+      trunk.baseRadius *
+      Math.sin(t * Math.PI);
+    const twist = phase + t * Math.PI * 2 * trunk.branching.twist;
+
+    points.push({
+      x:
+        crown.lean[0] * t +
+        bend * 0.68 +
+        Math.cos(twist) * gnarl +
+        Math.sin(t * Math.PI * 2.1) * trunk.bend * 0.08,
+      y,
+      z:
+        crown.lean[1] * t +
+        bend * 0.24 +
+        Math.sin(twist) * gnarl -
+        Math.cos(t * Math.PI * 1.7) * trunk.bend * 0.07,
+      radius: lerp(trunk.baseRadius, trunk.topRadius, Math.pow(t, 0.76)),
+    });
+  }
+
+  return points;
 }
 
-function findTrunkAttachment(trunkPoints, targetY) {
-  let best = trunkPoints[0];
-  let bestDistance = Number.POSITIVE_INFINITY;
+function findTrunkAttachment(points, targetY) {
+  return points.reduce((best, point) =>
+    Math.abs(point.y - targetY) < Math.abs(best.y - targetY) ? point : best,
+  );
+}
 
-  for (const point of trunkPoints) {
-    const distance = Math.abs(point.y - targetY);
-
-    if (distance < bestDistance) {
-      best = point;
-      bestDistance = distance;
+function selectPrimaryTargets(lobes, count) {
+  const byMacro = new Map();
+  for (const lobe of lobes) {
+    const current = byMacro.get(lobe.macroClumpId);
+    if (!current || distanceFromAxis(lobe) > distanceFromAxis(current)) {
+      byMacro.set(lobe.macroClumpId, lobe);
     }
   }
 
-  return best;
+  const targets = [...byMacro.values()].sort(
+    (left, right) => distanceFromAxis(right) - distanceFromAxis(left),
+  );
+  if (targets.length < count) {
+    for (const lobe of [...lobes].sort(
+      (left, right) => distanceFromAxis(right) - distanceFromAxis(left),
+    )) {
+      if (!targets.includes(lobe)) targets.push(lobe);
+      if (targets.length >= count) break;
+    }
+  }
+  return targets.slice(0, count);
 }
 
-function selectBranchTargets(lobes, count) {
-  return [...lobes]
-    .filter((lobe) => lobe.position.y > 1)
-    .sort((left, right) => {
-      const radialDifference = distanceFromAxis(right) - distanceFromAxis(left);
-      return Math.abs(radialDifference) > 0.05
-        ? radialDifference
-        : right.position.y - left.position.y;
-    })
-    .slice(0, count);
-}
-
-function createEmbeddedEndpoint(start, lobe) {
+function createEmbeddedEndpoint(start, lobe, insertionDepth) {
   const towardStart = normalizeVector({
     x: start.x - lobe.position.x,
     y: start.y - lobe.position.y,
     z: start.z - lobe.position.z,
   });
-  const supportRadius = ellipsoidSupportRadius(lobe.scale, towardStart);
-  const insertionDistance =
-    supportRadius * GENERATION_CONSTANTS.branchInsertionDepth;
-
+  const distance = ellipsoidSupportRadius(lobe.scale, towardStart) * insertionDepth;
   return {
-    x: lobe.position.x + towardStart.x * insertionDistance,
-    y: lobe.position.y + towardStart.y * insertionDistance,
-    z: lobe.position.z + towardStart.z * insertionDistance,
+    x: lobe.position.x + towardStart.x * distance,
+    y: lobe.position.y + towardStart.y * distance,
+    z: lobe.position.z + towardStart.z * distance,
   };
 }
 
-function createBranchControls(start, end, random) {
-  const offsetX = random.signed() * 0.14;
-  const offsetZ = random.signed() * 0.14;
+function createControls(start, end, random, settings, order) {
+  const direction = normalizeVector({
+    x: end.x - start.x,
+    y: end.y - start.y,
+    z: end.z - start.z,
+  });
+  const length = Math.sqrt(distanceSquared(start, end));
+  const side = normalizeVector({ x: -direction.z, y: 0.15, z: direction.x });
+  const upward = settings.upwardBias * length * (0.14 + order * 0.025);
+  const gnarl = settings.gnarl * length * 0.12;
+  const sideOffset = random.signed() * gnarl;
 
   return [
     {
-      x: lerp(start.x, end.x, 0.3) + offsetX,
-      y: lerp(start.y, end.y, 0.3) + random.range(0.12, 0.3),
-      z: lerp(start.z, end.z, 0.3) + offsetZ,
+      x: lerp(start.x, end.x, 0.34) + side.x * sideOffset,
+      y: lerp(start.y, end.y, 0.34) + upward,
+      z: lerp(start.z, end.z, 0.34) + side.z * sideOffset,
     },
     {
-      x: lerp(start.x, end.x, 0.72) - offsetX * 0.35,
-      y: lerp(start.y, end.y, 0.72) + random.range(0.08, 0.24),
-      z: lerp(start.z, end.z, 0.72) - offsetZ * 0.35,
+      x: lerp(start.x, end.x, 0.72) - side.x * sideOffset * 0.45,
+      y: lerp(start.y, end.y, 0.72) + upward * 0.58,
+      z: lerp(start.z, end.z, 0.72) - side.z * sideOffset * 0.45,
     },
   ];
 }
 
+function pointNearTip(branch, ratio = 0.72) {
+  const left = branch.points[branch.points.length - 2];
+  const right = branch.points.at(-1);
+  return {
+    x: lerp(left.x, right.x, ratio),
+    y: lerp(left.y, right.y, ratio),
+    z: lerp(left.z, right.z, ratio),
+  };
+}
+
+function createBranch({ id, parentId, order, start, target, random, preset, exposed = false }) {
+  const settings = preset.trunk.branching;
+  const insertionDepth = exposed
+    ? lerp(1.04, 1.18, random.next())
+    : GENERATION_CONSTANTS.branchInsertionDepth;
+  const end = createEmbeddedEndpoint(start, target, insertionDepth);
+  const controls = createControls(start, end, random, settings, order);
+  const parentScale = settings.radiusDecay ** Math.max(0, order - 1);
+  const startRadius = Math.max(
+    0.035,
+    preset.trunk.baseRadius * 0.68 * parentScale,
+  );
+  const endRadius = Math.max(0.018, startRadius * lerp(0.22, 0.34, random.next()));
+
+  return {
+    id,
+    parentId,
+    order,
+    macroClumpId: target.macroClumpId,
+    targetLobeId: target.id,
+    exposed,
+    points: [{ x: start.x, y: start.y, z: start.z }, ...controls, end],
+    startRadius,
+    endRadius,
+  };
+}
+
+function selectParent(branches, target, depth, childCounts, maximumChildren) {
+  return branches
+    .filter(
+      (branch) =>
+        branch.order < depth &&
+        (childCounts.get(branch.id) ?? 0) < maximumChildren,
+    )
+    .sort((left, right) => {
+      const leftMacro = left.macroClumpId === target.macroClumpId ? 0 : 1;
+      const rightMacro = right.macroClumpId === target.macroClumpId ? 0 : 1;
+      if (leftMacro !== rightMacro) return leftMacro - rightMacro;
+      const orderDifference = left.order - right.order;
+      if (orderDifference !== 0) return orderDifference;
+      return (
+        distanceSquared(left.points.at(-1), target.position) -
+        distanceSquared(right.points.at(-1), target.position)
+      );
+    })[0];
+}
+
+function attachLobes(lobes, branches) {
+  return lobes.map((lobe) => {
+    const exact = branches.findLast((branch) => branch.targetLobeId === lobe.id);
+    const nearest =
+      exact ??
+      [...branches].sort(
+        (left, right) =>
+          distanceSquared(left.points.at(-1), lobe.position) -
+          distanceSquared(right.points.at(-1), lobe.position),
+      )[0];
+    return { ...lobe, branchId: nearest?.id ?? null };
+  });
+}
+
 export class BranchGenerator {
-  generate(preset, lobes, random) {
-    const trunkPoints = [];
+  generate(preset, sourceLobes, random) {
+    const trunkPoints = createTrunkPoints(preset, random);
+    const settings = preset.trunk.branching;
+    const primaryTargets = selectPrimaryTargets(sourceLobes, settings.primaryCount);
+    const branches = [];
 
-    for (let index = 0; index <= preset.trunk.segments; index += 1) {
-      trunkPoints.push(createTrunkPoint(preset, random, index));
-    }
-
-    const branchTargets = selectBranchTargets(lobes, preset.trunk.branchCount);
-    const branches = branchTargets.map((lobe, index) => {
+    for (const target of primaryTargets) {
       const attachmentHeight = Math.max(
-        preset.crown.baseHeight * 0.68,
-        lobe.position.y - preset.crown.height * random.range(0.24, 0.42),
+        preset.crown.baseHeight * 0.62,
+        target.position.y - preset.crown.height * random.range(0.28, 0.44),
       );
       const start = findTrunkAttachment(trunkPoints, attachmentHeight);
-      const end = createEmbeddedEndpoint(start, lobe);
-      const controls = createBranchControls(start, end, random);
+      branches.push(
+        createBranch({
+          id: branches.length,
+          parentId: null,
+          order: 1,
+          start,
+          target,
+          random,
+          preset,
+        }),
+      );
+    }
 
-      return {
-        id: index,
-        targetLobeId: lobe.id,
-        points: [
-          { x: start.x, y: start.y, z: start.z },
-          ...controls,
-          end,
-        ],
-        startRadius: Math.max(preset.trunk.topRadius, start.radius * 0.66),
-        endRadius: Math.max(0.035, preset.trunk.topRadius * 0.3),
-      };
-    });
+    const primaryIds = new Set(primaryTargets.map((lobe) => lobe.id));
+    const childCounts = new Map();
+    const maximumChildren = Math.round(settings.childCount[1]);
+    for (const target of sourceLobes.filter((lobe) => !primaryIds.has(lobe.id))) {
+      const parent = selectParent(
+        branches,
+        target,
+        settings.depth,
+        childCounts,
+        maximumChildren,
+      );
+      const order = Math.min(settings.depth, (parent?.order ?? 1) + 1);
+      const start = parent ? pointNearTip(parent, random.range(0.48, 0.78)) : trunkPoints.at(-2);
+      branches.push(
+        createBranch({
+          id: branches.length,
+          parentId: parent?.id ?? null,
+          order,
+          start,
+          target,
+          random,
+          preset,
+        }),
+      );
+      if (parent) childCounts.set(parent.id, (childCounts.get(parent.id) ?? 0) + 1);
+    }
+
+    for (const parent of [...branches]) {
+      if (parent.order >= settings.depth || random.next() > settings.exposedTipRatio) {
+        continue;
+      }
+      const target = sourceLobes[parent.targetLobeId];
+      branches.push(
+        createBranch({
+          id: branches.length,
+          parentId: parent.id,
+          order: Math.min(settings.depth, parent.order + 1),
+          start: pointNearTip(parent, random.range(0.58, 0.84)),
+          target,
+          random,
+          preset,
+          exposed: true,
+        }),
+      );
+    }
 
     return {
       trunk: {
@@ -131,7 +271,8 @@ export class BranchGenerator {
         endRadius: preset.trunk.topRadius,
         flare: preset.trunk.flare,
       },
-      branches,
+      branches: Object.freeze(branches),
+      lobes: Object.freeze(attachLobes(sourceLobes, branches)),
     };
   }
 }

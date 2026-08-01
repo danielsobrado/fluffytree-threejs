@@ -30,8 +30,9 @@ function appendCap({
   frames,
   frameIndex,
   reverse,
-  positions,
-  normals,
+    positions,
+    normals,
+    uvs,
   indices,
   radialSegments,
 }) {
@@ -46,6 +47,7 @@ function appendCap({
 
   positions.push(center.x, center.y, center.z);
   normals.push(capNormal.x, capNormal.y, capNormal.z);
+  uvs.push(0.5, 0.5);
 
   for (let segment = 0; segment < radialSegments; segment += 1) {
     const current = ringStart + segment;
@@ -68,6 +70,7 @@ export class TaperedCurveGeometryFactory {
     flare = 0,
     capStart = false,
     capEnd = false,
+    radialSegments = TREE_STRUCTURE_RENDERING_CONSTANTS.radialSegments,
   }) {
     if (!Array.isArray(path) || path.length < 3) {
       throw new Error('A tapered curve requires at least three path points.');
@@ -77,10 +80,10 @@ export class TaperedCurveGeometryFactory {
     const frames = curve.computeFrenetFrames(sampleCount, false);
     const positions = [];
     const normals = [];
+    const uvs = [];
     const indices = [];
     const center = new THREE.Vector3();
     const radial = new THREE.Vector3();
-    const radialSegments = TREE_STRUCTURE_RENDERING_CONSTANTS.radialSegments;
 
     for (let ring = 0; ring <= sampleCount; ring += 1) {
       const t = ring / sampleCount;
@@ -100,6 +103,7 @@ export class TaperedCurveGeometryFactory {
           center.z + radial.z * radius,
         );
         normals.push(radial.x, radial.y, radial.z);
+        uvs.push(segment / radialSegments, t);
       }
     }
 
@@ -128,6 +132,7 @@ export class TaperedCurveGeometryFactory {
         reverse: true,
         positions,
         normals,
+        uvs,
         indices,
         radialSegments,
       });
@@ -141,6 +146,7 @@ export class TaperedCurveGeometryFactory {
         reverse: false,
         positions,
         normals,
+        uvs,
         indices,
         radialSegments,
       });
@@ -155,6 +161,7 @@ export class TaperedCurveGeometryFactory {
       'normal',
       new THREE.Float32BufferAttribute(normals, 3),
     );
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geometry.setIndex(indices);
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();

@@ -47,6 +47,14 @@ export class CrownShadowProxyBuilder {
     proxy.renderOrder = -1;
     proxy.computeBoundingBox();
     proxy.computeBoundingSphere();
+    proxy.userData.shadowProxy = {
+      visibleSurface: false,
+      triangleCount:
+        ((geometry.index?.count ?? geometry.attributes.position.count) / 3) *
+        treeData.lobes.length,
+      instanceCount: treeData.lobes.length,
+      scale: proxyScale,
+    };
     return proxy;
   }
 }
