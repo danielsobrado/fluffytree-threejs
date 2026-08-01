@@ -1,3 +1,5 @@
+import { RENDER_SMOKE_CONSTANTS } from './render-smoke-constants.js';
+
 const RENDER_SMOKE_QUERY_VALUE = 'render-smoke';
 const STATUS_ATTRIBUTE = 'renderStatus';
 const ERROR_ATTRIBUTE = 'renderError';
@@ -44,7 +46,9 @@ function collectSceneMetrics(scene) {
     crownVertices: 0,
     leafClusterCount: 0,
     leafCount: 0,
+    minimumLeafLayers: Number.POSITIVE_INFINITY,
     rootCollarCount: 0,
+    minimumRootCollarOverlap: Number.POSITIVE_INFINITY,
   };
 
   scene.traverse((object) => {
@@ -75,6 +79,10 @@ function collectSceneMetrics(scene) {
         object.userData?.leafDetail?.clusterCount ?? 0,
       );
       metrics.leafCount += Number(object.userData?.leafDetail?.leafCount ?? 0);
+      metrics.minimumLeafLayers = Math.min(
+        metrics.minimumLeafLayers,
+        Number(object.userData?.leafDetail?.layerCount ?? 0),
+      );
     }
 
     if (
@@ -85,6 +93,10 @@ function collectSceneMetrics(scene) {
       Number(object.userData?.structure?.rootCollarHeight ?? 0) > 0
     ) {
       metrics.rootCollarCount += 1;
+      metrics.minimumRootCollarOverlap = Math.min(
+        metrics.minimumRootCollarOverlap,
+        Number(object.userData?.structure?.rootCollarOverlap ?? 0),
+      );
     }
   });
 
@@ -97,12 +109,22 @@ function collectSceneMetrics(scene) {
     throw new Error('Invisible crown shadow proxies are incomplete.');
   }
 
-  if (metrics.leafClusterCount === 0 || metrics.leafCount === 0) {
-    throw new Error('Visible leaf shell geometry was not present in the scene.');
+  const minimumLeafClusters =
+    metrics.treeCount * RENDER_SMOKE_CONSTANTS.minimumLeafClustersPerTree;
+  if (
+    metrics.leafClusterCount < minimumLeafClusters ||
+    metrics.leafCount === 0 ||
+    metrics.minimumLeafLayers < RENDER_SMOKE_CONSTANTS.minimumLeafLayers
+  ) {
+    throw new Error('Visible leaf shells are not dense enough to close canopy gaps.');
   }
 
-  if (metrics.rootCollarCount !== metrics.treeCount) {
-    throw new Error('One or more trunks lack a capped, terrain-embedded root collar.');
+  if (
+    metrics.rootCollarCount !== metrics.treeCount ||
+    metrics.minimumRootCollarOverlap <
+      RENDER_SMOKE_CONSTANTS.minimumRootCollarOverlap
+  ) {
+    throw new Error('One or more trunks lack a seamless overlapping root collar.');
   }
 
   return metrics;
@@ -157,8 +179,14 @@ export class RenderSmokeProbe {
           sceneMetrics.leafClusterCount,
         );
         this.root.dataset.leafCount = String(sceneMetrics.leafCount);
+        this.root.dataset.minimumLeafLayers = String(
+          sceneMetrics.minimumLeafLayers,
+        );
         this.root.dataset.rootCollarCount = String(
           sceneMetrics.rootCollarCount,
+        );
+        this.root.dataset.minimumRootCollarOverlap = String(
+          sceneMetrics.minimumRootCollarOverlap,
         );
       }
     } catch (error) {
