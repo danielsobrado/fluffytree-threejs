@@ -7,12 +7,15 @@ presets:
       baseHeight: 2.45
       height: 4.65
       radius: 2.55
-      lobeCount: 11
-      lobeScale: [0.78, 1.18]
-      verticalScale: [0.78, 1.12]
-      radialBias: 0.58
+      lobeCount: 16
+      lobeScale: [0.74, 0.94]
+      verticalScale: [0.82, 1.08]
+      radialBias: 0.48
       asymmetry: 0.12
       lean: [0.12, -0.04]
+      surfaceTension: 0.72
+      lobeScaleMultiplier: 1.12
+      scaleVariation: 0.06
     trunk:
       baseRadius: 0.36
       topRadius: 0.14
@@ -22,24 +25,31 @@ presets:
       color: '#554133'
     foliage:
       palette: ['#24382d', '#4f754c', '#7fa45b', '#c2d982']
-      variation: 0.12
+      variation: 0.1
       paletteBase: 0.48
-      heightPaletteShift: 0.18
-      exposurePaletteShift: 0.12
+      heightPaletteShift: 0.16
+      exposurePaletteShift: 0.1
       radialNormalStrength: 0.78
-      wrapLight: 0.52
-      skyLightStrength: 0.22
-      cavityStrength: 0.34
-      heightLightStrength: 0.14
+      crownNormalBlend: 0.52
+      wrapLight: 0.58
+      skyLightStrength: 0.2
+      cavityStrength: 0.28
+      heightLightStrength: 0.12
       shell:
-        instancesPerLobe: 18
-        candidateMultiplier: 3
-        sizeRatio: [0.16, 0.25]
-        radialOffsetRatio: 0.045
-        exposureThreshold: 0.08
-        alphaTest: 0.46
+        instancesPerLobe: 24
+        candidateMultiplier: 4
+        sizeRatio: [0.11, 0.17]
+        widthRatio: [0.72, 1.05]
+        outwardRatio: [1.0, 1.35]
+        radialOffsetRatio: 0.008
+        exposureThreshold: 0.16
+        colorJitter: 0.035
+        paletteLift: 0.035
+        cavityScale: 0.35
+        normalBlend: 0.25
+        alphaTest: 0.52
         planesPerCluster: 3
-        shadowProxyScale: 0.97
+        shadowProxyScale: 0.98
 
   columnar:
     label: Columnar
@@ -49,12 +59,15 @@ presets:
       baseHeight: 1.55
       height: 6.35
       radius: 1.55
-      lobeCount: 13
-      lobeScale: [0.72, 1.05]
-      verticalScale: [0.95, 1.35]
-      radialBias: 0.42
+      lobeCount: 18
+      lobeScale: [0.68, 0.9]
+      verticalScale: [1.0, 1.28]
+      radialBias: 0.34
       asymmetry: 0.08
       lean: [-0.05, 0.04]
+      surfaceTension: 0.8
+      lobeScaleMultiplier: 1.12
+      scaleVariation: 0.05
     trunk:
       baseRadius: 0.3
       topRadius: 0.11
@@ -64,24 +77,31 @@ presets:
       color: '#4c3b30'
     foliage:
       palette: ['#19352e', '#315c4c', '#5e8d68', '#a1c99a']
-      variation: 0.1
+      variation: 0.08
       paletteBase: 0.45
-      heightPaletteShift: 0.16
-      exposurePaletteShift: 0.14
+      heightPaletteShift: 0.14
+      exposurePaletteShift: 0.11
       radialNormalStrength: 0.82
-      wrapLight: 0.56
-      skyLightStrength: 0.2
-      cavityStrength: 0.38
-      heightLightStrength: 0.12
+      crownNormalBlend: 0.62
+      wrapLight: 0.62
+      skyLightStrength: 0.18
+      cavityStrength: 0.3
+      heightLightStrength: 0.1
       shell:
-        instancesPerLobe: 17
-        candidateMultiplier: 3
-        sizeRatio: [0.14, 0.22]
-        radialOffsetRatio: 0.04
-        exposureThreshold: 0.07
-        alphaTest: 0.47
+        instancesPerLobe: 23
+        candidateMultiplier: 4
+        sizeRatio: [0.1, 0.16]
+        widthRatio: [0.68, 1.0]
+        outwardRatio: [1.0, 1.32]
+        radialOffsetRatio: 0.007
+        exposureThreshold: 0.17
+        colorJitter: 0.03
+        paletteLift: 0.03
+        cavityScale: 0.32
+        normalBlend: 0.28
+        alphaTest: 0.53
         planesPerCluster: 3
-        shadowProxyScale: 0.96
+        shadowProxyScale: 0.98
 
   irregularAutumn:
     label: Irregular autumn
@@ -91,12 +111,15 @@ presets:
       baseHeight: 2.25
       height: 5.45
       radius: 2.72
-      lobeCount: 12
-      lobeScale: [0.72, 1.22]
-      verticalScale: [0.8, 1.2]
-      radialBias: 0.7
+      lobeCount: 17
+      lobeScale: [0.72, 1.0]
+      verticalScale: [0.84, 1.14]
+      radialBias: 0.56
       asymmetry: 0.3
       lean: [0.3, 0.08]
+      surfaceTension: 0.65
+      lobeScaleMultiplier: 1.12
+      scaleVariation: 0.08
     trunk:
       baseRadius: 0.4
       topRadius: 0.13
@@ -106,21 +129,28 @@ presets:
       color: '#5a3d2e'
     foliage:
       palette: ['#5b2d24', '#9b4c2d', '#d77b3c', '#f0b968']
-      variation: 0.16
+      variation: 0.12
       paletteBase: 0.5
-      heightPaletteShift: 0.2
-      exposurePaletteShift: 0.16
+      heightPaletteShift: 0.18
+      exposurePaletteShift: 0.12
       radialNormalStrength: 0.76
-      wrapLight: 0.5
-      skyLightStrength: 0.2
-      cavityStrength: 0.36
-      heightLightStrength: 0.16
+      crownNormalBlend: 0.46
+      wrapLight: 0.56
+      skyLightStrength: 0.18
+      cavityStrength: 0.3
+      heightLightStrength: 0.13
       shell:
-        instancesPerLobe: 20
-        candidateMultiplier: 3
-        sizeRatio: [0.17, 0.27]
-        radialOffsetRatio: 0.05
-        exposureThreshold: 0.08
-        alphaTest: 0.45
+        instancesPerLobe: 26
+        candidateMultiplier: 4
+        sizeRatio: [0.11, 0.18]
+        widthRatio: [0.72, 1.08]
+        outwardRatio: [1.02, 1.42]
+        radialOffsetRatio: 0.009
+        exposureThreshold: 0.15
+        colorJitter: 0.04
+        paletteLift: 0.04
+        cavityScale: 0.34
+        normalBlend: 0.22
+        alphaTest: 0.51
         planesPerCluster: 3
-        shadowProxyScale: 0.97
+        shadowProxyScale: 0.98
