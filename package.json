@@ -1,6 +1,6 @@
 {
   "name": "fluffytree-threejs",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +12,9 @@
     "qa:shape:quick": "node tools/run-tree-shape-qa.js --seeds 64 --output qa-results/tree-shape-quick",
     "qa:crown": "node tools/run-crown-volume-qa.js",
     "qa:crown:quick": "node tools/run-crown-volume-qa.js --seeds 2 --output qa-results/crown-volume-quick",
-    "verify": "npm run check && npm run qa:render && npm run qa:shape && npm run qa:crown",
+    "qa:occupancy": "node tools/run-canopy-occupancy-qa.js",
+    "qa:occupancy:quick": "node tools/run-canopy-occupancy-qa.js --seeds 8 --output qa-results/canopy-occupancy-quick",
+    "verify": "npm run check && npm run qa:render && npm run qa:shape && npm run qa:crown && npm run qa:occupancy",
     "deploy:pages": "npm run verify && node tools/deploy-pages.js"
   },
   "devDependencies": {
