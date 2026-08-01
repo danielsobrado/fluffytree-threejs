@@ -13,9 +13,17 @@ export function formatReleaseVersion(release) {
 }
 
 export function formatDocumentTitle(release) {
-  return `Procedural Fluffy Trees ${formatReleaseVersion(release)}`;
+  const label = requireText(release?.label, 'label');
+  return `Procedural Fluffy Trees ${formatReleaseVersion(release)} — ${label}`;
+}
+
+export function formatOverlayTitle(release) {
+  const label = requireText(release?.label, 'label');
+  return `Procedural fluffy trees — ${label} · ${formatReleaseVersion(release)}`;
 }
 
 export function applyDocumentTitle(release) {
+  const releaseVersion = formatReleaseVersion(release);
   document.title = formatDocumentTitle(release);
+  document.documentElement.dataset.releaseVersion = releaseVersion;
 }
