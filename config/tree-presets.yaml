@@ -45,6 +45,16 @@ presets:
         normalEpsilon: 0.025
         colorPatchScale: 0.55
         colorPatchStrength: 0.08
+      leafDetail:
+        enabled: true
+        density: 0.78
+        scale: 1.35
+        embedRatio: 0.1
+        protrusionRatio: 0.16
+        leavesPerCluster: 5
+        colorLift: 0.08
+        colorJitter: 0.04
+        roughness: 0.9
       shell:
         instancesPerLobe: 24
         candidateMultiplier: 4
@@ -107,6 +117,16 @@ presets:
         normalEpsilon: 0.022
         colorPatchScale: 0.48
         colorPatchStrength: 0.07
+      leafDetail:
+        enabled: true
+        density: 0.74
+        scale: 1.25
+        embedRatio: 0.1
+        protrusionRatio: 0.14
+        leavesPerCluster: 5
+        colorLift: 0.06
+        colorJitter: 0.035
+        roughness: 0.92
       shell:
         instancesPerLobe: 23
         candidateMultiplier: 4
@@ -169,6 +189,16 @@ presets:
         normalEpsilon: 0.025
         colorPatchScale: 0.5
         colorPatchStrength: 0.12
+      leafDetail:
+        enabled: true
+        density: 0.82
+        scale: 1.4
+        embedRatio: 0.11
+        protrusionRatio: 0.18
+        leavesPerCluster: 5
+        colorLift: 0.07
+        colorJitter: 0.05
+        roughness: 0.9
       shell:
         instancesPerLobe: 26
         candidateMultiplier: 4
