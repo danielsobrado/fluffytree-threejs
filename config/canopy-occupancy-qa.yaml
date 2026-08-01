@@ -1,0 +1,27 @@
+run:
+  seedCount: 256
+  firstSeed: 104729
+  seedStep: 2654435761
+probe:
+  probeSlices: 18
+  gridResolution: 9
+  coverageRadiusMultiplier: 2.15
+  topRatio: 0.22
+thresholds:
+  roundOrchard:
+    coverageRatio: 0.82
+    minimumSliceCoverage: 0.62
+    trunkCoverageRatio: 0.94
+    capCoverageRatio: 0.78
+  columnar:
+    coverageRatio: 0.86
+    minimumSliceCoverage: 0.72
+    trunkCoverageRatio: 0.98
+    capCoverageRatio: 0.86
+  irregularAutumn:
+    coverageRatio: 0.78
+    minimumSliceCoverage: 0.52
+    trunkCoverageRatio: 0.92
+    capCoverageRatio: 0.72
+report:
+  maxFailures: 20
