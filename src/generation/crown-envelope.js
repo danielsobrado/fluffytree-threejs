@@ -1,0 +1,69 @@
+import { GENERATION_CONSTANTS } from './generation-constants.js';
+
+const PROFILE_FUNCTIONS = Object.freeze({
+  round(t) {
+    const centered = t * 2 - 1;
+    return Math.sqrt(Math.max(0, 1 - centered * centered));
+  },
+  columnar(t) {
+    return Math.pow(Math.max(0, Math.sin(Math.PI * t)), 0.28);
+  },
+  vase(t) {
+    const cap = Math.pow(Math.max(0, Math.sin(Math.PI * t)), 0.34);
+    const widening = 0.48 + 0.62 * Math.pow(t, 0.72);
+    return cap * widening;
+  },
+});
+
+function clamp01(value) {
+  return Math.min(1, Math.max(0, value));
+}
+
+export class CrownEnvelope {
+  constructor(crown) {
+    const profile = PROFILE_FUNCTIONS[crown.profile];
+
+    if (!profile) {
+      throw new Error(`Unsupported crown profile '${crown.profile}'.`);
+    }
+
+    this.crown = crown;
+    this.profile = profile;
+  }
+
+  radiusAt(normalizedHeight) {
+    const t = clamp01(normalizedHeight);
+    const profileRadius = Math.max(
+      GENERATION_CONSTANTS.minimumProfileRadius,
+      this.profile(t),
+    );
+
+    return this.crown.radius * profileRadius;
+  }
+
+  centerAt(normalizedHeight) {
+    const t = clamp01(normalizedHeight);
+    const bend = Math.sin(t * Math.PI * 0.82);
+
+    return {
+      x: this.crown.lean[0] * t + this.crown.asymmetry * bend * 0.42,
+      y: this.crown.baseHeight + this.crown.height * t,
+      z: this.crown.lean[1] * t - this.crown.asymmetry * bend * 0.18,
+    };
+  }
+
+  contains(point) {
+    const t = (point.y - this.crown.baseHeight) / this.crown.height;
+
+    if (t < 0 || t > 1) {
+      return false;
+    }
+
+    const center = this.centerAt(t);
+    const radius = this.radiusAt(t);
+    const dx = point.x - center.x;
+    const dz = point.z - center.z;
+
+    return dx * dx + dz * dz <= radius * radius;
+  }
+}
