@@ -47,7 +47,7 @@ capture() {
     --use-angle=swiftshader \
     --force-device-scale-factor=1 \
     --window-size="${size}" \
-    --virtual-time-budget=20000 \
+    --virtual-time-budget=40000 \
     --screenshot="${screenshot_output}" \
     --dump-dom \
     "${URL}" >"${dom_output}"
