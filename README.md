@@ -16,19 +16,18 @@ The repository is a deterministic, configuration-driven procedural tree system s
 - A terrain-embedded root collar overlaps the trunk tube.
 - The collar is capped below terrain and deliberately open at the hidden trunk join, preventing a visible horizontal cut face.
 
-## Closed leaf canopy
+## Volumetric leaf canopy
 
 Control lobes and the smooth implicit crown remain generation tools. They are not rendered as visible foliage.
 
-- The implicit crown mesh is color- and depth-disabled in the camera pass.
-- It remains available only as a slightly inset coherent shadow proxy.
 - Four surface layers provide the visible silhouette.
-- A deterministic interior closure system adds darker spine, bridge, and top-cap foliage.
-- Spine foliage hides the trunk and keeps columnar species continuous along height.
-- Bridge foliage closes gaps between neighboring procedural crown regions.
-- Top-cap foliage prevents open crown tips.
-- Interior samples are corrected into the implicit crown field, so closure does not restore a visible smooth blob.
-- Small irregular golden-angle leaf tufts provide the complete visible canopy.
+- Volume samples fill the full interior cross-section of every active foliage lobe.
+- A dedicated trunk-occlusion column hides the central trunk from ordinary camera angles.
+- Saddle samples fill negative space between neighboring crown masses.
+- Layered top-cap samples close crown tips.
+- Interior samples use multiple micro-layers with deterministic 3D jitter so they form depth rather than another hollow shell.
+- The implicit crown mesh remains color- and depth-disabled and is used only as a coherent shadow proxy.
+- Small irregular golden-angle leaf tufts provide all visible foliage.
 - Per-cluster colors remain coherent with each seasonal palette.
 
 Hierarchical wind and production distance LOD remain later phases.
@@ -62,6 +61,7 @@ npm run check
 npm run qa:render
 npm run qa:shape
 npm run qa:crown
+npm run qa:occupancy
 npm run verify
 ```
 
@@ -70,11 +70,14 @@ Smaller development runs are available:
 ```bash
 npm run qa:shape:quick
 npm run qa:crown:quick
+npm run qa:occupancy:quick
 ```
 
-The full control-shape run generates 2,048 seeded trees for each preset: 6,144 trees in total. Every tree is generated twice to verify exact replay determinism. Reports are written to `qa-results/tree-shape/report.json` and `report.md`.
+The full control-shape run generates 2,048 seeded trees for each preset: 6,144 trees in total. Every tree is generated twice to verify exact replay determinism.
 
-The crown-volume battery extracts 16 proxy meshes per preset and repeats each extraction. Its reports are written to `qa-results/crown-volume/report.json` and `report.md`.
+The crown-volume battery extracts 16 proxy meshes per preset and repeats each extraction.
+
+The canopy occupancy battery generates 256 seeds per preset and measures interior coverage, minimum horizontal-slice coverage, trunk occlusion, top-cap coverage, and exact replay. Reports are written to `qa-results/canopy-occupancy/report.json` and `report.md`.
 
 The automated gates cover:
 
@@ -84,10 +87,10 @@ The automated gates cover:
 - Branch insertion and monotonic trunk structure.
 - Deterministic shadow-proxy extraction and seed uniqueness.
 - A single closed proxy component with no boundary or non-manifold edges.
-- Finite proxy vertices, normalized field-gradient normals, coincident-normal consistency, and maximum surface edge length.
 - No smooth crown mesh writing color or depth in the camera pass.
 - Minimum surface-shell density and four radial surface layers.
-- Minimum spine, bridge, and top-cap interior closure coverage for every tree.
+- Minimum volume, trunk, saddle, and top-cap occupancy for every tree.
+- Multi-seed numeric coverage thresholds for crown slices, trunk occlusion, and cap closure.
 - A terrain-embedded root collar with positive trunk overlap and no visible top cap.
 - The exact uploaded release identifier in the browser and visible demo titles.
 
@@ -103,7 +106,7 @@ src/core/               Cross-cutting utilities
 src/diagnostics/        Browser and rendering diagnostics
 src/domain/             Validated domain configuration
 src/generation/         Renderer-independent procedural generation
-src/qa/                 Numeric topology, silhouette, shell, and volume analysis
+src/qa/                 Numeric topology, silhouette, shell, and occupancy analysis
 src/rendering/          Three.js geometry, material, and mesh construction
 src/ui/                 DOM presentation
 styles/                 Page styling
