@@ -58,19 +58,13 @@ function calculateButtress(angle, ratio, seed) {
   );
 }
 
-function appendCap({
-  positions,
-  indices,
-  radialSegments,
-  ringStart,
-  normalUp,
-}) {
+function appendBottomCap(positions, indices, radialSegments) {
   let centerX = 0;
   let centerY = 0;
   let centerZ = 0;
 
   for (let segment = 0; segment < radialSegments; segment += 1) {
-    const offset = (ringStart + segment) * 3;
+    const offset = segment * 3;
     centerX += positions[offset];
     centerY += positions[offset + 1];
     centerZ += positions[offset + 2];
@@ -83,14 +77,9 @@ function appendCap({
   positions.push(centerX, centerY, centerZ);
 
   for (let segment = 0; segment < radialSegments; segment += 1) {
-    const current = ringStart + segment;
-    const next = ringStart + ((segment + 1) % radialSegments);
-
-    if (normalUp) {
-      indices.push(centerIndex, next, current);
-    } else {
-      indices.push(centerIndex, current, next);
-    }
+    const current = segment;
+    const next = (segment + 1) % radialSegments;
+    indices.push(centerIndex, current, next);
   }
 }
 
@@ -152,20 +141,7 @@ export class RootCollarGeometryFactory {
       }
     }
 
-    appendCap({
-      positions,
-      indices,
-      radialSegments,
-      ringStart: 0,
-      normalUp: false,
-    });
-    appendCap({
-      positions,
-      indices,
-      radialSegments,
-      ringStart: ringCount * radialSegments,
-      normalUp: true,
-    });
+    appendBottomCap(positions, indices, radialSegments);
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
@@ -180,7 +156,8 @@ export class RootCollarGeometryFactory {
       embeddedDepth: TREE_STRUCTURE_RENDERING_CONSTANTS.rootEmbedDepth,
       collarHeight: TREE_STRUCTURE_RENDERING_CONSTANTS.rootCollarHeight,
       overlap: TREE_STRUCTURE_RENDERING_CONSTANTS.rootCollarOverlap,
-      capped: true,
+      bottomCapped: true,
+      topCapped: false,
     };
     return geometry;
   }
