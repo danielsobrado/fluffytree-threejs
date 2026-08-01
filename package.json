@@ -8,7 +8,8 @@
     "check": "node --check src/main.js && node --check tools/run-tree-shape-qa.js && node --test",
     "qa:shape": "node tools/run-tree-shape-qa.js",
     "qa:shape:quick": "node tools/run-tree-shape-qa.js --seeds 64 --output qa-results/tree-shape-quick",
-    "verify": "npm test && npm run qa:shape"
+    "verify": "npm test && npm run qa:shape",
+    "deploy:pages": "npm run check && node tools/deploy-pages.js"
   },
   "devDependencies": {
     "js-yaml": "4.1.0"
