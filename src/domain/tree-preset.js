@@ -90,21 +90,17 @@ function requirePositiveInteger(value, path) {
   }
 }
 
-function createFoliageConfig(id, foliage) {
-  requireFields(foliage, REQUIRED_FOLIAGE_FIELDS, `${id}.foliage`);
-  requireFields(
-    foliage.shell,
-    REQUIRED_SHELL_FIELDS,
-    `${id}.foliage.shell`,
-  );
-
-  const palette = freezeArray(foliage.palette, `${id}.foliage.palette`);
-  if (!palette.every((color) => typeof color === 'string')) {
-    throw new Error(`Configuration '${id}.foliage.palette' must contain colors.`);
-  }
-
+function validateFoliageTuning(id, foliage) {
   requireRange(foliage.variation, 0, 1, `${id}.foliage.variation`);
   requireRange(foliage.paletteBase, 0, 1, `${id}.foliage.paletteBase`);
+  requireFinite(
+    foliage.heightPaletteShift,
+    `${id}.foliage.heightPaletteShift`,
+  );
+  requireFinite(
+    foliage.exposurePaletteShift,
+    `${id}.foliage.exposurePaletteShift`,
+  );
   requireRange(
     foliage.radialNormalStrength,
     0,
@@ -130,36 +126,62 @@ function createFoliageConfig(id, foliage) {
     1,
     `${id}.foliage.heightLightStrength`,
   );
+}
+
+function validateShellTuning(id, shell) {
   requirePositiveInteger(
-    foliage.shell.instancesPerLobe,
+    shell.instancesPerLobe,
     `${id}.foliage.shell.instancesPerLobe`,
   );
   requirePositiveInteger(
-    foliage.shell.candidateMultiplier,
+    shell.candidateMultiplier,
     `${id}.foliage.shell.candidateMultiplier`,
   );
   requirePositiveInteger(
-    foliage.shell.planesPerCluster,
+    shell.planesPerCluster,
     `${id}.foliage.shell.planesPerCluster`,
   );
   requireRange(
-    foliage.shell.exposureThreshold,
+    shell.radialOffsetRatio,
+    0,
+    0.25,
+    `${id}.foliage.shell.radialOffsetRatio`,
+  );
+  requireRange(
+    shell.exposureThreshold,
     0,
     1,
     `${id}.foliage.shell.exposureThreshold`,
   );
   requireRange(
-    foliage.shell.alphaTest,
+    shell.alphaTest,
     0,
     1,
     `${id}.foliage.shell.alphaTest`,
   );
   requireRange(
-    foliage.shell.shadowProxyScale,
+    shell.shadowProxyScale,
     0.5,
     1.2,
     `${id}.foliage.shell.shadowProxyScale`,
   );
+}
+
+function createFoliageConfig(id, foliage) {
+  requireFields(foliage, REQUIRED_FOLIAGE_FIELDS, `${id}.foliage`);
+  requireFields(
+    foliage.shell,
+    REQUIRED_SHELL_FIELDS,
+    `${id}.foliage.shell`,
+  );
+
+  const palette = freezeArray(foliage.palette, `${id}.foliage.palette`);
+  if (!palette.every((color) => typeof color === 'string')) {
+    throw new Error(`Configuration '${id}.foliage.palette' must contain colors.`);
+  }
+
+  validateFoliageTuning(id, foliage);
+  validateShellTuning(id, foliage.shell);
 
   const sizeRatio = freezeArray(
     foliage.shell.sizeRatio,
