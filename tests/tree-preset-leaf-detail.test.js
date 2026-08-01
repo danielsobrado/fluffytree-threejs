@@ -7,6 +7,8 @@ test('leaf detail configuration is validated and frozen', () => {
 
   assert.equal(preset.foliage.leafDetail.enabled, true);
   assert.equal(preset.foliage.leafDetail.leavesPerCluster, 5);
+  assert.equal(preset.foliage.leafDetail.coreScale, 0.8);
+  assert.equal(preset.foliage.leafDetail.layerCount, 2);
   assert.equal(Object.isFrozen(preset.foliage.leafDetail), true);
 });
 
@@ -31,5 +33,29 @@ test('leaf detail requires a positive leaf count', () => {
         },
       }),
     /leavesPerCluster/,
+  );
+});
+
+test('leaf detail rejects a full-size visible core', () => {
+  assert.throws(
+    () =>
+      createTestPreset({
+        foliage: {
+          leafDetail: { coreScale: 1 },
+        },
+      }),
+    /coreScale/,
+  );
+});
+
+test('leaf detail limits shell layering', () => {
+  assert.throws(
+    () =>
+      createTestPreset({
+        foliage: {
+          leafDetail: { layerCount: 5 },
+        },
+      }),
+    /layerCount/,
   );
 });
