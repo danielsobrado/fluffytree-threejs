@@ -2,6 +2,8 @@ const RENDER_SMOKE_QUERY_VALUE = 'render-smoke';
 const STATUS_ATTRIBUTE = 'renderStatus';
 const ERROR_ATTRIBUTE = 'renderError';
 const CROWN_NAME = 'unified-crown';
+const LEAF_DETAIL_NAME = 'leaf-detail-shell';
+const STRUCTURE_NAME = 'tree-structure';
 
 function isRenderSmokeRequested() {
   return (
@@ -15,24 +17,60 @@ function serializeError(error) {
   return String(error);
 }
 
-function collectCrownMetrics(scene) {
-  let crownCount = 0;
-  let crownTriangles = 0;
-  let crownVertices = 0;
+function collectSceneMetrics(scene) {
+  const metrics = {
+    crownCount: 0,
+    crownTriangles: 0,
+    crownVertices: 0,
+    leafClusterCount: 0,
+    leafCount: 0,
+    closedRootCount: 0,
+  };
 
   scene.traverse((object) => {
-    if (object.name !== CROWN_NAME) return;
+    if (object.name === CROWN_NAME) {
+      metrics.crownCount += 1;
+      metrics.crownTriangles += Number(
+        object.geometry?.userData?.volume?.triangleCount ?? 0,
+      );
+      metrics.crownVertices += Number(
+        object.geometry?.userData?.volume?.vertexCount ?? 0,
+      );
+    }
 
-    crownCount += 1;
-    crownTriangles += Number(object.geometry?.userData?.volume?.triangleCount ?? 0);
-    crownVertices += Number(object.geometry?.userData?.volume?.vertexCount ?? 0);
+    if (object.name === LEAF_DETAIL_NAME) {
+      metrics.leafClusterCount += Number(
+        object.userData?.leafDetail?.clusterCount ?? 0,
+      );
+      metrics.leafCount += Number(object.userData?.leafDetail?.leafCount ?? 0);
+    }
+
+    if (
+      object.name === STRUCTURE_NAME &&
+      object.userData?.structure?.rootCapped === true &&
+      Number(object.userData?.structure?.rootEmbedDepth ?? 0) > 0
+    ) {
+      metrics.closedRootCount += 1;
+    }
   });
 
-  if (crownCount === 0 || crownTriangles === 0 || crownVertices === 0) {
+  if (
+    metrics.crownCount === 0 ||
+    metrics.crownTriangles === 0 ||
+    metrics.crownVertices === 0
+  ) {
     throw new Error('Unified crown geometry was not present in the rendered scene.');
   }
 
-  return { crownCount, crownTriangles, crownVertices };
+  if (metrics.leafClusterCount === 0 || metrics.leafCount === 0) {
+    throw new Error('Visible leaf detail was not present in the rendered scene.');
+  }
+
+  if (metrics.closedRootCount !== metrics.crownCount) {
+    throw new Error('One or more tree roots were not capped and embedded.');
+  }
+
+  return metrics;
 }
 
 export class RenderSmokeProbe {
@@ -60,7 +98,7 @@ export class RenderSmokeProbe {
     if (!this.enabled) return;
 
     try {
-      const crownMetrics = collectCrownMetrics(scene);
+      const sceneMetrics = collectSceneMetrics(scene);
 
       if (typeof renderer.compileAsync === 'function') {
         await renderer.compileAsync(scene, camera);
@@ -72,9 +110,14 @@ export class RenderSmokeProbe {
         this.root.dataset[STATUS_ATTRIBUTE] = 'ready';
         this.root.dataset.renderCalls = String(renderer.info.render.calls);
         this.root.dataset.renderTriangles = String(renderer.info.render.triangles);
-        this.root.dataset.crownCount = String(crownMetrics.crownCount);
-        this.root.dataset.crownTriangles = String(crownMetrics.crownTriangles);
-        this.root.dataset.crownVertices = String(crownMetrics.crownVertices);
+        this.root.dataset.crownCount = String(sceneMetrics.crownCount);
+        this.root.dataset.crownTriangles = String(sceneMetrics.crownTriangles);
+        this.root.dataset.crownVertices = String(sceneMetrics.crownVertices);
+        this.root.dataset.leafClusterCount = String(
+          sceneMetrics.leafClusterCount,
+        );
+        this.root.dataset.leafCount = String(sceneMetrics.leafCount);
+        this.root.dataset.closedRootCount = String(sceneMetrics.closedRootCount);
       }
     } catch (error) {
       this.fail(error);
