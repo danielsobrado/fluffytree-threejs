@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CrownVolumeGeometryFactory } from './crown-volume-geometry-factory.js';
 import { CrownVolumeMaterialFactory } from './crown-volume-material-factory.js';
 
-function insetAroundCenter(geometry, center, scale) {
+function scaleAroundCenter(geometry, center, scale) {
   geometry.translate(-center.x, -center.y, -center.z);
   geometry.scale(scale, scale, scale);
   geometry.translate(center.x, center.y, center.z);
@@ -21,17 +21,23 @@ export class CrownVolumeBuilder {
 
   build(treeData) {
     const geometry = this.geometryFactory.create(treeData);
-    const settings = treeData.palette.leafDetail;
-    insetAroundCenter(geometry, treeData.crownCenter, settings.coreScale);
+    scaleAroundCenter(
+      geometry,
+      treeData.crownCenter,
+      treeData.palette.shell.shadowProxyScale,
+    );
 
-    const material = this.materialFactory.create(treeData.palette);
-    const crown = new THREE.Mesh(geometry, material);
-    crown.name = 'inner-crown-core';
+    const crown = new THREE.Mesh(
+      geometry,
+      this.materialFactory.create(treeData.palette),
+    );
+    crown.name = 'crown-shadow-proxy';
     crown.castShadow = true;
-    crown.receiveShadow = true;
-    crown.userData.innerCore = {
-      scale: settings.coreScale,
-      brightness: settings.coreBrightness,
+    crown.receiveShadow = false;
+    crown.frustumCulled = true;
+    crown.userData.shadowProxy = {
+      visibleSurface: false,
+      scale: treeData.palette.shell.shadowProxyScale,
     };
     return crown;
   }
