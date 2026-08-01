@@ -48,7 +48,7 @@ presets:
       leafDetail:
         enabled: true
         density: 1.0
-        scale: 2.08
+        scale: 1.65
         embedRatio: 0.14
         protrusionRatio: 0.22
         leavesPerCluster: 8
@@ -60,13 +60,13 @@ presets:
         layerCount: 4
         layerOffsetRatio: 0.16
       shell:
-        instancesPerLobe: 52
+        instancesPerLobe: 70
         candidateMultiplier: 4
-        sizeRatio: [0.14, 0.22]
+        sizeRatio: [0.1, 0.16]
         widthRatio: [0.72, 1.05]
         outwardRatio: [1.0, 1.35]
         radialOffsetRatio: 0.008
-        exposureThreshold: 0.06
+        exposureThreshold: 0.05
         colorJitter: 0.035
         paletteLift: 0.035
         cavityScale: 0.35
@@ -124,7 +124,7 @@ presets:
       leafDetail:
         enabled: true
         density: 1.0
-        scale: 2.0
+        scale: 1.6
         embedRatio: 0.13
         protrusionRatio: 0.2
         leavesPerCluster: 8
@@ -136,13 +136,13 @@ presets:
         layerCount: 4
         layerOffsetRatio: 0.17
       shell:
-        instancesPerLobe: 50
+        instancesPerLobe: 68
         candidateMultiplier: 4
-        sizeRatio: [0.13, 0.2]
+        sizeRatio: [0.09, 0.15]
         widthRatio: [0.68, 1.0]
         outwardRatio: [1.0, 1.32]
         radialOffsetRatio: 0.007
-        exposureThreshold: 0.06
+        exposureThreshold: 0.05
         colorJitter: 0.03
         paletteLift: 0.03
         cavityScale: 0.32
@@ -200,7 +200,7 @@ presets:
       leafDetail:
         enabled: true
         density: 1.0
-        scale: 2.12
+        scale: 1.7
         embedRatio: 0.14
         protrusionRatio: 0.23
         leavesPerCluster: 8
@@ -212,13 +212,13 @@ presets:
         layerCount: 4
         layerOffsetRatio: 0.17
       shell:
-        instancesPerLobe: 54
+        instancesPerLobe: 72
         candidateMultiplier: 4
-        sizeRatio: [0.14, 0.23]
+        sizeRatio: [0.1, 0.17]
         widthRatio: [0.72, 1.08]
         outwardRatio: [1.02, 1.42]
         radialOffsetRatio: 0.009
-        exposureThreshold: 0.05
+        exposureThreshold: 0.04
         colorJitter: 0.04
         paletteLift: 0.04
         cavityScale: 0.34
