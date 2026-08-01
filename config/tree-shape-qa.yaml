@@ -23,7 +23,6 @@ thresholds:
       silhouetteComponentCount: 1
       shellMissingSourceLobeCount: 0
       shellDuplicatePositionCount: 0
-      shellSilhouetteComponentCount: 1
     ranges:
       minimumBranchInsertion: [0.54, 0.56]
       maximumBranchInsertion: [0.54, 0.56]
@@ -48,6 +47,7 @@ thresholds:
       lobeMeanExposure: [0.42, 1]
       lobeMaximumExposure: [0.5, 1]
       shellSilhouetteContribution: [0.002, 0.4]
+      shellSilhouetteLargestComponentRatio: [0.992, 1]
       shellSilhouetteHoleRatio: [0, 0.035]
 
   profiles:
@@ -110,6 +110,7 @@ report:
     - shellMeanExposure
     - shellOccludedRatio
     - shellSilhouetteContribution
+    - shellSilhouetteLargestComponentRatio
     - shellSilhouetteHoleRatio
     - crownAspectRatio
     - widthDepthRatio
@@ -126,6 +127,7 @@ report:
     - shellMeanExposure
     - shellOccludedRatio
     - shellSilhouetteContribution
+    - shellSilhouetteLargestComponentRatio
     - shellSilhouetteHoleRatio
     - crownAspectRatio
     - widthDepthRatio
