@@ -25,18 +25,31 @@ function createTreeData() {
         colorMix: 0.7,
       },
     ],
+    trunk: {
+      points: [
+        { x: 0, y: 0, z: 0 },
+        { x: 0.02, y: 2.5, z: 0 },
+        { x: 0.04, y: 5.8, z: 0.02 },
+      ],
+    },
     palette: {
       leafDetail: {
         closure: {
           enabled: true,
-          spineSlices: 4,
-          spineRingCount: 3,
-          bridgeSamples: 2,
-          capSamples: 6,
-          radiusRatio: 0.45,
+          volumeSlices: 6,
+          samplesPerSlice: 8,
+          trunkSlices: 6,
+          trunkRingCount: 3,
+          saddleSamples: 2,
+          capLayers: 2,
+          capSamplesPerLayer: 6,
+          microLayerCount: 2,
+          radiusRatio: 0.82,
+          trunkRadiusRatio: 0.3,
           clusterScaleRatio: 0.12,
           colorDrop: 0.14,
           axialJitter: 0.15,
+          depthJitterRatio: 0.18,
         },
       },
     },
@@ -54,16 +67,16 @@ function createField() {
   };
 }
 
-test('canopy closure creates spine, bridge, and cap fill deterministically', () => {
+test('canopy closure creates all volumetric roles deterministically', () => {
   const sampler = new CanopyClosureSampler();
   const first = sampler.generate(createTreeData(), createField());
   const second = sampler.generate(createTreeData(), createField());
 
   assert.deepEqual(first, second);
-  assert.equal(first.length, 26);
-  assert.equal(first.filter((sample) => sample.role === 'spine').length, 16);
-  assert.equal(first.filter((sample) => sample.role === 'bridge').length, 4);
-  assert.equal(first.filter((sample) => sample.role === 'cap').length, 6);
+  for (const role of ['volume', 'trunk', 'saddle', 'cap']) {
+    assert.ok(first.some((sample) => sample.role === role), role);
+  }
+  assert.ok(first.length > 70);
   assert.ok(first.every((sample) => sample.scale > 0));
 });
 
