@@ -23,7 +23,8 @@ export class FoliageShellMaterialFactory {
       sunDirection,
       radialNormalExpression: 'vec3( 0.0, 0.0, 1.0 )',
       heightExpression: 'position.y + 0.5',
-      cacheKey: 'foliage-shell-phase-2-v1',
+      forceRadialFragmentNormal: true,
+      cacheKey: 'foliage-shell-phase-2-v2',
     });
     material.userData.disposables.push(alphaTexture);
     return material;
