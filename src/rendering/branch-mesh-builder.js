@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { RootCollarGeometryFactory, trimPathAboveHeight } from './root-collar-geometry-factory.js';
+import {
+  RootCollarGeometryFactory,
+  trimPathAboveHeight,
+} from './root-collar-geometry-factory.js';
 import {
   calculateRootCollarRadiusAtHeight,
   getRootCollarJoinHeight,
@@ -68,6 +71,8 @@ export class BranchMeshBuilder {
     mesh.receiveShadow = true;
     mesh.userData.structure = {
       rootCapped: true,
+      rootBottomCapped: true,
+      rootTopCapped: false,
       rootCollar: true,
       rootEmbedDepth: TREE_STRUCTURE_RENDERING_CONSTANTS.rootEmbedDepth,
       rootCollarHeight: TREE_STRUCTURE_RENDERING_CONSTANTS.rootCollarHeight,
