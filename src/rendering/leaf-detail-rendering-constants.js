@@ -5,4 +5,9 @@ export const LEAF_DETAIL_RENDERING_CONSTANTS = Object.freeze({
   surfaceTolerance: 0.002,
   materialMetalness: 0,
   defaultRoughness: 0.92,
+  innerLayerScale: 1.14,
+  outerLayerScale: 0.84,
+  scaleJitterMinimum: 0.88,
+  scaleJitterMaximum: 1.12,
+  tangentReferenceThreshold: 0.9,
 });
