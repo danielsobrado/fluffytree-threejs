@@ -70,8 +70,8 @@ export function createTestPreset(overrides = {}) {
         roughness: 0.9,
         coreScale: 0.8,
         coreBrightness: 0.7,
-        layerCount: 2,
-        layerOffsetRatio: 0.14,
+        layerCount: 4,
+        layerOffsetRatio: 0.16,
         ...leafDetailOverrides,
       },
       shell: {
