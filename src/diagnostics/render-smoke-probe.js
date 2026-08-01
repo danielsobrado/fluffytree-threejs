@@ -1,7 +1,7 @@
 const RENDER_SMOKE_QUERY_VALUE = 'render-smoke';
 const STATUS_ATTRIBUTE = 'renderStatus';
 const ERROR_ATTRIBUTE = 'renderError';
-const CROWN_NAME = 'unified-crown';
+const CROWN_PROXY_NAME = 'crown-shadow-proxy';
 const LEAF_DETAIL_NAME = 'leaf-detail-shell';
 const STRUCTURE_NAME = 'tree-structure';
 
@@ -38,23 +38,36 @@ function validateReleaseTitles(root) {
 
 function collectSceneMetrics(scene) {
   const metrics = {
-    crownCount: 0,
+    treeCount: 0,
+    shadowProxyCount: 0,
     crownTriangles: 0,
     crownVertices: 0,
     leafClusterCount: 0,
     leafCount: 0,
-    closedRootCount: 0,
+    rootCollarCount: 0,
   };
 
   scene.traverse((object) => {
-    if (object.name === CROWN_NAME) {
-      metrics.crownCount += 1;
+    if (object.userData?.tree) {
+      metrics.treeCount += 1;
+    }
+
+    if (object.name === CROWN_PROXY_NAME) {
+      metrics.shadowProxyCount += 1;
       metrics.crownTriangles += Number(
         object.geometry?.userData?.volume?.triangleCount ?? 0,
       );
       metrics.crownVertices += Number(
         object.geometry?.userData?.volume?.vertexCount ?? 0,
       );
+
+      if (
+        object.userData?.shadowProxy?.visibleSurface !== false ||
+        object.material?.colorWrite !== false ||
+        object.material?.depthWrite !== false
+      ) {
+        throw new Error('A smooth crown blob is still visible in the color pass.');
+      }
     }
 
     if (object.name === LEAF_DETAIL_NAME) {
@@ -67,26 +80,29 @@ function collectSceneMetrics(scene) {
     if (
       object.name === STRUCTURE_NAME &&
       object.userData?.structure?.rootCapped === true &&
-      Number(object.userData?.structure?.rootEmbedDepth ?? 0) > 0
+      object.userData?.structure?.rootCollar === true &&
+      Number(object.userData?.structure?.rootEmbedDepth ?? 0) > 0 &&
+      Number(object.userData?.structure?.rootCollarHeight ?? 0) > 0
     ) {
-      metrics.closedRootCount += 1;
+      metrics.rootCollarCount += 1;
     }
   });
 
   if (
-    metrics.crownCount === 0 ||
+    metrics.treeCount === 0 ||
+    metrics.shadowProxyCount !== metrics.treeCount ||
     metrics.crownTriangles === 0 ||
     metrics.crownVertices === 0
   ) {
-    throw new Error('Unified crown geometry was not present in the rendered scene.');
+    throw new Error('Invisible crown shadow proxies are incomplete.');
   }
 
   if (metrics.leafClusterCount === 0 || metrics.leafCount === 0) {
-    throw new Error('Visible leaf detail was not present in the rendered scene.');
+    throw new Error('Visible leaf shell geometry was not present in the scene.');
   }
 
-  if (metrics.closedRootCount !== metrics.crownCount) {
-    throw new Error('One or more tree roots were not capped and embedded.');
+  if (metrics.rootCollarCount !== metrics.treeCount) {
+    throw new Error('One or more trunks lack a capped, terrain-embedded root collar.');
   }
 
   return metrics;
@@ -131,14 +147,19 @@ export class RenderSmokeProbe {
         this.root.dataset.releaseVersion = releaseVersion;
         this.root.dataset.renderCalls = String(renderer.info.render.calls);
         this.root.dataset.renderTriangles = String(renderer.info.render.triangles);
-        this.root.dataset.crownCount = String(sceneMetrics.crownCount);
+        this.root.dataset.treeCount = String(sceneMetrics.treeCount);
+        this.root.dataset.shadowProxyCount = String(
+          sceneMetrics.shadowProxyCount,
+        );
         this.root.dataset.crownTriangles = String(sceneMetrics.crownTriangles);
         this.root.dataset.crownVertices = String(sceneMetrics.crownVertices);
         this.root.dataset.leafClusterCount = String(
           sceneMetrics.leafClusterCount,
         );
         this.root.dataset.leafCount = String(sceneMetrics.leafCount);
-        this.root.dataset.closedRootCount = String(sceneMetrics.closedRootCount);
+        this.root.dataset.rootCollarCount = String(
+          sceneMetrics.rootCollarCount,
+        );
       }
     } catch (error) {
       this.fail(error);
