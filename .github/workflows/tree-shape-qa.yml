@@ -33,14 +33,14 @@ jobs:
       - name: Check source and unit tests
         run: npm run check
 
-      - name: Run headless WebGL render smoke
+      - name: Run desktop and mobile WebGL render smoke
         run: npm run qa:render
 
-      - name: Upload render smoke evidence
+      - name: Upload visual parity render evidence
         if: always() && hashFiles('qa-results/render-smoke/**') != ''
         uses: actions/upload-artifact@v7
         with:
-          name: phase-2-render-smoke
+          name: phase-2-5-render-smoke
           path: qa-results/render-smoke
           if-no-files-found: error
 
@@ -51,6 +51,6 @@ jobs:
         if: always() && hashFiles('qa-results/tree-shape/**') != ''
         uses: actions/upload-artifact@v7
         with:
-          name: tree-shape-qa-report
+          name: phase-2-5-tree-shape-qa-report
           path: qa-results/tree-shape
           if-no-files-found: error
