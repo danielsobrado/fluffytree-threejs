@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CrownVolumeField } from '../generation/crown-volume-field.js';
+import { CanopyClosureSampler } from './canopy-closure-sampler.js';
 import { LeafClusterGeometryFactory } from './leaf-cluster-geometry-factory.js';
 import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constants.js';
 import { samplePaletteColor } from './palette-color-sampler.js';
@@ -53,10 +54,22 @@ function selectSamples(treeData, density) {
   );
 }
 
-function createInstanceRecords(samples, layerCount) {
+function createSurfaceRecords(samples, layerCount) {
   return samples.flatMap((sample) =>
-    Array.from({ length: layerCount }, (_, layer) => ({ sample, layer })),
+    Array.from({ length: layerCount }, (_, layer) => ({
+      sample,
+      layer,
+      kind: 'surface',
+    })),
   );
+}
+
+function createClosureRecords(samples) {
+  return samples.map((sample) => ({
+    sample,
+    layer: 0,
+    kind: 'closure',
+  }));
 }
 
 function calculateLayerRatio(layer, settings) {
@@ -111,9 +124,19 @@ function createTangentBasis(normal) {
   return { tangent, bitangent };
 }
 
-function addTangentialJitter(position, normal, treeData, sample, layer, settings, scale) {
+function addTangentialJitter(
+  position,
+  normal,
+  treeData,
+  sample,
+  layer,
+  settings,
+  scale,
+) {
   const id = sample.id + layer * 8191;
-  const angle = hashUnit(treeData.seed, id, 0x165667b1) * LEAF_DETAIL_RENDERING_CONSTANTS.tau;
+  const angle =
+    hashUnit(treeData.seed, id, 0x165667b1) *
+    LEAF_DETAIL_RENDERING_CONSTANTS.tau;
   const radius =
     Math.sqrt(hashUnit(treeData.seed, id, 0xd3a2646c)) *
     getTangentialJitterRatio(settings) *
@@ -123,9 +146,86 @@ function addTangentialJitter(position, normal, treeData, sample, layer, settings
   position.addScaledVector(bitangent, Math.sin(angle) * radius);
 }
 
+function resolvePlacement(record, field) {
+  if (record.kind === 'closure') {
+    return {
+      position: new THREE.Vector3(
+        record.sample.position.x,
+        record.sample.position.y,
+        record.sample.position.z,
+      ),
+      normal: new THREE.Vector3(
+        record.sample.normal.x,
+        record.sample.normal.y,
+        record.sample.normal.z,
+      ).normalize(),
+    };
+  }
+
+  return projectToSurface(field, record.sample);
+}
+
+function resolvePosition(
+  record,
+  placement,
+  treeData,
+  settings,
+  instanceScale,
+) {
+  const position = placement.position.clone();
+  if (record.kind === 'closure') return position;
+
+  position.addScaledVector(
+    placement.normal,
+    calculateRadialOffset(record.layer, settings, instanceScale),
+  );
+  addTangentialJitter(
+    position,
+    placement.normal,
+    treeData,
+    record.sample,
+    record.layer,
+    settings,
+    instanceScale,
+  );
+  return position;
+}
+
+function calculateInstanceScale(record, settings, treeData) {
+  const instanceId = record.sample.id + record.layer * 4099;
+  const scaleJitter = THREE.MathUtils.lerp(
+    LEAF_DETAIL_RENDERING_CONSTANTS.scaleJitterMinimum,
+    LEAF_DETAIL_RENDERING_CONSTANTS.scaleJitterMaximum,
+    hashUnit(treeData.seed, instanceId, 0x27d4eb2d),
+  );
+  const layerScale =
+    record.kind === 'surface'
+      ? calculateLayerScale(record.layer, settings)
+      : 1;
+
+  return Math.max(
+    LEAF_DETAIL_RENDERING_CONSTANTS.minimumScale,
+    record.sample.scale * settings.scale * layerScale * scaleJitter,
+  );
+}
+
+function countClosureRoles(samples) {
+  return samples.reduce(
+    (counts, sample) => {
+      counts[sample.role] = (counts[sample.role] ?? 0) + 1;
+      return counts;
+    },
+    { spine: 0, bridge: 0, cap: 0 },
+  );
+}
+
 export class LeafClusterBuilder {
-  constructor({ geometryFactory = new LeafClusterGeometryFactory() } = {}) {
+  constructor({
+    geometryFactory = new LeafClusterGeometryFactory(),
+    closureSampler = new CanopyClosureSampler(),
+  } = {}) {
     this.geometryFactory = geometryFactory;
+    this.closureSampler = closureSampler;
   }
 
   build(treeData) {
@@ -133,7 +233,14 @@ export class LeafClusterBuilder {
     const selected = settings.enabled
       ? selectSamples(treeData, settings.density)
       : [];
-    const records = createInstanceRecords(selected, settings.layerCount);
+    const field = new CrownVolumeField(treeData);
+    const closureSamples = settings.enabled
+      ? this.closureSampler.generate(treeData, field)
+      : [];
+    const records = [
+      ...createSurfaceRecords(selected, settings.layerCount),
+      ...createClosureRecords(closureSamples),
+    ];
 
     if (records.length === 0) {
       const empty = new THREE.Group();
@@ -141,7 +248,6 @@ export class LeafClusterBuilder {
       return empty;
     }
 
-    const field = new CrownVolumeField(treeData);
     const geometry = this.geometryFactory.create(settings);
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
@@ -158,46 +264,33 @@ export class LeafClusterBuilder {
     const spin = new THREE.Quaternion();
     const scale = new THREE.Vector3();
 
-    records.forEach(({ sample, layer }, index) => {
-      const surface = projectToSurface(field, sample);
-      const instanceId = sample.id + layer * 4099;
-      const scaleJitter = THREE.MathUtils.lerp(
-        LEAF_DETAIL_RENDERING_CONSTANTS.scaleJitterMinimum,
-        LEAF_DETAIL_RENDERING_CONSTANTS.scaleJitterMaximum,
-        hashUnit(treeData.seed, instanceId, 0x27d4eb2d),
-      );
-      const instanceScale = Math.max(
-        LEAF_DETAIL_RENDERING_CONSTANTS.minimumScale,
-        sample.scale *
-          settings.scale *
-          calculateLayerScale(layer, settings) *
-          scaleJitter,
-      );
-      const position = surface.position
-        .clone()
-        .addScaledVector(
-          surface.normal,
-          calculateRadialOffset(layer, settings, instanceScale),
-        );
-      addTangentialJitter(
-        position,
-        surface.normal,
+    records.forEach((record, index) => {
+      const placement = resolvePlacement(record, field);
+      const instanceScale = calculateInstanceScale(record, settings, treeData);
+      const position = resolvePosition(
+        record,
+        placement,
         treeData,
-        sample,
-        layer,
         settings,
         instanceScale,
       );
 
-      alignment.setFromUnitVectors(UP, surface.normal);
-      spin.setFromAxisAngle(UP, sample.rotation + layer * GOLDEN_ANGLE);
+      alignment.setFromUnitVectors(UP, placement.normal);
+      spin.setFromAxisAngle(
+        UP,
+        record.sample.rotation + record.layer * GOLDEN_ANGLE,
+      );
       alignment.multiply(spin);
       scale.setScalar(instanceScale);
       matrix.compose(position, alignment, scale);
       mesh.setMatrixAt(index, matrix);
 
       const jitter =
-        (hashUnit(treeData.seed, sample.id + layer * 6151, 0x85ebca6b) *
+        (hashUnit(
+          treeData.seed,
+          record.sample.id + record.layer * 6151,
+          0x85ebca6b,
+        ) *
           2 -
           1) *
         settings.colorJitter;
@@ -205,7 +298,7 @@ export class LeafClusterBuilder {
         index,
         samplePaletteColor(
           treeData.palette.palette,
-          sample.colorMix + settings.colorLift + jitter,
+          record.sample.colorMix + settings.colorLift + jitter,
         ),
       );
     });
@@ -216,8 +309,16 @@ export class LeafClusterBuilder {
     mesh.name = 'leaf-detail-shell';
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+
+    const closureRoles = countClosureRoles(closureSamples);
+    const surfaceClusterCount = selected.length * settings.layerCount;
     mesh.userData.leafDetail = {
       clusterCount: records.length,
+      surfaceClusterCount,
+      closureClusterCount: closureSamples.length,
+      closureSpineCount: closureRoles.spine,
+      closureBridgeCount: closureRoles.bridge,
+      closureCapCount: closureRoles.cap,
       sourceSampleCount: selected.length,
       layerCount: settings.layerCount,
       leafCount: records.length * settings.leavesPerCluster,
