@@ -1,0 +1,6 @@
+remote: origin
+sourceBranch: main
+publishBranch: gh-pages
+requiredFiles:
+  - index.html
+  - .nojekyll
