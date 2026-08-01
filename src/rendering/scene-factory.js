@@ -93,6 +93,6 @@ export class SceneFactory {
     const { hemisphere, sun } = createLights(config);
     scene.add(hemisphere, sun, createGround(config));
 
-    return { scene, renderer, camera, controls };
+    return { scene, renderer, camera, controls, sun };
   }
 }
