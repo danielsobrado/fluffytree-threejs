@@ -1,6 +1,13 @@
 import { CrownVolumeGenerator } from '../generation/crown-volume-generator.js';
 import { TreeGenerator } from '../generation/tree-generator.js';
-import { analyzeCrownVolume, hashCrownVolume } from './crown-volume-analyzer.js';
+import {
+  analyzeCrownVolume,
+  hashCrownVolume,
+} from './crown-volume-analyzer.js';
+
+const TREE_GENERATION_OPTIONS = Object.freeze({
+  includeSurfaceSamples: false,
+});
 
 function percentile(sorted, ratio) {
   if (sorted.length === 0) return 0;
@@ -86,7 +93,11 @@ export class CrownVolumeQaRunner {
 
       for (let offset = 0; offset < configuration.run.seedCount; offset += 1) {
         const seed = configuration.run.seedStart + offset;
-        const tree = this.treeGenerator.generate(preset, seed);
+        const tree = this.treeGenerator.generate(
+          preset,
+          seed,
+          TREE_GENERATION_OPTIONS,
+        );
         const volume = this.volumeGenerator.generate(tree);
         const hash = hashCrownVolume(volume);
         const metrics = analyzeCrownVolume(volume);
@@ -98,7 +109,11 @@ export class CrownVolumeQaRunner {
           replay < configuration.run.deterministicReplayCount;
           replay += 1
         ) {
-          const replayTree = this.treeGenerator.generate(preset, seed);
+          const replayTree = this.treeGenerator.generate(
+            preset,
+            seed,
+            TREE_GENERATION_OPTIONS,
+          );
           const replayVolume = this.volumeGenerator.generate(replayTree);
           if (hashCrownVolume(replayVolume) !== hash) {
             deterministicMismatchCount += 1;
