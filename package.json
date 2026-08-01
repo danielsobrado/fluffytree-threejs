@@ -1,6 +1,6 @@
 {
   "name": "fluffytree-threejs",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,9 @@
     "qa:render": "bash tools/run-render-smoke.sh",
     "qa:shape": "node tools/run-tree-shape-qa.js",
     "qa:shape:quick": "node tools/run-tree-shape-qa.js --seeds 64 --output qa-results/tree-shape-quick",
-    "verify": "npm run check && npm run qa:render && npm run qa:shape",
+    "qa:crown": "node tools/run-crown-volume-qa.js",
+    "qa:crown:quick": "node tools/run-crown-volume-qa.js --seeds 2 --output qa-results/crown-volume-quick",
+    "verify": "npm run check && npm run qa:render && npm run qa:shape && npm run qa:crown",
     "deploy:pages": "npm run verify && node tools/deploy-pages.js"
   },
   "devDependencies": {
