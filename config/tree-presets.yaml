@@ -1,0 +1,78 @@
+presets:
+  roundOrchard:
+    label: Round orchard
+    height: 7.4
+    crown:
+      profile: round
+      baseHeight: 2.45
+      height: 4.65
+      radius: 2.55
+      lobeCount: 11
+      lobeScale: [0.78, 1.18]
+      verticalScale: [0.78, 1.12]
+      radialBias: 0.58
+      asymmetry: 0.12
+      lean: [0.12, -0.04]
+    trunk:
+      baseRadius: 0.36
+      topRadius: 0.14
+      bend: 0.24
+      segments: 8
+      branchCount: 6
+      color: '#554133'
+    foliage:
+      baseColor: '#4f754c'
+      lightColor: '#a7c66b'
+      variation: 0.18
+
+  columnar:
+    label: Columnar
+    height: 8.25
+    crown:
+      profile: columnar
+      baseHeight: 1.55
+      height: 6.35
+      radius: 1.55
+      lobeCount: 13
+      lobeScale: [0.72, 1.05]
+      verticalScale: [0.95, 1.35]
+      radialBias: 0.42
+      asymmetry: 0.08
+      lean: [-0.05, 0.04]
+    trunk:
+      baseRadius: 0.3
+      topRadius: 0.11
+      bend: 0.12
+      segments: 9
+      branchCount: 5
+      color: '#4c3b30'
+    foliage:
+      baseColor: '#315c4c'
+      lightColor: '#8abf83'
+      variation: 0.14
+
+  irregularAutumn:
+    label: Irregular autumn
+    height: 8.05
+    crown:
+      profile: vase
+      baseHeight: 2.25
+      height: 5.45
+      radius: 2.72
+      lobeCount: 12
+      lobeScale: [0.72, 1.22]
+      verticalScale: [0.8, 1.2]
+      radialBias: 0.7
+      asymmetry: 0.3
+      lean: [0.3, 0.08]
+    trunk:
+      baseRadius: 0.4
+      topRadius: 0.13
+      bend: 0.42
+      segments: 9
+      branchCount: 7
+      color: '#5a3d2e'
+    foliage:
+      baseColor: '#9b4c2d'
+      lightColor: '#e7a256'
+      variation: 0.24

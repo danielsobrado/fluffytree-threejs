@@ -25,6 +25,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Test procedural generation
+        run: npm test
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
