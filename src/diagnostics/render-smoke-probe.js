@@ -1,6 +1,7 @@
 const RENDER_SMOKE_QUERY_VALUE = 'render-smoke';
 const STATUS_ATTRIBUTE = 'renderStatus';
 const ERROR_ATTRIBUTE = 'renderError';
+const CROWN_NAME = 'unified-crown';
 
 function isRenderSmokeRequested() {
   return (
@@ -12,6 +13,26 @@ function isRenderSmokeRequested() {
 function serializeError(error) {
   if (error instanceof Error) return `${error.name}: ${error.message}`;
   return String(error);
+}
+
+function collectCrownMetrics(scene) {
+  let crownCount = 0;
+  let crownTriangles = 0;
+  let crownVertices = 0;
+
+  scene.traverse((object) => {
+    if (object.name !== CROWN_NAME) return;
+
+    crownCount += 1;
+    crownTriangles += Number(object.geometry?.userData?.volume?.triangleCount ?? 0);
+    crownVertices += Number(object.geometry?.userData?.volume?.vertexCount ?? 0);
+  });
+
+  if (crownCount === 0 || crownTriangles === 0 || crownVertices === 0) {
+    throw new Error('Unified crown geometry was not present in the rendered scene.');
+  }
+
+  return { crownCount, crownTriangles, crownVertices };
 }
 
 export class RenderSmokeProbe {
@@ -27,7 +48,11 @@ export class RenderSmokeProbe {
     this.root.dataset[STATUS_ATTRIBUTE] = 'pending';
     renderer.debug.checkShaderErrors = true;
     renderer.debug.onShaderError = (...details) => {
-      this.fail(new Error(`WebGL shader compilation failed (${details.length} diagnostic values).`));
+      this.fail(
+        new Error(
+          `WebGL shader compilation failed (${details.length} diagnostic values).`,
+        ),
+      );
     };
   }
 
@@ -35,6 +60,8 @@ export class RenderSmokeProbe {
     if (!this.enabled) return;
 
     try {
+      const crownMetrics = collectCrownMetrics(scene);
+
       if (typeof renderer.compileAsync === 'function') {
         await renderer.compileAsync(scene, camera);
       } else {
@@ -45,6 +72,9 @@ export class RenderSmokeProbe {
         this.root.dataset[STATUS_ATTRIBUTE] = 'ready';
         this.root.dataset.renderCalls = String(renderer.info.render.calls);
         this.root.dataset.renderTriangles = String(renderer.info.render.triangles);
+        this.root.dataset.crownCount = String(crownMetrics.crownCount);
+        this.root.dataset.crownTriangles = String(crownMetrics.crownTriangles);
+        this.root.dataset.crownVertices = String(crownMetrics.crownVertices);
       }
     } catch (error) {
       this.fail(error);
