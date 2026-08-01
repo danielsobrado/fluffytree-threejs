@@ -5,6 +5,19 @@ import { addFoliageInstanceAttributes } from './instanced-foliage-attributes.js'
 
 const LOCAL_OUTWARD = new THREE.Vector3(0, 0, 1);
 
+function crownDirection(position, center) {
+  const x = position.x - center.x;
+  const y = position.y - center.y;
+  const z = position.z - center.z;
+  const length = Math.hypot(x, y, z);
+
+  if (length <= Number.EPSILON) {
+    return { x: 0, y: 1, z: 0 };
+  }
+
+  return { x: x / length, y: y / length, z: z / length };
+}
+
 export class FoliageShellBuilder {
   constructor({
     geometryFactory = new FoliageShellGeometryFactory(),
@@ -18,11 +31,11 @@ export class FoliageShellBuilder {
     const geometry = this.geometryFactory.create(
       treeData.palette.shell.planesPerCluster,
     );
-    addFoliageInstanceAttributes(
-      geometry,
-      treeData.shell,
-      (instance) => instance.exposure,
-    );
+    addFoliageInstanceAttributes(geometry, treeData.shell, {
+      getExposure: (instance) => instance.exposure,
+      getCrownDirection: (instance) =>
+        crownDirection(instance.position, treeData.crownCenter),
+    });
 
     const material = this.materialFactory.create({
       foliage: treeData.palette,
@@ -54,7 +67,11 @@ export class FoliageShellBuilder {
       quaternion.setFromUnitVectors(LOCAL_OUTWARD, normal);
       twist.setFromAxisAngle(LOCAL_OUTWARD, instance.rotation);
       quaternion.multiply(twist);
-      scale.setScalar(instance.scale);
+      scale.set(
+        instance.scale * instance.widthRatio,
+        instance.scale * instance.widthRatio,
+        instance.scale * instance.outwardRatio,
+      );
       matrix.compose(position, quaternion, scale);
       shell.setMatrixAt(index, matrix);
     });
