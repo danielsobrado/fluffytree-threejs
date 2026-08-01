@@ -1,8 +1,8 @@
 import { GENERATION_CONSTANTS } from './generation-constants.js';
 import { ellipsoidSupportRadius, normalizeVector } from './lobe-geometry.js';
 
-function lerp(min, max, t) {
-  return min + (max - min) * t;
+function lerp(minimum, maximum, t) {
+  return minimum + (maximum - minimum) * t;
 }
 
 function distanceFromAxis(lobe) {
@@ -12,14 +12,21 @@ function distanceFromAxis(lobe) {
 function createTrunkPoint(preset, random, index) {
   const { trunk, crown } = preset;
   const t = index / trunk.segments;
-  const y = lerp(0, crown.baseHeight + crown.height * 0.58, t);
-  const bend = Math.sin(t * Math.PI) * trunk.bend;
+  const y = lerp(0, crown.baseHeight + crown.height * 0.48, t);
+  const primaryBend = Math.sin(t * Math.PI * 0.92) * trunk.bend;
+  const secondaryBend = Math.sin(t * Math.PI * 2.15) * trunk.bend * 0.14;
 
   return {
-    x: crown.lean[0] * t + bend * (0.62 + random.signed() * 0.12),
+    x:
+      crown.lean[0] * t +
+      primaryBend * (0.64 + random.signed() * 0.08) +
+      secondaryBend,
     y,
-    z: crown.lean[1] * t + bend * (0.24 + random.signed() * 0.1),
-    radius: lerp(trunk.baseRadius, trunk.topRadius, Math.pow(t, 0.82)),
+    z:
+      crown.lean[1] * t +
+      primaryBend * (0.28 + random.signed() * 0.07) -
+      secondaryBend * 0.55,
+    radius: lerp(trunk.baseRadius, trunk.topRadius, Math.pow(t, 0.78)),
   };
 }
 
@@ -68,6 +75,24 @@ function createEmbeddedEndpoint(start, lobe) {
   };
 }
 
+function createBranchControls(start, end, random) {
+  const offsetX = random.signed() * 0.14;
+  const offsetZ = random.signed() * 0.14;
+
+  return [
+    {
+      x: lerp(start.x, end.x, 0.3) + offsetX,
+      y: lerp(start.y, end.y, 0.3) + random.range(0.12, 0.3),
+      z: lerp(start.z, end.z, 0.3) + offsetZ,
+    },
+    {
+      x: lerp(start.x, end.x, 0.72) - offsetX * 0.35,
+      y: lerp(start.y, end.y, 0.72) + random.range(0.08, 0.24),
+      z: lerp(start.z, end.z, 0.72) - offsetZ * 0.35,
+    },
+  ];
+}
+
 export class BranchGenerator {
   generate(preset, lobes, random) {
     const trunkPoints = [];
@@ -79,27 +104,23 @@ export class BranchGenerator {
     const branchTargets = selectBranchTargets(lobes, preset.trunk.branchCount);
     const branches = branchTargets.map((lobe, index) => {
       const attachmentHeight = Math.max(
-        preset.crown.baseHeight * 0.7,
-        lobe.position.y - preset.crown.height * random.range(0.22, 0.4),
+        preset.crown.baseHeight * 0.68,
+        lobe.position.y - preset.crown.height * random.range(0.24, 0.42),
       );
       const start = findTrunkAttachment(trunkPoints, attachmentHeight);
       const end = createEmbeddedEndpoint(start, lobe);
-      const control = {
-        x: lerp(start.x, end.x, 0.46) + random.signed() * 0.12,
-        y: lerp(start.y, end.y, 0.54) + random.range(0.08, 0.28),
-        z: lerp(start.z, end.z, 0.46) + random.signed() * 0.12,
-      };
+      const controls = createBranchControls(start, end, random);
 
       return {
         id: index,
         targetLobeId: lobe.id,
         points: [
           { x: start.x, y: start.y, z: start.z },
-          control,
+          ...controls,
           end,
         ],
-        startRadius: Math.max(preset.trunk.topRadius, start.radius * 0.62),
-        endRadius: Math.max(0.035, preset.trunk.topRadius * 0.32),
+        startRadius: Math.max(preset.trunk.topRadius, start.radius * 0.66),
+        endRadius: Math.max(0.035, preset.trunk.topRadius * 0.3),
       };
     });
 
@@ -108,6 +129,7 @@ export class BranchGenerator {
         points: trunkPoints.map(({ x, y, z }) => ({ x, y, z })),
         startRadius: preset.trunk.baseRadius,
         endRadius: preset.trunk.topRadius,
+        flare: preset.trunk.flare,
       },
       branches,
     };
