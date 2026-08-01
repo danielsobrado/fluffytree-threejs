@@ -6,6 +6,7 @@ function createVertexDeclarations() {
   return `
     attribute float instanceColorMix;
     attribute float instanceExposure;
+    attribute vec3 instanceCrownDirection;
     varying float vFoliagePaletteCoordinate;
     varying float vFoliageExposure;
     varying float vFoliageHeight;
@@ -15,6 +16,7 @@ function createVertexDeclarations() {
     uniform float uFoliageHeightPaletteShift;
     uniform float uFoliageExposurePaletteShift;
     uniform float uFoliageRadialNormalStrength;
+    uniform float uFoliageCrownNormalBlend;
   `;
 }
 
@@ -45,7 +47,17 @@ function createWorldRadialShader() {
       );
       foliageRadialInstance = foliageInstanceMatrix * foliageRadialInstance;
     #endif
-    vFoliageRadialWorld = normalize( mat3( modelMatrix ) * foliageRadialInstance );
+    vec3 foliageLobeRadialWorld = normalize(
+      mat3( modelMatrix ) * foliageRadialInstance
+    );
+    vec3 foliageCrownRadialWorld = normalize(
+      mat3( modelMatrix ) * instanceCrownDirection
+    );
+    vFoliageRadialWorld = normalize( mix(
+      foliageLobeRadialWorld,
+      foliageCrownRadialWorld,
+      uFoliageCrownNormalBlend
+    ) );
   `;
 }
 
@@ -124,6 +136,9 @@ export function configureStylizedFoliageShader(
       },
       uFoliageRadialNormalStrength: {
         value: foliage.radialNormalStrength,
+      },
+      uFoliageCrownNormalBlend: {
+        value: foliage.crownNormalBlend,
       },
       uFoliageWrapLight: { value: foliage.wrapLight },
       uFoliageSkyLightStrength: { value: foliage.skyLightStrength },
