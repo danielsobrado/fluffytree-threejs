@@ -154,7 +154,9 @@ function analyzeProjection(tree, horizontalAxis, resolution) {
 
   const coreCount = countMask(coreMask);
   const combinedCount = countMask(combinedMask);
-  const components = countComponents(combinedMask, resolution, resolution);
+  const components = countComponents(combinedMask, resolution, resolution, {
+    includeDiagonals: true,
+  });
 
   return {
     contribution:
