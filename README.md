@@ -6,39 +6,27 @@ Procedural stylized trees built with Three.js.
 
 The repository is a deterministic, configuration-driven procedural tree system split into small generation, rendering, animation, diagnostics, and QA modules.
 
-## Phase 1: procedural structure
+## Procedural structure
 
 - Rounded orchard, columnar, and irregular vase-shaped crown envelopes.
-- Deterministic foliage-lobe placement from a seed.
-- Generated bent trunks and primary branches.
-- Connected crown enforcement and branch-to-foliage insertion.
+- Deterministic control-lobe placement from a seed.
+- Generated curved trunks and primary supporting branches.
+- Connected crown enforcement and branch-to-crown insertion.
+- Seamless tapered tube geometry with configurable trunk flare.
 
-## Phase 2: stylized foliage
+## Unified canopy
 
-- Opaque instanced crown cores.
-- Deterministic exposed foliage shells.
-- Seasonal palette textures and stylized canopy lighting.
-- Low-detail crown shadow proxies.
-- Headless WebGL shader compilation and screenshot smoke testing.
+Control lobes define the crown but are no longer rendered as separate spheres.
 
-## Phase 2.5: visual parity
+- Rotated ellipsoid distance fields are combined with a smooth union.
+- Marching tetrahedra extracts one continuous crown mesh.
+- Low-frequency field displacement breaks the silhouette without producing spikes.
+- Field-gradient normals remain smooth across former lobe boundaries.
+- Broad crown-space palette patches replace per-card color noise.
+- Opaque crown geometry avoids alpha overdraw and casts coherent shadows.
+- Foliage fins, surface stamps, and visible primitive intersections are not part of the active renderer.
 
-The visual-parity pass addresses the main issues visible in Phase 2 mobile captures:
-
-- More consistent overlapping lobes reduce isolated ball-shaped crown masses.
-- Crown-wide normals blend lighting across neighbouring lobes.
-- Radial root-anchored foliage fins replace tangent cards that looked like surface craters.
-- Shell colors inherit from their source lobe with limited variation.
-- Shell cavity darkening is reduced so exterior foliage remains readable.
-- Higher-detail, less-deformed crown cores reduce obvious icosahedron facets.
-
-Current deterministic budgets:
-
-| Preset | Core lobes | Shell clusters | Leaf cards |
-|---|---:|---:|---:|
-| Round orchard | 16 | 384 | 1,152 |
-| Columnar | 18 | 414 | 1,242 |
-| Irregular autumn | 17 | 442 | 1,326 |
+The volume resolution, union smoothing, surface displacement, normal sampling, and color patching are configured per preset in `config/tree-presets.yaml`.
 
 Hierarchical wind and production distance LOD remain later phases.
 
@@ -77,16 +65,17 @@ A smaller local shape run is available while changing the generator:
 npm run qa:shape:quick
 ```
 
-The full shape run generates 2,048 seeded trees for each preset: 6,144 trees in total. Every tree is generated twice to verify exact replay determinism. Reports are written to `qa-results/tree-shape/report.json` and `report.md`.
+The full control-shape run generates 2,048 seeded trees for each preset: 6,144 trees in total. Every tree is generated twice to verify exact replay determinism. Reports are written to `qa-results/tree-shape/report.json` and `report.md`.
 
-The QA gates measure:
+The automated gates cover:
 
-- Exact lobe, shell-cluster, leaf-card, branch, and trunk-point counts.
-- Finite numeric output, deterministic replay, and seed uniqueness.
-- Connected 3D foliage and connected front/side silhouettes.
-- Crown aspect, density, envelope coverage, profile similarity, and foliage spill.
-- Shell surface attachment, normals, scale, exposure, and silhouette contribution.
-- Trunk penetration and branch endpoints embedded inside target lobes.
+- Exact procedural topology and seed replay.
+- Connected control volumes and front/side silhouettes.
+- Crown aspect, density, envelope coverage, profile similarity, and spill.
+- Branch insertion and monotonic trunk structure.
+- Deterministic unified crown extraction.
+- Finite crown vertices, normalized field-gradient normals, coincident-normal consistency, and maximum surface edge length.
+- Desktop and mobile WebGL compilation and screenshots.
 
 ## Structure
 
@@ -101,10 +90,10 @@ src/diagnostics/        Browser and rendering diagnostics
 src/domain/             Validated domain configuration
 src/generation/         Renderer-independent procedural generation
 src/qa/                 Numeric topology, silhouette, shell, and volume analysis
-src/rendering/          Three.js geometry, material, texture, and mesh construction
+src/rendering/          Three.js geometry, material, and mesh construction
 src/ui/                 DOM presentation
 styles/                 Page styling
-tests/                  Deterministic generation, shader, and QA tests
+tests/                  Deterministic generation, rendering-data, and QA tests
 tools/                  Command-line QA and deployment entry points
 ```
 
