@@ -1,3 +1,6 @@
+import { GENERATION_CONSTANTS } from './generation-constants.js';
+import { ellipsoidSupportRadius, normalizeVector } from './lobe-geometry.js';
+
 function lerp(min, max, t) {
   return min + (max - min) * t;
 }
@@ -48,6 +51,23 @@ function selectBranchTargets(lobes, count) {
     .slice(0, count);
 }
 
+function createEmbeddedEndpoint(start, lobe) {
+  const towardStart = normalizeVector({
+    x: start.x - lobe.position.x,
+    y: start.y - lobe.position.y,
+    z: start.z - lobe.position.z,
+  });
+  const supportRadius = ellipsoidSupportRadius(lobe.scale, towardStart);
+  const insertionDistance =
+    supportRadius * GENERATION_CONSTANTS.branchInsertionDepth;
+
+  return {
+    x: lobe.position.x + towardStart.x * insertionDistance,
+    y: lobe.position.y + towardStart.y * insertionDistance,
+    z: lobe.position.z + towardStart.z * insertionDistance,
+  };
+}
+
 export class BranchGenerator {
   generate(preset, lobes, random) {
     const trunkPoints = [];
@@ -63,14 +83,7 @@ export class BranchGenerator {
         lobe.position.y - preset.crown.height * random.range(0.22, 0.4),
       );
       const start = findTrunkAttachment(trunkPoints, attachmentHeight);
-      const directionX = lobe.position.x - start.x;
-      const directionZ = lobe.position.z - start.z;
-      const endScale = random.range(0.72, 0.86);
-      const end = {
-        x: start.x + directionX * endScale,
-        y: start.y + (lobe.position.y - start.y) * random.range(0.72, 0.88),
-        z: start.z + directionZ * endScale,
-      };
+      const end = createEmbeddedEndpoint(start, lobe);
       const control = {
         x: lerp(start.x, end.x, 0.46) + random.signed() * 0.12,
         y: lerp(start.y, end.y, 0.54) + random.range(0.08, 0.28),
@@ -79,6 +92,7 @@ export class BranchGenerator {
 
       return {
         id: index,
+        targetLobeId: lobe.id,
         points: [
           { x: start.x, y: start.y, z: start.z },
           control,

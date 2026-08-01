@@ -4,4 +4,7 @@ export const GENERATION_CONSTANTS = Object.freeze({
   minimumLobeScale: 0.18,
   trunkSampleCount: 10,
   branchSampleCount: 6,
+  lobeConnectivityTargetOverlap: 0.94,
+  connectivityIterationMultiplier: 2,
+  branchInsertionDepth: 0.55,
 });

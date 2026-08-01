@@ -1,11 +1,17 @@
 {
   "name": "fluffytree-threejs",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/main.js && node --test"
+    "check": "node --check src/main.js && node --check tools/run-tree-shape-qa.js && node --test",
+    "qa:shape": "node tools/run-tree-shape-qa.js",
+    "qa:shape:quick": "node tools/run-tree-shape-qa.js --seeds 64 --output qa-results/tree-shape-quick",
+    "verify": "npm test && npm run qa:shape"
+  },
+  "devDependencies": {
+    "js-yaml": "4.1.0"
   },
   "engines": {
     "node": ">=20"
