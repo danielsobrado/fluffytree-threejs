@@ -1,12 +1,12 @@
 presets:
   roundOrchard:
     label: Round orchard
-    height: 7.4
+    height: 6.9
     crown:
       profile: round
-      baseHeight: 2.45
-      height: 4.65
-      radius: 2.55
+      baseHeight: 2.3
+      height: 4.0
+      radius: 2.75
       lobeCount: 16
       lobeScale: [0.74, 0.94]
       verticalScale: [0.82, 1.08]
