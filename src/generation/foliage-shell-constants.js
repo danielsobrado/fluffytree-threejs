@@ -8,8 +8,11 @@ export const FOLIAGE_SHELL_CONSTANTS = Object.freeze({
   exposureWeight: 0.58,
   outwardWeight: 0.34,
   upwardWeight: 0.08,
-  selectionScoreWeight: 0.68,
-  selectionSeparationWeight: 0.32,
   scoreJitter: 0.0001,
+  // A cluster only counts as covering a candidate when both face roughly the
+  // same way, so a card on the far side of a thin crown cannot claim the near
+  // side is covered. cos(75 degrees).
+  minimumCoverageNormalDot: 0.2588,
+  minimumCellSize: 1e-4,
   seedSalt: 0x9e3779b9,
 });

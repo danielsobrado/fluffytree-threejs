@@ -78,8 +78,8 @@ presets:
         layerCount: 1
         layerOffsetRatio: 0.16
       shell:
-        instancesPerLobe: 160
-        candidateMultiplier: 4
+        candidatesPerLobe: 640
+        coverageRadiusRatio: 0.13
         sizeRatio: [0.1, 0.16]
         widthRatio: [0.72, 1.05]
         outwardRatio: [1.0, 1.35]
@@ -90,7 +90,7 @@ presets:
         cavityScale: 0.35
         normalBlend: 0.25
         alphaTest: 0.46
-        planesPerCluster: 3
+        planesPerCluster: 2
         shadowProxyScale: 0.98
 
   columnar:
@@ -172,8 +172,8 @@ presets:
         layerCount: 1
         layerOffsetRatio: 0.17
       shell:
-        instancesPerLobe: 136
-        candidateMultiplier: 4
+        candidatesPerLobe: 1000
+        coverageRadiusRatio: 0.115
         sizeRatio: [0.09, 0.15]
         widthRatio: [0.68, 1.0]
         outwardRatio: [1.0, 1.32]
@@ -184,7 +184,7 @@ presets:
         cavityScale: 0.32
         normalBlend: 0.28
         alphaTest: 0.47
-        planesPerCluster: 3
+        planesPerCluster: 2
         shadowProxyScale: 0.98
 
   irregularAutumn:
@@ -266,8 +266,8 @@ presets:
         layerCount: 1
         layerOffsetRatio: 0.17
       shell:
-        instancesPerLobe: 148
-        candidateMultiplier: 4
+        candidatesPerLobe: 592
+        coverageRadiusRatio: 0.13
         sizeRatio: [0.1, 0.17]
         widthRatio: [0.72, 1.08]
         outwardRatio: [1.02, 1.42]
@@ -278,5 +278,5 @@ presets:
         cavityScale: 0.34
         normalBlend: 0.22
         alphaTest: 0.45
-        planesPerCluster: 3
+        planesPerCluster: 2
         shadowProxyScale: 0.98

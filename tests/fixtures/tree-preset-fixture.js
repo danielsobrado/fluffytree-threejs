@@ -98,8 +98,8 @@ export function createTestPreset(overrides = {}) {
         ...heroLeafOverrides,
       },
       shell: {
-        instancesPerLobe: 12,
-        candidateMultiplier: 3,
+        candidatesPerLobe: 256,
+        coverageRadiusRatio: 0.13,
         sizeRatio: [0.12, 0.18],
         widthRatio: [0.72, 1.05],
         outwardRatio: [1, 1.35],

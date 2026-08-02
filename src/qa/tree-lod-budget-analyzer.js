@@ -1,3 +1,4 @@
+import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js';
 import { hashUnit } from '../rendering/deterministic-hash.js';
 
 function countBranches(tree, maximumOrder) {
@@ -24,7 +25,11 @@ function selectedShellCount(tree, density, salt) {
 export function analyzeTreeLodBudgets(tree) {
   const foliage = tree.palette;
   const heroClusters = selectedShellCount(tree, foliage.heroLeaves.density, 0x9e3779b1);
-  const interiorShell = selectedShellCount(tree, 0.3, 0x6c8e9cf5);
+  const interiorShell = selectedShellCount(
+    tree,
+    FOLIAGE_RENDERING_CONSTANTS.heroInteriorDensity,
+    0x6c8e9cf5,
+  );
   const mediumShell = selectedShellCount(tree, 0.7, 0x517cc1b7);
   const lobeCount = tree.lobes.length;
   const lod0 =

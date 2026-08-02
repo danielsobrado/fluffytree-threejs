@@ -26,7 +26,7 @@ function checkConfiguredRanges(metrics, ranges, failures) {
 function checkFoliageCounts(metrics, preset, failures) {
   const shellSettings = preset.foliage.shell;
   const maximumShellCount =
-    preset.crown.lobeCount * shellSettings.instancesPerLobe;
+    preset.crown.lobeCount * shellSettings.candidatesPerLobe;
   const minimumUsefulShellCount = preset.crown.lobeCount;
 
   checkRange(
@@ -44,16 +44,19 @@ function checkFoliageCounts(metrics, preset, failures) {
     ],
     failures,
   );
+  // A lobe fully buried inside its neighbours legitimately carries no clusters.
+  // The coverage gate owns the stronger invariant, that every lobe with exposed
+  // surface carries at least one, because only it recomputes exposure.
   checkRange(
     metrics,
     'shellMinimumInstancesPerLobe',
-    [0, shellSettings.instancesPerLobe],
+    [0, shellSettings.candidatesPerLobe],
     failures,
   );
   checkRange(
     metrics,
     'shellMaximumInstancesPerLobe',
-    [1, shellSettings.instancesPerLobe],
+    [1, shellSettings.candidatesPerLobe],
     failures,
   );
 }

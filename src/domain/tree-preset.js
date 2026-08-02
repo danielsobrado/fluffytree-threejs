@@ -93,8 +93,8 @@ const REQUIRED_HERO_LEAF_FIELDS = [
 ];
 
 const REQUIRED_SHELL_FIELDS = [
-  'instancesPerLobe',
-  'candidateMultiplier',
+  'candidatesPerLobe',
+  'coverageRadiusRatio',
   'sizeRatio',
   'widthRatio',
   'outwardRatio',
@@ -310,12 +310,14 @@ function validateCoreTuning(id, core) {
 
 function validateShellTuning(id, shell) {
   requirePositiveInteger(
-    shell.instancesPerLobe,
-    `${id}.foliage.shell.instancesPerLobe`,
+    shell.candidatesPerLobe,
+    `${id}.foliage.shell.candidatesPerLobe`,
   );
-  requirePositiveInteger(
-    shell.candidateMultiplier,
-    `${id}.foliage.shell.candidateMultiplier`,
+  requireRange(
+    shell.coverageRadiusRatio,
+    0.02,
+    0.5,
+    `${id}.foliage.shell.coverageRadiusRatio`,
   );
   requirePositiveInteger(
     shell.planesPerCluster,

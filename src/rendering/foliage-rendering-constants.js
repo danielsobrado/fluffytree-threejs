@@ -7,6 +7,14 @@ export const FOLIAGE_RENDERING_CONSTANTS = Object.freeze({
   // neighbouring cores still overlap in the crevices between clumps, which is
   // where an alpha-cut shell alone leaves the sky visible through the crown.
   coreScaleMultiplier: 1.35,
+  // Inward copies of exterior cards. They add parallax behind the canopy surface
+  // but cannot fill a region the exterior pass never covered, so the triangle
+  // budget goes to exterior coverage first and this layer takes what is left.
+  heroInteriorDensity: 0.09,
+  // Cluster quads are unit sized, so this is what turns a cluster's generated
+  // scale into its rendered card width. The coverage gate needs the same number
+  // to express a surface gap in card widths.
+  shellCardScaleMultiplier: 2.55,
   coreRoughness: 0.96,
   shellRoughness: 0.92,
   shellRootInset: -0.08,

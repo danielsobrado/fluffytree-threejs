@@ -5,6 +5,7 @@ import {
   normalizedRotatedPointDistance,
   pointOnLobeSurface,
 } from './lobe-geometry.js';
+import { SpatialHashGrid } from './spatial-hash-grid.js';
 
 function clamp01(value) {
   return Math.min(1, Math.max(0, value));
@@ -57,46 +58,15 @@ function calculateClearance(point, lobes, ownerLobeId) {
   return minimum === Number.POSITIVE_INFINITY ? 1 : minimum;
 }
 
-function calculateSeparation(candidate, selected) {
-  if (selected.length === 0) return 1;
-
-  let minimum = 1;
-  for (const current of selected) {
-    const dot =
-      candidate.normal.x * current.normal.x +
-      candidate.normal.y * current.normal.y +
-      candidate.normal.z * current.normal.z;
-    minimum = Math.min(minimum, clamp01((1 - dot) * 0.5));
-  }
-
-  return minimum;
+function distanceSquared(left, right) {
+  const x = left.x - right.x;
+  const y = left.y - right.y;
+  const z = left.z - right.z;
+  return x * x + y * y + z * z;
 }
 
-function selectDistributedCandidates(candidates, count) {
-  const remaining = [...candidates];
-  const selected = [];
-
-  while (selected.length < count && remaining.length > 0) {
-    let bestIndex = 0;
-    let bestScore = Number.NEGATIVE_INFINITY;
-
-    for (let index = 0; index < remaining.length; index += 1) {
-      const candidate = remaining[index];
-      const score =
-        candidate.score * FOLIAGE_SHELL_CONSTANTS.selectionScoreWeight +
-        calculateSeparation(candidate, selected) *
-          FOLIAGE_SHELL_CONSTANTS.selectionSeparationWeight;
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestIndex = index;
-      }
-    }
-
-    selected.push(remaining.splice(bestIndex, 1)[0]);
-  }
-
-  return selected;
+function normalDot(left, right) {
+  return left.x * right.x + left.y * right.y + left.z * right.z;
 }
 
 function createCandidate(
@@ -128,10 +98,7 @@ function createCandidate(
     z: surfacePoint.z - crownCenter.z,
   });
   const outwardAlignment = clamp01(
-    (normal.x * outward.x +
-      normal.y * outward.y +
-      normal.z * outward.z +
-      FOLIAGE_SHELL_CONSTANTS.outwardBias) /
+    (normalDot(normal, outward) + FOLIAGE_SHELL_CONSTANTS.outwardBias) /
       FOLIAGE_SHELL_CONSTANTS.outwardRange,
   );
   const upwardAlignment = clamp01(normal.y * 0.5 + 0.5);
@@ -144,11 +111,13 @@ function createCandidate(
   return {
     candidateIndex,
     lobeId: lobe.id,
+    surfacePoint,
     position,
     normal,
     exposure,
     clearance,
     score,
+    coverageRadius: meanScale * settings.coverageRadiusRatio,
     scale: meanScale * random.range(settings.sizeRatio[0], settings.sizeRatio[1]),
     widthRatio: random.range(settings.widthRatio[0], settings.widthRatio[1]),
     outwardRatio: random.range(
@@ -161,67 +130,143 @@ function createCandidate(
   };
 }
 
-function selectLobeShell(candidates, settings) {
-  const exposed = candidates.filter(
-    (candidate) => candidate.exposure >= settings.exposureThreshold,
+function compareCandidates(left, right) {
+  return (
+    right.score - left.score ||
+    left.lobeId - right.lobeId ||
+    left.candidateIndex - right.candidateIndex
   );
-  exposed.sort(
-    (left, right) =>
-      right.score - left.score || left.candidateIndex - right.candidateIndex,
-  );
+}
 
-  return selectDistributedCandidates(exposed, settings.instancesPerLobe);
+/**
+ * Deterministic maximal Poisson-disk selection over the whole crown.
+ *
+ * Candidates are visited in score order and accepted unless an already accepted
+ * cluster covers them: near enough in space and facing a similar way, so a card
+ * on the far side of a thin crown cannot claim to cover this one. Because the
+ * pass only stops when no candidate can still be added, every rejected candidate
+ * has a compatible cluster within that cluster's covering radius. That is the
+ * property the previous per-lobe score-and-normal-separation selection lacked:
+ * it balanced exposure against normal difference and left whole lobes bare.
+ */
+function selectCoveringCandidates(candidates, cellSize) {
+  const grid = new SpatialHashGrid(cellSize);
+  const selected = [];
+
+  for (const candidate of candidates) {
+    const covering = grid.findNear(candidate.position, (accepted) => {
+      const radius = accepted.coverageRadius;
+      return (
+        distanceSquared(candidate.position, accepted.position) < radius * radius &&
+        normalDot(candidate.normal, accepted.normal) >=
+          FOLIAGE_SHELL_CONSTANTS.minimumCoverageNormalDot
+      );
+    });
+
+    if (covering) continue;
+
+    grid.insert(candidate.position, candidate);
+    selected.push(candidate);
+  }
+
+  return selected;
+}
+
+/**
+ * A lobe with no accepted cluster renders as bare core wherever it reaches the
+ * crown surface. Its best candidate is added unconditionally, even when the lobe
+ * looked fully buried at candidate density, because a denser look at the same
+ * surface can still find exposed ground there. One extra card per lobe is
+ * negligible, and it makes "every lobe carries a leaf card" true without
+ * qualification.
+ */
+function coverEveryLobe(selected, bestByLobe) {
+  const covered = new Set(selected.map((candidate) => candidate.lobeId));
+  const additions = [];
+
+  for (const [lobeId, candidate] of bestByLobe) {
+    if (covered.has(lobeId) || !candidate) continue;
+    additions.push(candidate);
+  }
+
+  return additions;
 }
 
 export class FoliageShellGenerator {
   generate(preset, lobes, random) {
     const settings = preset.foliage.shell;
     const crownCenter = calculateCrownCenter(lobes);
-    const instances = [];
-    const lobeExposure = [];
+    const bestByLobe = new Map();
+    const exposed = [];
+    let maximumCoverageRadius = 0;
 
     for (const lobe of lobes) {
-      const candidateCount =
-        settings.instancesPerLobe * settings.candidateMultiplier;
       const phase = random.range(0, FOLIAGE_SHELL_CONSTANTS.tau);
-      const candidates = [];
+      let best = null;
 
-      for (let index = 0; index < candidateCount; index += 1) {
-        candidates.push(
-          createCandidate(
-            lobe,
-            createFibonacciDirection(index, candidateCount, phase),
-            lobes,
-            crownCenter,
-            settings,
-            random,
-            index,
-          ),
+      for (let index = 0; index < settings.candidatesPerLobe; index += 1) {
+        const candidate = createCandidate(
+          lobe,
+          createFibonacciDirection(index, settings.candidatesPerLobe, phase),
+          lobes,
+          crownCenter,
+          settings,
+          random,
+          index,
+        );
+
+        if (!best || compareCandidates(candidate, best) < 0) best = candidate;
+        if (candidate.exposure < settings.exposureThreshold) continue;
+
+        exposed.push(candidate);
+        maximumCoverageRadius = Math.max(
+          maximumCoverageRadius,
+          candidate.coverageRadius,
         );
       }
 
-      const selected = selectLobeShell(candidates, settings);
-      lobeExposure[lobe.id] = selected.length === 0
-        ? 0
-        : selected.reduce((total, candidate) => total + candidate.exposure, 0) /
-          selected.length;
+      bestByLobe.set(lobe.id, best);
+    }
 
-      for (const candidate of selected) {
-        instances.push({
-          id: instances.length,
-          lobeId: candidate.lobeId,
-          position: candidate.position,
-          normal: candidate.normal,
-          scale: candidate.scale,
-          widthRatio: candidate.widthRatio,
-          outwardRatio: candidate.outwardRatio,
-          rotation: candidate.rotation,
-          colorMix: candidate.colorMix,
-          exposure: candidate.exposure,
-          clearance: candidate.clearance,
-          windPhase: candidate.windPhase,
-        });
-      }
+    exposed.sort(compareCandidates);
+    const selected = selectCoveringCandidates(
+      exposed,
+      Math.max(maximumCoverageRadius, FOLIAGE_SHELL_CONSTANTS.minimumCellSize),
+    );
+    selected.push(...coverEveryLobe(selected, bestByLobe));
+    selected.sort(compareCandidates);
+
+    const lobeExposureTotals = new Map();
+    const instances = selected.map((candidate, index) => {
+      const totals = lobeExposureTotals.get(candidate.lobeId) ?? {
+        total: 0,
+        count: 0,
+      };
+      totals.total += candidate.exposure;
+      totals.count += 1;
+      lobeExposureTotals.set(candidate.lobeId, totals);
+
+      return {
+        id: index,
+        lobeId: candidate.lobeId,
+        position: candidate.position,
+        normal: candidate.normal,
+        scale: candidate.scale,
+        widthRatio: candidate.widthRatio,
+        outwardRatio: candidate.outwardRatio,
+        rotation: candidate.rotation,
+        colorMix: candidate.colorMix,
+        exposure: candidate.exposure,
+        clearance: candidate.clearance,
+        coverageRadius: candidate.coverageRadius,
+        windPhase: candidate.windPhase,
+      };
+    });
+
+    const lobeExposure = [];
+    for (const lobe of lobes) {
+      const totals = lobeExposureTotals.get(lobe.id);
+      lobeExposure[lobe.id] = totals ? totals.total / totals.count : 0;
     }
 
     return {

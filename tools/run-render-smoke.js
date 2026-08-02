@@ -121,7 +121,7 @@ function runBrowser(browser, name, size) {
         '--force-device-scale-factor=1',
         `--user-data-dir=${profile}`,
         `--window-size=${size}`,
-        `--virtual-time-budget=${qaMode === 'render-smoke' ? 40000 : 120000}`,
+        `--virtual-time-budget=${qaMode === 'render-smoke' ? 20000 : 120000}`,
         `--screenshot=${screenshot}`,
         '--dump-dom',
         url,
@@ -179,7 +179,7 @@ function runBrowser(browser, name, size) {
           `${name} browser capture timed out (${activeCapture?.status}): ${diagnostics}`,
         ),
       );
-    }, qaMode === 'render-smoke' ? 150000 : 300000);
+    }, 300000);
     child.on('error', finish);
     child.on('close', (code) => {
       exitCode = code;

@@ -16,7 +16,8 @@
     "qa:crown:quick": "node tools/run-crown-volume-qa.js --seeds 2 --output qa-results/crown-volume-quick",
     "qa:lod": "node tools/run-tree-lod-qa.js",
     "qa:solidity": "node tools/run-canopy-solidity-qa.js",
-    "verify": "npm run check && npm run qa:render && npm run qa:solidity && npm run qa:shape && npm run qa:crown && npm run qa:lod && npm run qa:stress",
+    "qa:coverage": "node tools/run-shell-coverage-qa.js",
+    "verify": "npm run check && npm run qa:render && npm run qa:solidity && npm run qa:coverage && npm run qa:shape && npm run qa:crown && npm run qa:lod && npm run qa:stress",
     "deploy:pages": "npm run verify && node tools/deploy-pages.js",
     "deploy:pages:no-qa": "node tools/deploy-pages.js"
   },

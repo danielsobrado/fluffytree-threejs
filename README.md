@@ -19,7 +19,8 @@ The repository is a deterministic, configuration-driven procedural tree system s
 ## Painterly foliage and LOD
 
 - Low-poly clump cores create the dark interior canopy mass at every level of detail, including the hero level. An alpha-cut shell cannot tile a closed surface, so without the cores the sky shows through the crown.
-- Alpha-cut procedural leaf sprays cover exposed surfaces and silhouettes.
+- Alpha-cut procedural leaf sprays cover exposed surfaces and silhouettes. Clusters are chosen by deterministic maximal Poisson-disk selection over the whole crown, not per lobe, so every exposed patch is within a covering radius of a cluster that faces the same way. Selecting on score alone left whole lobes bare.
+- Every lobe carries at least one cluster, so no lobe can render as bare core.
 - Sparse modeled hero leaves add close edge detail without filling the crown with geometry.
 - Crown-aware palette shading produces coherent cavity, sky, height, and sunward color.
 - Shader wind moves foliage without rotating the trunk or updating instance matrices on the CPU.
@@ -67,6 +68,7 @@ The no-QA command still fetches remote `main`, validates required Pages files, a
 npm run check
 npm run qa:render
 npm run qa:solidity
+npm run qa:coverage
 npm run qa:shape
 npm run qa:crown
 npm run qa:lod
@@ -90,6 +92,10 @@ The LOD budget gate measures every demo tree against fixed triangle, draw-call, 
 
 The deterministic 75-tree stress gate projects a 1280×720 view, checks mixed-LOD migration, and enforces the 100-draw and 128 MB budgets. `qa:stress:render` additionally captures that scene in a browser; the 30 FPS requirement must be measured on the stated Iris Xe/GTX 670-class hardware rather than software WebGL.
 
+The leaf coverage gate measures how far the exposed crown surface ever gets from a leaf cluster that could cover it. Probes are an independent Fibonacci set, twice as dense as the candidates the generator chose from and offset by an unrelated phase, and a cluster only counts when it faces the same way as the probe. The worst gap is reported in card widths, so a pass means the cards always overlap. It runs over a seed sweep rather than only the demo seeds, because cluster counts follow from covering the surface and vary with the seed. Limits live in `config/shell-coverage-qa.yaml`.
+
+The LOD budget gate measures the demo layout plus the same seed sweep, for the same reason.
+
 The canopy solidity gate renders every demo tree alone at LOD0 against a transparent background from eight crown angles and three trunk angles. Background pixels that cannot reach the image border are counted as see-through openings, and only openings wide enough to contain a three-pixel radius are scored, so the stipple between leaf cards is ignored while a real window is not. Trunk views hide the foliage so a trunk defect is measured against the trunk. Limits live in `config/canopy-solidity-qa.yaml`, and a failing run writes the worst view of each preset to `qa-results/canopy-solidity/` with every counted opening flooded in magenta.
 
 The automated gates cover:
@@ -107,6 +113,7 @@ The automated gates cover:
 - A 75-tree 720p distribution with batched far impostors and bounded GPU resources.
 - A watertight trunk sweep with no boundary or non-manifold edges, capped below the terrain.
 - No see-through openings in the rendered crown or trunk from any measured angle.
+- No exposed crown surface farther from a compatible leaf cluster than a leaf card is wide.
 - The exact uploaded release identifier in the browser and visible demo titles.
 
 ## Structure

@@ -32,7 +32,7 @@ test('generated tree respects requested topology counts', () => {
   assert.ok(tree.shell.length > 0);
   assert.ok(
     tree.shell.length <=
-      preset.crown.lobeCount * preset.foliage.shell.instancesPerLobe,
+      preset.crown.lobeCount * preset.foliage.shell.candidatesPerLobe,
   );
   assert.equal(tree.lobeExposure.length, preset.crown.lobeCount);
   assert.ok(tree.lobes.every((lobe) => Number.isInteger(lobe.macroClumpId)));

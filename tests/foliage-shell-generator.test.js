@@ -18,17 +18,16 @@ function groupByLobe(instances) {
   return groups;
 }
 
-test('foliage shell covers only exposed parts of each lobe up to its budget', () => {
+test('every lobe carries clusters and only exposed candidates are used', () => {
   const preset = createTestPreset();
   const tree = new TreeGenerator().generate(preset, 8128);
   const groups = groupByLobe(tree.shell);
 
   assert.ok(tree.shell.length > 0);
   for (const lobe of tree.lobes) {
-    assert.ok(
-      (groups.get(lobe.id)?.length ?? 0) <=
-        preset.foliage.shell.instancesPerLobe,
-    );
+    const count = groups.get(lobe.id)?.length ?? 0;
+    assert.ok(count >= 1, `lobe ${lobe.id} rendered as bare core`);
+    assert.ok(count <= preset.foliage.shell.candidatesPerLobe);
   }
   assert.ok(
     tree.shell.every(
@@ -36,6 +35,36 @@ test('foliage shell covers only exposed parts of each lobe up to its budget', ()
         instance.exposure >= preset.foliage.shell.exposureThreshold,
     ),
   );
+});
+
+test('selected clusters keep a covering separation from compatible neighbours', () => {
+  const preset = createTestPreset();
+  const tree = new TreeGenerator().generate(preset, 8128);
+
+  for (const instance of tree.shell) {
+    for (const other of tree.shell) {
+      if (other.id >= instance.id) continue;
+
+      const dot =
+        instance.normal.x * other.normal.x +
+        instance.normal.y * other.normal.y +
+        instance.normal.z * other.normal.z;
+      if (dot < 0.2588) continue;
+
+      const distance = Math.hypot(
+        instance.position.x - other.position.x,
+        instance.position.y - other.position.y,
+        instance.position.z - other.position.z,
+      );
+      // The bare-lobe fallback is allowed to sit inside another cluster's radius.
+      if (distance < other.coverageRadius) {
+        assert.equal(
+          tree.shell.filter((entry) => entry.lobeId === instance.lobeId).length,
+          1,
+        );
+      }
+    }
+  }
 });
 
 test('foliage shell fins sit outside their source lobe with valid dimensions', () => {

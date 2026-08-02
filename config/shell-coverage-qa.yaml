@@ -1,0 +1,54 @@
+# Leaf coverage gate.
+#
+# The solidity gate proves nothing shows *through* the canopy. This gate proves
+# the leaf cards actually reach the whole exposed crown surface, which is a
+# different failure: opaque cores with bald patches still score zero holes.
+#
+# For every seeded tree an independent Fibonacci probe set is laid over each
+# lobe, twice as dense as the candidates the generator chose from and offset by
+# an unrelated phase. Each exposed probe is measured to the nearest leaf cluster
+# that faces the same way it does.
+#
+#   gapCardRatio      maximum probe-to-cluster distance / the median rendered card width
+#   gapRatio          the same distance / the preset's configured covering radius
+#   bareExposedLobes  lobes with exposed surface and no cluster at all
+#
+# gapCardRatio is the metric that means something physically: below 1 the cards
+# at the worst point on the crown are still wider than the gap between them. The
+# limit is calibrated against the rendered result rather than derived. For scale,
+# the previous per-lobe selector measured 2.2 on columnar.
+#
+# gapRatio only asks whether selection honoured the radius it was configured
+# with, so tightening that radius mechanically raises it. It sits above 1 because
+# the probes are denser than the candidates selection had to choose from. It is a
+# sanity check on the algorithm, not a coverage bound.
+#
+# This is a sampled bound, not a continuous proof: distance to the nearest
+# cluster is 1-Lipschitz, so a point between probes can exceed the reported gap
+# by at most the probe spacing.
+
+run:
+  seedCount: 24
+  firstSeed: 90001
+  seedStep: 7919
+
+probe:
+  probeDensityMultiplier: 2
+  probeExposureMargin: 0.05
+
+thresholds:
+  roundOrchard:
+    gapRatio: 1.5
+    gapCardRatio: 0.85
+    bareExposedLobes: 0
+  columnar:
+    gapRatio: 1.5
+    gapCardRatio: 0.85
+    bareExposedLobes: 0
+  irregularAutumn:
+    gapRatio: 1.5
+    gapCardRatio: 0.85
+    bareExposedLobes: 0
+
+report:
+  maxFailures: 6
