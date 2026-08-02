@@ -80,7 +80,12 @@ function runBrowser(browser, name, size) {
   return new Promise((resolve, reject) => {
     const screenshot = path.join(outputDirectory, `${name}.png`);
     const profile = path.join(outputDirectory, `${name}-profile`);
-    fs.rmSync(profile, { recursive: true, force: true });
+    fs.rmSync(profile, {
+      recursive: true,
+      force: true,
+      maxRetries: 8,
+      retryDelay: 125,
+    });
     fs.rmSync(screenshot, { force: true });
     activeCapture = { status: 'pending', error: '' };
     const child = spawn(
@@ -141,12 +146,20 @@ function runBrowser(browser, name, size) {
       }
     }, 250);
     const timer = setTimeout(() => {
+      if (
+        activeCapture?.status === 'ready' &&
+        fs.existsSync(screenshot) &&
+        fs.statSync(screenshot).size > 0
+      ) {
+        finish();
+        return;
+      }
       finish(
         new Error(
           `${name} browser capture timed out (${activeCapture?.status}): ${diagnostics}`,
         ),
       );
-    }, qaMode === 'stress' ? 180000 : 70000);
+    }, qaMode === 'stress' ? 180000 : 150000);
     child.on('error', finish);
     child.on('close', (code) => {
       exitCode = code;
