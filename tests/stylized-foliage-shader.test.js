@@ -89,7 +89,7 @@ test('stylized foliage shader installs crown-aware attributes and lighting', () 
   assert.deepEqual(material.userData.disposables, [paletteTexture]);
 });
 
-test('shell shader replaces double-sided back-face normals with radial normals', () => {
+test('shell shader replaces card normals with crown-aware radial normals', () => {
   const material = createMaterial();
   configure(material, { forceRadialFragmentNormal: true });
 

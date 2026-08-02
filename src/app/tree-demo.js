@@ -47,6 +47,7 @@ export class TreeDemo {
       : sceneConfig;
     this.presetMap = presetMap;
     this.context = this.sceneFactory.create(container, this.sceneConfig);
+    this.applyRequestedView();
     this.billboardBatchManager = new TreeBillboardBatchManager(this.context.scene);
     this.lodController = new TreeLodController(
       this.sceneConfig.lod,
@@ -162,6 +163,16 @@ export class TreeDemo {
     );
     this.context.renderer.render(this.context.scene, this.context.camera);
     this.updateStressReport();
+  }
+
+  applyRequestedView() {
+    const view = new URLSearchParams(window.location.search).get('view');
+    if (view !== 'close') return;
+
+    this.context.camera.position.set(13, 6.3, 9.2);
+    this.context.controls.target.set(5.4, 4.2, 0.5);
+    this.context.camera.updateProjectionMatrix();
+    this.context.controls.update();
   }
 
   updateStressReport() {

@@ -20,7 +20,7 @@ export class FoliageShellMaterialFactory {
       alphaTest: foliage.shell.alphaTest,
       transparent: false,
       depthWrite: true,
-      side: THREE.DoubleSide,
+      side: THREE.FrontSide,
       roughness: FOLIAGE_RENDERING_CONSTANTS.shellRoughness,
       metalness: 0,
     });

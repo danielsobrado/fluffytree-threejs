@@ -27,7 +27,9 @@ export class FoliageCoreMaterialFactory {
       radialNormalExpression: 'normalize( position )',
       heightExpression: 'position.y * 0.5 + 0.5',
       forceRadialFragmentNormal: true,
-      cacheKey: 'foliage-core-phase-2-5-v1',
+      colorMultiplier: foliage.core.brightness,
+      surfaceBreakup: 0.14,
+      cacheKey: 'foliage-core-interior-mass-v3',
     });
   }
 }

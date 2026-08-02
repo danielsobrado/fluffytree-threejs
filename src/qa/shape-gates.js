@@ -25,25 +25,35 @@ function checkConfiguredRanges(metrics, ranges, failures) {
 
 function checkFoliageCounts(metrics, preset, failures) {
   const shellSettings = preset.foliage.shell;
-  const shellCount = preset.crown.lobeCount * shellSettings.instancesPerLobe;
+  const maximumShellCount =
+    preset.crown.lobeCount * shellSettings.instancesPerLobe;
+  const minimumUsefulShellCount = preset.crown.lobeCount;
 
-  checkExact(metrics, 'shellInstanceCount', shellCount, failures);
-  checkExact(
+  checkRange(
+    metrics,
+    'shellInstanceCount',
+    [minimumUsefulShellCount, maximumShellCount],
+    failures,
+  );
+  checkRange(
     metrics,
     'leafCardCount',
-    shellCount * shellSettings.planesPerCluster,
+    [
+      minimumUsefulShellCount * shellSettings.planesPerCluster,
+      maximumShellCount * shellSettings.planesPerCluster,
+    ],
     failures,
   );
-  checkExact(
+  checkRange(
     metrics,
     'shellMinimumInstancesPerLobe',
-    shellSettings.instancesPerLobe,
+    [0, shellSettings.instancesPerLobe],
     failures,
   );
-  checkExact(
+  checkRange(
     metrics,
     'shellMaximumInstancesPerLobe',
-    shellSettings.instancesPerLobe,
+    [1, shellSettings.instancesPerLobe],
     failures,
   );
 }

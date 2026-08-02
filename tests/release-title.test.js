@@ -8,25 +8,25 @@ import {
 
 const release = Object.freeze({
   version: '2.0.0',
-  build: '20260801.1',
-  label: 'branch-led foliage LOD',
+  build: '20260802.1',
+  label: 'exposed-surface foliage LOD',
 });
 
 test('release version includes semantic version and uploaded build', () => {
-  assert.equal(formatReleaseVersion(release), 'v2.0.0+20260801.1');
+  assert.equal(formatReleaseVersion(release), 'v2.0.0+20260802.1');
 });
 
 test('browser title includes the exact uploaded release version', () => {
   assert.equal(
     formatDocumentTitle(release),
-    'Procedural Fluffy Trees v2.0.0+20260801.1 — branch-led foliage LOD',
+    'Procedural Fluffy Trees v2.0.0+20260802.1 — exposed-surface foliage LOD',
   );
 });
 
 test('overlay title includes the same uploaded release version', () => {
   assert.equal(
     formatOverlayTitle(release),
-    'Procedural fluffy trees — branch-led foliage LOD · v2.0.0+20260801.1',
+    'Procedural fluffy trees — exposed-surface foliage LOD · v2.0.0+20260802.1',
   );
 });
 

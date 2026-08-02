@@ -15,7 +15,7 @@ import {
   StylizedBarkMaterialFactory,
 } from './stylized-bark-material-factory.js';
 
-const TRUNK_INSIDE_COLLAR_RATIO = 0.9;
+const TRUNK_INSIDE_COLLAR_RATIO = 0.98;
 
 export class BranchMeshBuilder {
   constructor({
@@ -52,7 +52,13 @@ export class BranchMeshBuilder {
         flare: treeData.trunk.flare,
         seed: treeData.seed,
       });
-    addStylizedBarkColors(rootGeometry, treeData.barkPalette, treeData.seed, 0);
+    addStylizedBarkColors(
+      rootGeometry,
+      treeData.barkPalette,
+      treeData.seed,
+      0,
+      treeData.height,
+    );
     const trunkGeometry = this.geometryFactory.create({
         path: trunkPath,
         startRadius: trunkStartRadius,
@@ -60,7 +66,13 @@ export class BranchMeshBuilder {
         sampleCount: trunkCurveSamples,
         radialSegments,
       });
-    addStylizedBarkColors(trunkGeometry, treeData.barkPalette, treeData.seed, 0);
+    addStylizedBarkColors(
+      trunkGeometry,
+      treeData.barkPalette,
+      treeData.seed,
+      0,
+      treeData.height,
+    );
     const branchGeometries = treeData.branches
       .filter((branch) => branch.order <= maxBranchOrder)
       .map((branch) => {
@@ -77,6 +89,7 @@ export class BranchMeshBuilder {
           treeData.barkPalette,
           treeData.seed + branch.id * 101,
           branch.order,
+          treeData.height,
         );
         return geometry;
       });

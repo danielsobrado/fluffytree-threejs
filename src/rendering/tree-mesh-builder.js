@@ -86,14 +86,14 @@ export class TreeMeshBuilder {
             this.foliageCoreBuilder.build(treeData, {
               ...foliageResources,
               detail: 1,
-              scaleMultiplier: 1.02,
+              scaleMultiplier: 0.9,
               name: 'foliage-core-lod1',
             }),
             this.foliageShellBuilder.build(treeData, {
               ...foliageResources,
-              density: 0.7,
+              density: 0.75,
               planesPerCluster: 1,
-              scaleMultiplier: 1.96,
+              scaleMultiplier: 2.55,
               name: 'foliage-shell-lod1',
             }),
           ]
@@ -113,7 +113,7 @@ export class TreeMeshBuilder {
             this.foliageCoreBuilder.build(treeData, {
               ...foliageResources,
               detail: 0,
-              scaleMultiplier: 1.08,
+              scaleMultiplier: 1.25,
               name: 'foliage-core-lod2',
             }),
           ]
@@ -139,16 +139,14 @@ export class TreeMeshBuilder {
           radialSegments: 10,
           name: 'tree-structure',
         }),
-        this.foliageCoreBuilder.build(treeData, {
-          ...foliageResources,
-          detail: 2,
-          name: 'foliage-core-lod0',
-        }),
         this.foliageShellBuilder.build(treeData, {
           ...foliageResources,
           density: 1,
-          planesPerCluster: 2,
-          scaleMultiplier: 1.86,
+          planesPerCluster: treeData.palette.shell.planesPerCluster,
+          scaleMultiplier: 2.55,
+          interiorDensity: 0.3,
+          interiorInsetRatio: 0.3,
+          interiorScaleRatio: 1.08,
           name: 'foliage-shell-lod0',
         }),
         heroLeaves,

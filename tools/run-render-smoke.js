@@ -10,7 +10,12 @@ const outputDirectory = path.resolve(
 );
 const rootDirectory = process.cwd();
 const qaMode = process.env.RENDER_SMOKE_QA_MODE ?? 'render-smoke';
-const url = `http://127.0.0.1:${port}/?qa=${encodeURIComponent(qaMode)}`;
+const query = new URLSearchParams({ qa: qaMode });
+const additionalQuery = new URLSearchParams(
+  process.env.RENDER_SMOKE_QUERY ?? '',
+);
+additionalQuery.forEach((value, key) => query.set(key, value));
+const url = `http://127.0.0.1:${port}/?${query}`;
 const mimeTypes = new Map([
   ['.css', 'text/css'],
   ['.html', 'text/html'],

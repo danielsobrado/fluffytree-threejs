@@ -12,6 +12,7 @@ function createVertexDeclarations() {
     varying float vFoliageHeight;
     varying vec3 vFoliageRadialWorld;
     varying float vFoliagePatch;
+    varying vec3 vFoliageLocalPosition;
     uniform float uFoliageVariation;
     uniform float uFoliagePaletteBase;
     uniform float uFoliageHeightPaletteShift;
@@ -31,12 +32,15 @@ function createFragmentDeclarations() {
     varying float vFoliageHeight;
     varying vec3 vFoliageRadialWorld;
     varying float vFoliagePatch;
+    varying vec3 vFoliageLocalPosition;
     uniform sampler2D uFoliagePalette;
     uniform vec3 uFoliageSunDirection;
     uniform float uFoliageWrapLight;
     uniform float uFoliageSkyLightStrength;
     uniform float uFoliageCavityStrength;
     uniform float uFoliageHeightLightStrength;
+    uniform float uFoliageColorMultiplier;
+    uniform float uFoliageSurfaceBreakup;
   `;
 }
 
@@ -100,8 +104,17 @@ function createColorShader() {
       1.0 + uFoliageHeightLightStrength,
       clamp( vFoliageHeight, 0.0, 1.0 )
     );
+    float foliageFinePattern =
+      sin(vFoliageLocalPosition.x * 17.0 + vFoliageLocalPosition.y * 11.0) *
+      sin(vFoliageLocalPosition.z * 19.0 - vFoliageLocalPosition.y * 13.0);
+    float foliageFineLight = mix(
+      1.0,
+      mix(0.78, 1.12, smoothstep(-0.45, 0.55, foliageFinePattern)),
+      uFoliageSurfaceBreakup
+    );
     diffuseColor.rgb = foliagePaletteColor * foliageSunFactor * foliageSkyFactor *
-      foliageCavityFactor * foliageHeightFactor;
+      foliageCavityFactor * foliageHeightFactor * foliageFineLight *
+      uFoliageColorMultiplier;
   `;
 }
 
@@ -126,6 +139,8 @@ export function configureStylizedFoliageShader(
     radialNormalExpression,
     heightExpression,
     forceRadialFragmentNormal = false,
+    colorMultiplier = 1,
+    surfaceBreakup = 0.04,
     cacheKey,
   },
 ) {
@@ -151,6 +166,8 @@ export function configureStylizedFoliageShader(
       uFoliageSkyLightStrength: { value: foliage.skyLightStrength },
       uFoliageCavityStrength: { value: foliage.cavityStrength },
       uFoliageHeightLightStrength: { value: foliage.heightLightStrength },
+      uFoliageColorMultiplier: { value: colorMultiplier },
+      uFoliageSurfaceBreakup: { value: surfaceBreakup },
       uTreeWindTime: {
         get value() {
           return windState.time;
@@ -200,6 +217,7 @@ export function configureStylizedFoliageShader(
           transformed.x += treeWindPrimary * uTreeWindStrength * treeWindWeight;
           transformed.z += treeWindSecondary * uTreeWindStrength * treeWindWeight * 0.46;
           vFoliageHeight = clamp( ${heightExpression}, 0.0, 1.0 );
+          vFoliageLocalPosition = position;
           vFoliageExposure = instanceExposure;
           vFoliagePaletteCoordinate = clamp(
             uFoliagePaletteBase +

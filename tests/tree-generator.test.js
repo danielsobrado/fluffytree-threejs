@@ -29,9 +29,10 @@ test('generated tree respects requested topology counts', () => {
     preset.trunk.branching.primaryCount,
   );
   assert.equal(tree.trunk.points.length, preset.trunk.segments + 1);
-  assert.equal(
-    tree.shell.length,
-    preset.crown.lobeCount * preset.foliage.shell.instancesPerLobe,
+  assert.ok(tree.shell.length > 0);
+  assert.ok(
+    tree.shell.length <=
+      preset.crown.lobeCount * preset.foliage.shell.instancesPerLobe,
   );
   assert.equal(tree.lobeExposure.length, preset.crown.lobeCount);
   assert.ok(tree.lobes.every((lobe) => Number.isInteger(lobe.macroClumpId)));

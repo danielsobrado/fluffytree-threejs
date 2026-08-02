@@ -18,18 +18,24 @@ function groupByLobe(instances) {
   return groups;
 }
 
-test('foliage shell has an exact distributed count for every lobe', () => {
+test('foliage shell covers only exposed parts of each lobe up to its budget', () => {
   const preset = createTestPreset();
   const tree = new TreeGenerator().generate(preset, 8128);
   const groups = groupByLobe(tree.shell);
 
-  assert.equal(groups.size, tree.lobes.length);
+  assert.ok(tree.shell.length > 0);
   for (const lobe of tree.lobes) {
-    assert.equal(
-      groups.get(lobe.id)?.length,
-      preset.foliage.shell.instancesPerLobe,
+    assert.ok(
+      (groups.get(lobe.id)?.length ?? 0) <=
+        preset.foliage.shell.instancesPerLobe,
     );
   }
+  assert.ok(
+    tree.shell.every(
+      (instance) =>
+        instance.exposure >= preset.foliage.shell.exposureThreshold,
+    ),
+  );
 });
 
 test('foliage shell fins sit outside their source lobe with valid dimensions', () => {
@@ -51,6 +57,8 @@ test('foliage shell fins sit outside their source lobe with valid dimensions', (
     );
     assert.ok(Math.abs(normalLength - 1) <= NORMAL_TOLERANCE);
     assert.ok(instance.exposure >= 0 && instance.exposure <= 1);
+    assert.ok(instance.exposure >= preset.foliage.shell.exposureThreshold);
+    assert.ok(Number.isFinite(instance.clearance));
     assert.ok(instance.colorMix >= 0 && instance.colorMix <= 1);
     assert.ok(instance.scale > 0);
     assert.ok(instance.widthRatio >= preset.foliage.shell.widthRatio[0]);

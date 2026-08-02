@@ -23,8 +23,8 @@ function createLeafPoints(index, leafCount, settings) {
     Math.sin(directionAngle),
   );
   const side = new THREE.Vector3(-direction.z, 0, direction.x);
-  const length = 0.48 + (index % 4) * 0.055;
-  const width = 0.12 + ((index + 1) % 3) * 0.018;
+  const length = 0.62 + (index % 4) * 0.065;
+  const width = 0.17 + ((index + 1) % 3) * 0.022;
   const fold = settings.protrusionRatio * (0.72 + (index % 3) * 0.12);
   const base = baseCenter.clone();
   const shoulder = baseCenter.clone().addScaledVector(direction, length * 0.44);
@@ -40,11 +40,7 @@ function createLeafPoints(index, leafCount, settings) {
     .clone()
     .addScaledVector(direction, length)
     .add(new THREE.Vector3(0, fold, 0));
-  const ridge = baseCenter
-    .clone()
-    .addScaledVector(direction, length * 0.48)
-    .add(new THREE.Vector3(0, fold * 0.76, 0));
-  return { base, left, tip, right, ridge };
+  return { base, left, tip, right };
 }
 
 export class LeafClusterGeometryFactory {
@@ -61,21 +57,7 @@ export class LeafClusterGeometryFactory {
       appendVertex(positions, points.left);
       appendVertex(positions, points.tip);
       appendVertex(positions, points.right);
-      appendVertex(positions, points.ridge);
-      indices.push(
-        offset,
-        offset + 1,
-        offset + 4,
-        offset + 1,
-        offset + 2,
-        offset + 4,
-        offset + 2,
-        offset + 3,
-        offset + 4,
-        offset + 3,
-        offset,
-        offset + 4,
-      );
+      indices.push(offset, offset + 1, offset + 2, offset, offset + 2, offset + 3);
     }
 
     const geometry = new THREE.BufferGeometry();
@@ -90,7 +72,7 @@ export class LeafClusterGeometryFactory {
     geometry.name = 'leaf-cluster-geometry';
     geometry.userData.heroLeaves = {
       leavesPerCluster: leafCount,
-      triangleCount: leafCount * 4,
+      triangleCount: leafCount * 2,
     };
     return geometry;
   }

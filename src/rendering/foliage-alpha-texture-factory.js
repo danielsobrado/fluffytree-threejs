@@ -20,10 +20,12 @@ function sampleShape(x, y, shape) {
   const offsetY = y - shape.y;
   const localX = offsetX * cos + offsetY * sin;
   const localY = -offsetX * sin + offsetY * cos;
-  const distance =
-    (localX / shape.radiusX) ** 2 + (localY / shape.radiusY) ** 2;
+  const longitudinal = localY / shape.radiusY;
+  const leafEnvelope = Math.max(0.08, 1 - Math.abs(longitudinal) ** 1.65);
+  const lateral = localX / (shape.radiusX * Math.sqrt(leafEnvelope));
+  const distance = lateral ** 2 + longitudinal ** 2;
 
-  return 1 - smoothstep(0.7, 1.04, distance);
+  return 1 - smoothstep(0.72, 1.03, distance);
 }
 
 function sampleAlpha(x, y) {

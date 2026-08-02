@@ -14,17 +14,32 @@ const CARD_UVS = Object.freeze([
   Object.freeze([0, 1]),
 ]);
 
+function cardRotation(cardIndex, cardCount) {
+  if (cardCount <= 1 || cardIndex === 0) {
+    return new THREE.Quaternion();
+  }
+
+  const axis = cardIndex % 2 === 0
+    ? new THREE.Vector3(1, 0, 0)
+    : new THREE.Vector3(0, 1, 0);
+  const direction = cardIndex % 2 === 0 ? -1 : 1;
+  return new THREE.Quaternion().setFromAxisAngle(axis, direction * 0.52);
+}
+
 function appendCard(buffers, cardIndex, cardCount) {
-  const angle = cardCount <= 1 ? 0 : (cardIndex / cardCount) * Math.PI;
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
+  const rotation = cardRotation(cardIndex, cardCount);
+  const vertexVector = new THREE.Vector3();
+  const normalVector = new THREE.Vector3(0, 0, 1).applyQuaternion(rotation);
   const offset = buffers.positions.length / 3;
 
   CARD_VERTICES.forEach((vertex, index) => {
-    const x = vertex[0] * cos - vertex[1] * sin;
-    const y = vertex[0] * sin + vertex[1] * cos;
-    buffers.positions.push(x, y, vertex[2] + cardIndex * 0.003);
-    buffers.normals.push(0, 0, 1);
+    vertexVector.fromArray(vertex).applyQuaternion(rotation);
+    buffers.positions.push(
+      vertexVector.x,
+      vertexVector.y,
+      vertexVector.z + cardIndex * 0.003,
+    );
+    buffers.normals.push(normalVector.x, normalVector.y, normalVector.z);
     buffers.uvs.push(CARD_UVS[index][0], CARD_UVS[index][1]);
   });
   buffers.indices.push(offset, offset + 1, offset + 2, offset, offset + 2, offset + 3);

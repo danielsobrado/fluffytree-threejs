@@ -6,17 +6,22 @@ function clamp01(value) {
   return Math.min(1, Math.max(0, value));
 }
 
-export function addStylizedBarkColors(geometry, palette, seed, order = 0) {
+export function addStylizedBarkColors(
+  geometry,
+  palette,
+  seed,
+  order = 0,
+  treeHeight = 1,
+) {
   const colors = palette.map((value) => new THREE.Color(value));
   const positions = geometry.getAttribute('position');
-  const uvs = geometry.getAttribute('uv');
   const output = new Float32Array(positions.count * 3);
   const color = new THREE.Color();
   const phase = (((Number(seed) >>> 0) % 4093) / 4093) * TAU + order * 0.73;
 
   for (let index = 0; index < positions.count; index += 1) {
-    const u = uvs?.getX(index) ?? 0;
-    const v = uvs?.getY(index) ?? positions.getY(index) * 0.1;
+    const u = geometry.getAttribute('uv')?.getX(index) ?? 0;
+    const v = clamp01(positions.getY(index) / Math.max(0.001, treeHeight));
     const grain = Math.sin(v * 31 + Math.sin(u * TAU * 3 + phase) * 1.8 + phase);
     const broad = Math.sin(v * 7.5 + u * TAU + phase * 0.6);
     const ridge = clamp01(0.5 + grain * 0.16 + broad * 0.12 + order * 0.035);

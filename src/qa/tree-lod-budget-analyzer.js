@@ -26,13 +26,13 @@ function selectedShellCount(tree, density, salt) {
 export function analyzeTreeLodBudgets(tree) {
   const foliage = tree.palette;
   const heroClusters = selectedShellCount(tree, foliage.heroLeaves.density, 0x9e3779b1);
+  const interiorShell = selectedShellCount(tree, 0.3, 0x6c8e9cf5);
   const mediumShell = selectedShellCount(tree, 0.7, 0x517cc1b7);
   const lobeCount = tree.lobes.length;
   const lod0 =
     structureTriangles(tree, 3, 10, 20, 10) +
-    lobeCount * 320 +
-    tree.shell.length * 2 * 2 +
-    heroClusters * foliage.heroLeaves.leavesPerCluster * 4;
+    (tree.shell.length + interiorShell) * foliage.shell.planesPerCluster * 2 +
+    heroClusters * foliage.heroLeaves.leavesPerCluster * 2;
   const lod1 =
     structureTriangles(tree, 2, 8, 14, 7) +
     lobeCount * 80 +
@@ -45,6 +45,7 @@ export function analyzeTreeLodBudgets(tree) {
     shadowTriangles: lobeCount * 80,
     heroLeafClusters: heroClusters,
     shellClusters: tree.shell.length,
+    interiorShellClusters: interiorShell,
   });
 }
 

@@ -51,7 +51,7 @@ export class LeafClusterBuilder {
       roughness:
         settings.roughness ?? LEAF_DETAIL_RENDERING_CONSTANTS.defaultRoughness,
       metalness: LEAF_DETAIL_RENDERING_CONSTANTS.materialMetalness,
-      side: THREE.DoubleSide,
+      side: THREE.FrontSide,
     });
     material.name = 'leaf-detail-material';
 
