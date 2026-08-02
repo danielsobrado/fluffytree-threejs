@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import { CANOPY_CLOSURE_CONSTANTS } from './canopy-closure-constants.js';
-import { hashUnit } from './canopy-closure-math.js';
+import { hashUnit } from './deterministic-hash.js';
 import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constants.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -46,14 +45,6 @@ function calculateSurfaceLayerScale(layer, settings) {
     LEAF_DETAIL_RENDERING_CONSTANTS.innerLayerScale,
     LEAF_DETAIL_RENDERING_CONSTANTS.outerLayerScale,
     calculateLayerRatio(layer, settings.layerCount),
-  );
-}
-
-function calculateClosureLayerScale(layer, settings) {
-  return THREE.MathUtils.lerp(
-    CANOPY_CLOSURE_CONSTANTS.closureLayerScaleMaximum,
-    CANOPY_CLOSURE_CONSTANTS.closureLayerScaleMinimum,
-    calculateLayerRatio(layer, settings.closure.microLayerCount),
   );
 }
 
@@ -118,50 +109,7 @@ function addSurfaceJitter(
   position.addScaledVector(bitangent, Math.sin(angle) * radius);
 }
 
-function addClosureJitter(
-  position,
-  normal,
-  treeData,
-  record,
-  settings,
-  instanceScale,
-) {
-  if (settings.closure.microLayerCount <= 1) return;
-
-  const id = record.sample.id + record.layer * 12289;
-  const angle =
-    hashUnit(treeData.seed, id, 0x94d049bb) *
-    LEAF_DETAIL_RENDERING_CONSTANTS.tau;
-  const radialDistance =
-    Math.sqrt(hashUnit(treeData.seed, id, 0x27d4eb2d)) *
-    settings.closure.depthJitterRatio *
-    instanceScale;
-  const normalDistance =
-    (hashUnit(treeData.seed, id, 0xc2b2ae35) - 0.5) *
-    settings.closure.depthJitterRatio *
-    instanceScale;
-  const { tangent, bitangent } = createTangentBasis(normal);
-  position.addScaledVector(tangent, Math.cos(angle) * radialDistance);
-  position.addScaledVector(bitangent, Math.sin(angle) * radialDistance);
-  position.addScaledVector(normal, normalDistance);
-}
-
 export function resolvePlacement(record, field) {
-  if (record.kind === 'closure') {
-    return {
-      position: new THREE.Vector3(
-        record.sample.position.x,
-        record.sample.position.y,
-        record.sample.position.z,
-      ),
-      normal: new THREE.Vector3(
-        record.sample.normal.x,
-        record.sample.normal.y,
-        record.sample.normal.z,
-      ).normalize(),
-    };
-  }
-
   return projectToSurface(field, record.sample);
 }
 
@@ -172,10 +120,7 @@ export function calculateInstanceScale(record, settings, treeData) {
     LEAF_DETAIL_RENDERING_CONSTANTS.scaleJitterMaximum,
     hashUnit(treeData.seed, instanceId, 0x27d4eb2d),
   );
-  const layerScale =
-    record.kind === 'surface'
-      ? calculateSurfaceLayerScale(record.layer, settings)
-      : calculateClosureLayerScale(record.layer, settings);
+  const layerScale = calculateSurfaceLayerScale(record.layer, settings);
 
   return Math.max(
     LEAF_DETAIL_RENDERING_CONSTANTS.minimumScale,
@@ -191,18 +136,6 @@ export function resolvePosition(
   instanceScale,
 ) {
   const position = placement.position.clone();
-
-  if (record.kind === 'closure') {
-    addClosureJitter(
-      position,
-      placement.normal,
-      treeData,
-      record,
-      settings,
-      instanceScale,
-    );
-    return position;
-  }
 
   position.addScaledVector(
     placement.normal,

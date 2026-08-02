@@ -1,4 +1,5 @@
 import { RENDER_SMOKE_CONSTANTS } from './render-smoke-constants.js';
+import { reportQaStatus, serializeQaError } from './qa-status-reporter.js';
 
 const RENDER_SMOKE_QUERY_VALUE = 'render-smoke';
 const STATUS_ATTRIBUTE = 'renderStatus';
@@ -12,19 +13,6 @@ function isRenderSmokeRequested() {
     new URLSearchParams(window.location.search).get('qa') ===
     RENDER_SMOKE_QUERY_VALUE
   );
-}
-
-function serializeError(error) {
-  if (error instanceof Error) return `${error.name}: ${error.message}`;
-  return String(error);
-}
-
-function reportStatus(status, error = '') {
-  const query = new URLSearchParams({ status, error });
-  void fetch(`/__render-smoke-status?${query}`, {
-    cache: 'no-store',
-    keepalive: true,
-  }).catch(() => {});
 }
 
 function validateReleaseTitles(root) {
@@ -55,8 +43,9 @@ function collectSceneMetrics(scene) {
     lodCounts: [0, 0, 0, 0],
     maximumLodTriangles: [0, 0, 0, 0],
     maximumLodDrawCalls: [0, 0, 0, 0],
-    rootCollarCount: 0,
-    minimumRootCollarOverlap: Number.POSITIVE_INFINITY,
+    closedTrunkCount: 0,
+    trunkBoundaryEdges: 0,
+    maximumRootBaseHeight: Number.NEGATIVE_INFINITY,
   };
 
   scene.traverse((object) => {
@@ -98,20 +87,24 @@ function collectSceneMetrics(scene) {
       );
     }
 
-    if (
-      object.name === STRUCTURE_NAME &&
-      object.userData?.structure?.rootCapped === true &&
-      object.userData?.structure?.rootBottomCapped === true &&
-      object.userData?.structure?.rootTopCapped === false &&
-      object.userData?.structure?.rootCollar === true &&
-      Number(object.userData?.structure?.rootEmbedDepth ?? 0) > 0 &&
-      Number(object.userData?.structure?.rootCollarHeight ?? 0) > 0
-    ) {
-      metrics.rootCollarCount += 1;
-      metrics.minimumRootCollarOverlap = Math.min(
-        metrics.minimumRootCollarOverlap,
-        Number(object.userData?.structure?.rootCollarOverlap ?? 0),
+    if (object.name === STRUCTURE_NAME && object.userData?.structure) {
+      const structure = object.userData.structure;
+      metrics.trunkBoundaryEdges +=
+        Number(structure.trunkBoundaryEdges ?? 0) +
+        Number(structure.trunkNonManifoldEdges ?? 0);
+      metrics.maximumRootBaseHeight = Math.max(
+        metrics.maximumRootBaseHeight,
+        Number(structure.rootBaseMaximumHeight ?? 0),
       );
+
+      if (
+        structure.trunkClosed === true &&
+        structure.trunkOutwardFacing === true &&
+        Number(structure.rootEmbedDepth ?? 0) > 0 &&
+        Number(structure.rootFlareHeight ?? 0) > 0
+      ) {
+        metrics.closedTrunkCount += 1;
+      }
     }
   });
 
@@ -151,11 +144,14 @@ function collectSceneMetrics(scene) {
   }
 
   if (
-    metrics.rootCollarCount !== metrics.treeCount ||
-    metrics.minimumRootCollarOverlap <
-      RENDER_SMOKE_CONSTANTS.minimumRootCollarOverlap
+    metrics.closedTrunkCount !== metrics.treeCount ||
+    metrics.trunkBoundaryEdges !== 0 ||
+    metrics.maximumRootBaseHeight >
+      RENDER_SMOKE_CONSTANTS.maximumRootBaseHeight
   ) {
-    throw new Error('One or more trunks lack a seamless overlapping root collar.');
+    throw new Error(
+      'One or more trunks are not an outward-facing closed sweep buried under the terrain.',
+    );
   }
 
   return metrics;
@@ -204,7 +200,7 @@ export class RenderSmokeProbe {
         for (const [key, value] of Object.entries(sceneMetrics)) {
           this.root.dataset[key] = String(value);
         }
-        reportStatus('ready');
+        reportQaStatus('ready');
       }
     } catch (error) {
       this.fail(error);
@@ -216,8 +212,8 @@ export class RenderSmokeProbe {
 
     this.failed = true;
     this.root.dataset[STATUS_ATTRIBUTE] = 'error';
-    this.root.dataset[ERROR_ATTRIBUTE] = serializeError(error);
-    reportStatus('error', serializeError(error));
+    this.root.dataset[ERROR_ATTRIBUTE] = serializeQaError(error);
+    reportQaStatus('error', serializeQaError(error));
     console.error('Render smoke probe failed.', error);
   }
 }
@@ -226,6 +222,6 @@ export function markRenderSmokeBootstrapFailure(error) {
   if (!isRenderSmokeRequested()) return;
 
   document.documentElement.dataset[STATUS_ATTRIBUTE] = 'error';
-  document.documentElement.dataset[ERROR_ATTRIBUTE] = serializeError(error);
-  reportStatus('error', serializeError(error));
+  document.documentElement.dataset[ERROR_ATTRIBUTE] = serializeQaError(error);
+  reportQaStatus('error', serializeQaError(error));
 }

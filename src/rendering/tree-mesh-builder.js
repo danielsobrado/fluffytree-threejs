@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { BranchMeshBuilder } from './branch-mesh-builder.js';
 import { CrownShadowProxyBuilder } from './crown-shadow-proxy-builder.js';
 import { FoliageCoreBuilder } from './foliage-core-builder.js';
+import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js';
 import { FoliageShellBuilder } from './foliage-shell-builder.js';
 import { FoliageTextureSetFactory } from './foliage-texture-set-factory.js';
 import { LeafClusterBuilder } from './leaf-cluster-builder.js';
@@ -86,7 +87,7 @@ export class TreeMeshBuilder {
             this.foliageCoreBuilder.build(treeData, {
               ...foliageResources,
               detail: 1,
-              scaleMultiplier: 0.9,
+              scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.coreScaleMultiplier,
               name: 'foliage-core-lod1',
             }),
             this.foliageShellBuilder.build(treeData, {
@@ -113,7 +114,7 @@ export class TreeMeshBuilder {
             this.foliageCoreBuilder.build(treeData, {
               ...foliageResources,
               detail: 0,
-              scaleMultiplier: 1.25,
+              scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.coreScaleMultiplier,
               name: 'foliage-core-lod2',
             }),
           ]
@@ -138,6 +139,15 @@ export class TreeMeshBuilder {
           maxBranchOrder: 3,
           radialSegments: 10,
           name: 'tree-structure',
+        }),
+        // The alpha-cut shell can never tile a closed surface on its own, so the
+        // clump cores carry the interior mass that stops the crown reading as a
+        // shell of loose cards with sky behind them.
+        this.foliageCoreBuilder.build(treeData, {
+          ...foliageResources,
+          detail: 1,
+          scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.coreScaleMultiplier,
+          name: 'foliage-core-lod0',
         }),
         this.foliageShellBuilder.build(treeData, {
           ...foliageResources,

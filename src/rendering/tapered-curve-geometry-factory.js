@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+import {
+  createSweepFrames,
+  createSweepParameters,
+} from './swept-tube-sampling.js';
 import { TREE_STRUCTURE_RENDERING_CONSTANTS } from './tree-structure-rendering-constants.js';
 
 function toVector3(point) {
@@ -26,24 +30,18 @@ function calculateRadius(startRadius, endRadius, flare, t) {
 }
 
 function appendCap({
-  curve,
-  frames,
-  frameIndex,
+  center,
+  tangent,
   reverse,
-    positions,
-    normals,
-    uvs,
+  positions,
+  normals,
+  uvs,
   indices,
   radialSegments,
+  ringStart,
 }) {
-  const t = frameIndex === 0 ? 0 : 1;
-  const center = curve.getPointAt(t);
-  const capNormal = frames.tangents[frameIndex]
-    .clone()
-    .multiplyScalar(reverse ? -1 : 1)
-    .normalize();
+  const capNormal = tangent.clone().multiplyScalar(reverse ? -1 : 1).normalize();
   const centerIndex = positions.length / 3;
-  const ringStart = frameIndex * radialSegments;
 
   positions.push(center.x, center.y, center.z);
   normals.push(capNormal.x, capNormal.y, capNormal.z);
@@ -70,6 +68,8 @@ export class TaperedCurveGeometryFactory {
     flare = 0,
     capStart = false,
     capEnd = false,
+    sampleBias = 1,
+    radiusScale = null,
     radialSegments = TREE_STRUCTURE_RENDERING_CONSTANTS.radialSegments,
   }) {
     if (!Array.isArray(path) || path.length < 3) {
@@ -77,36 +77,54 @@ export class TaperedCurveGeometryFactory {
     }
 
     const curve = createCurve(path);
-    const frames = curve.computeFrenetFrames(sampleCount, false);
+    const parameters = createSweepParameters(sampleCount, sampleBias);
+    const centers = parameters.map((t) => curve.getPointAt(t));
+    const tangents = parameters.map((t) => curve.getTangentAt(t).normalize());
+    const frames = createSweepFrames(tangents);
     const positions = [];
     const normals = [];
     const uvs = [];
     const indices = [];
-    const center = new THREE.Vector3();
     const radial = new THREE.Vector3();
+    const binormalVector = new THREE.Vector3();
+    let startRingMaximumHeight = Number.NEGATIVE_INFINITY;
 
-    for (let ring = 0; ring <= sampleCount; ring += 1) {
-      const t = ring / sampleCount;
-      curve.getPointAt(t, center);
+    parameters.forEach((t, ring) => {
+      const center = centers[ring];
       const radius = calculateRadius(startRadius, endRadius, flare, t);
+      const normal = frames.normals[ring];
+      const binormal = frames.binormals[ring];
+      binormalVector.set(binormal.x, binormal.y, binormal.z);
 
       for (let segment = 0; segment < radialSegments; segment += 1) {
         const angle = (segment / radialSegments) * Math.PI * 2;
+        const scale = radiusScale
+          ? radiusScale({ angle, height: center.y, t })
+          : 1;
         radial
-          .copy(frames.normals[ring])
+          .set(normal.x, normal.y, normal.z)
           .multiplyScalar(Math.cos(angle))
-          .addScaledVector(frames.binormals[ring], Math.sin(angle))
+          .addScaledVector(binormalVector, Math.sin(angle))
           .normalize();
+        const y = center.y + radial.y * radius * scale;
         positions.push(
-          center.x + radial.x * radius,
-          center.y + radial.y * radius,
-          center.z + radial.z * radius,
+          center.x + radial.x * radius * scale,
+          y,
+          center.z + radial.z * radius * scale,
         );
         normals.push(radial.x, radial.y, radial.z);
         uvs.push(segment / radialSegments, t);
-      }
-    }
 
+        if (ring === 0) {
+          startRingMaximumHeight = Math.max(startRingMaximumHeight, y);
+        }
+      }
+    });
+
+    // Ring vertices advance with cos(angle) * normal + sin(angle) * binormal and
+    // binormal = tangent x normal, so a ring walked in rising segment order is
+    // clockwise when seen from outside. Each wall triangle is therefore wound
+    // against that order to keep its front face pointing away from the axis.
     for (let ring = 0; ring < sampleCount; ring += 1) {
       const current = ring * radialSegments;
       const next = (ring + 1) * radialSegments;
@@ -115,40 +133,40 @@ export class TaperedCurveGeometryFactory {
         const following = (segment + 1) % radialSegments;
         indices.push(
           current + segment,
+          next + following,
           next + segment,
-          next + following,
           current + segment,
-          next + following,
           current + following,
+          next + following,
         );
       }
     }
 
     if (capStart) {
       appendCap({
-        curve,
-        frames,
-        frameIndex: 0,
+        center: centers[0],
+        tangent: tangents[0],
         reverse: true,
         positions,
         normals,
         uvs,
         indices,
         radialSegments,
+        ringStart: 0,
       });
     }
 
     if (capEnd) {
       appendCap({
-        curve,
-        frames,
-        frameIndex: sampleCount,
+        center: centers[sampleCount],
+        tangent: tangents[sampleCount],
         reverse: false,
         positions,
         normals,
         uvs,
         indices,
         radialSegments,
+        ringStart: sampleCount * radialSegments,
       });
     }
 
@@ -163,8 +181,21 @@ export class TaperedCurveGeometryFactory {
     );
     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geometry.setIndex(indices);
+
+    if (radiusScale) {
+      // Radial normals no longer describe a flared, buttressed sweep.
+      geometry.computeVertexNormals();
+    }
+
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
+    geometry.userData.sweptTube = {
+      ringCount: sampleCount + 1,
+      radialSegments,
+      capStart,
+      capEnd,
+      startRingMaximumHeight,
+    };
     return geometry;
   }
 }

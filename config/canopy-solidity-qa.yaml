@@ -1,0 +1,48 @@
+# Screen-space solidity gate.
+#
+# Each demo tree is rendered alone at LOD0 against a transparent background from
+# several angles. Background pixels that cannot reach the image border are places
+# where the camera looks straight through the tree. Only openings wide enough to
+# contain the configured hole radius are counted, so the single-pixel stipple
+# between neighbouring leaf cards is ignored while a visible window is not.
+#
+#   holeRatio         counted enclosed background / filled silhouette, all openings
+#   largestHoleRatio  counted enclosed background / filled silhouette, largest opening
+#   coverageRatio     rendered pixels / framed image, guards against a vanished tree
+#
+# The crown group frames the whole tree. The base group frames the root flare with
+# the foliage hidden, so a trunk that is not a closed sweep is measured against the
+# trunk itself rather than being diluted by the canopy around it.
+#
+# Measured on the current presets: every crown and base view reports 0.00000 for
+# both hole metrics. Removing the LOD0 clump cores pushes crown holeRatio to
+# 0.032 - 0.091, so these limits sit an order of magnitude below a real regression.
+
+thresholds:
+  roundOrchard:
+    crown:
+      holeRatio: 0.003
+      largestHoleRatio: 0.002
+      coverageRatio: 0.04
+    base:
+      holeRatio: 0.001
+      largestHoleRatio: 0.001
+      coverageRatio: 0.04
+  columnar:
+    crown:
+      holeRatio: 0.003
+      largestHoleRatio: 0.002
+      coverageRatio: 0.04
+    base:
+      holeRatio: 0.001
+      largestHoleRatio: 0.001
+      coverageRatio: 0.04
+  irregularAutumn:
+    crown:
+      holeRatio: 0.003
+      largestHoleRatio: 0.002
+      coverageRatio: 0.04
+    base:
+      holeRatio: 0.001
+      largestHoleRatio: 0.001
+      coverageRatio: 0.04

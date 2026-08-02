@@ -5,6 +5,7 @@ import {
   isStressSceneRequested,
 } from './stress-scene.js';
 import { logger } from '../core/logger.js';
+import { CanopySolidityProbe } from '../diagnostics/canopy-solidity-probe.js';
 import { RenderSmokeProbe } from '../diagnostics/render-smoke-probe.js';
 import { FrameBudgetQueue } from '../generation/frame-budget-queue.js';
 import { TreeGenerator } from '../generation/tree-generator.js';
@@ -22,12 +23,14 @@ export class TreeDemo {
     treeMeshBuilder = new TreeMeshBuilder(),
     windController = new TreeWindController(),
     renderSmokeProbe = new RenderSmokeProbe(),
+    canopySolidityProbe = new CanopySolidityProbe(),
   } = {}) {
     this.sceneFactory = sceneFactory;
     this.treeGenerator = treeGenerator;
     this.treeMeshBuilder = treeMeshBuilder;
     this.windController = windController;
     this.renderSmokeProbe = renderSmokeProbe;
+    this.canopySolidityProbe = canopySolidityProbe;
     this.generationQueue = new FrameBudgetQueue();
     this.treeRoots = [];
     this.generation = 0;
@@ -65,6 +68,7 @@ export class TreeDemo {
       return preset.label;
     }))];
 
+    this.canopySolidityProbe.install();
     createDemoOverlay(container, labels, overlayTitle);
     this.rebuildTrees();
     window.addEventListener('resize', this.handleResize);
@@ -75,6 +79,7 @@ export class TreeDemo {
       this.context.scene,
       this.context.camera,
     );
+    void this.runCanopySolidityProbe();
     logger.info('Procedural tree demo started.', {
       releaseVersion,
       presets: labels,
@@ -133,6 +138,19 @@ export class TreeDemo {
 
     this.generation += 1;
     this.context.renderer.shadowMap.needsUpdate = true;
+  }
+
+  async runCanopySolidityProbe() {
+    if (!this.canopySolidityProbe.enabled) return;
+
+    // One presented frame guarantees every hero material has compiled before the
+    // probe reads pixels back from its own render target.
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    await this.canopySolidityProbe.run({
+      renderer: this.context.renderer,
+      scene: this.context.scene,
+      trees: this.treeRoots,
+    });
   }
 
   handleResize() {

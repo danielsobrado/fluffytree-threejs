@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CrownVolumeField } from '../generation/crown-volume-field.js';
-import { hashUnit } from './canopy-closure-math.js';
+import { hashUnit } from './deterministic-hash.js';
 import { LeafClusterGeometryFactory } from './leaf-cluster-geometry-factory.js';
 import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constants.js';
 import { createSurfaceRecords } from './leaf-cluster-record-factory.js';

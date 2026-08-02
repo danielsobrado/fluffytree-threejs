@@ -1,13 +1,15 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
-  RootCollarGeometryFactory,
-  trimPathAboveHeight,
-} from './root-collar-geometry-factory.js';
+  analyzeGeometryBoundary,
+  calculateSignedVolume,
+} from '../qa/geometry-boundary-analyzer.js';
 import {
-  calculateRootCollarRadiusAtHeight,
-  getRootCollarJoinHeight,
-} from './root-collar-profile.js';
+  calculateRootFlareScale,
+  calculateRootRadiusScale,
+  extendPathBelowGround,
+  getRootFlareTopHeight,
+} from './root-flare-profile.js';
 import { TaperedCurveGeometryFactory } from './tapered-curve-geometry-factory.js';
 import { TREE_STRUCTURE_RENDERING_CONSTANTS } from './tree-structure-rendering-constants.js';
 import {
@@ -15,16 +17,12 @@ import {
   StylizedBarkMaterialFactory,
 } from './stylized-bark-material-factory.js';
 
-const TRUNK_INSIDE_COLLAR_RATIO = 0.98;
-
 export class BranchMeshBuilder {
   constructor({
     geometryFactory = new TaperedCurveGeometryFactory(),
-    rootCollarGeometryFactory = new RootCollarGeometryFactory(),
     materialFactory = new StylizedBarkMaterialFactory(),
   } = {}) {
     this.geometryFactory = geometryFactory;
-    this.rootCollarGeometryFactory = rootCollarGeometryFactory;
     this.materialFactory = materialFactory;
   }
 
@@ -38,34 +36,31 @@ export class BranchMeshBuilder {
       name = 'tree-structure',
     } = {},
   ) {
-    const joinHeight = getRootCollarJoinHeight();
-    const trunkPath = trimPathAboveHeight(treeData.trunk.points, joinHeight);
-    const trunkStartRadius =
-      calculateRootCollarRadiusAtHeight(
-        treeData.trunk.startRadius,
-        treeData.trunk.flare,
-        joinHeight,
-      ) * TRUNK_INSIDE_COLLAR_RATIO;
-    const rootGeometry = this.rootCollarGeometryFactory.create({
-        path: treeData.trunk.points,
-        startRadius: treeData.trunk.startRadius,
-        flare: treeData.trunk.flare,
-        seed: treeData.seed,
-      });
-    addStylizedBarkColors(
-      rootGeometry,
-      treeData.barkPalette,
-      treeData.seed,
-      0,
-      treeData.height,
-    );
+    const trunkPath = extendPathBelowGround(treeData.trunk.points);
     const trunkGeometry = this.geometryFactory.create({
-        path: trunkPath,
-        startRadius: trunkStartRadius,
-        endRadius: treeData.trunk.endRadius,
-        sampleCount: trunkCurveSamples,
-        radialSegments,
-      });
+      path: trunkPath,
+      startRadius: treeData.trunk.startRadius,
+      endRadius: treeData.trunk.endRadius,
+      sampleCount: trunkCurveSamples,
+      sampleBias: TREE_STRUCTURE_RENDERING_CONSTANTS.trunkSampleBias,
+      radiusScale: ({ angle, height }) =>
+        calculateRootRadiusScale(
+          treeData.trunk.flare,
+          angle,
+          height,
+          treeData.seed,
+        ),
+      capStart: true,
+      capEnd: true,
+      radialSegments,
+    });
+    const trunkBoundary = analyzeGeometryBoundary(trunkGeometry.getIndex().array);
+    const trunkVolume = calculateSignedVolume(
+      trunkGeometry.getAttribute('position').array,
+      trunkGeometry.getIndex().array,
+    );
+    const rootBaseMaximumHeight =
+      trunkGeometry.userData.sweptTube.startRingMaximumHeight;
     addStylizedBarkColors(
       trunkGeometry,
       treeData.barkPalette,
@@ -93,7 +88,7 @@ export class BranchMeshBuilder {
         );
         return geometry;
       });
-    const geometries = [rootGeometry, trunkGeometry, ...branchGeometries];
+    const geometries = [trunkGeometry, ...branchGeometries];
     const merged = mergeGeometries(geometries, false);
     geometries.forEach((geometry) => geometry.dispose());
 
@@ -107,13 +102,22 @@ export class BranchMeshBuilder {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.userData.structure = {
-      rootCapped: true,
-      rootBottomCapped: true,
-      rootTopCapped: false,
-      rootCollar: true,
+      trunkClosed: trunkBoundary.closed,
+      trunkBoundaryEdges: trunkBoundary.boundaryEdges,
+      trunkNonManifoldEdges: trunkBoundary.nonManifoldEdges,
+      trunkOutwardFacing: trunkVolume > 0,
+      trunkSignedVolume: trunkVolume,
       rootEmbedDepth: TREE_STRUCTURE_RENDERING_CONSTANTS.rootEmbedDepth,
-      rootCollarHeight: TREE_STRUCTURE_RENDERING_CONSTANTS.rootCollarHeight,
-      rootCollarOverlap: TREE_STRUCTURE_RENDERING_CONSTANTS.rootCollarOverlap,
+      rootBaseMaximumHeight,
+      rootBase: {
+        x: trunkPath[0].x,
+        y: trunkPath[0].y,
+        z: trunkPath[0].z,
+        radius:
+          treeData.trunk.startRadius *
+          calculateRootFlareScale(treeData.trunk.flare, trunkPath[0].y),
+      },
+      rootFlareHeight: getRootFlareTopHeight(),
       branchCount: branchGeometries.length,
       maximumBranchOrder: maxBranchOrder,
     };

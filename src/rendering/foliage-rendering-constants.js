@@ -3,6 +3,10 @@ export const FOLIAGE_RENDERING_CONSTANTS = Object.freeze({
   alphaTextureResolution: 64,
   coreLobeDetail: 3,
   coreLobeDeformation: 0.16,
+  // The clump cores are the canopy's opaque interior. They are sized so that
+  // neighbouring cores still overlap in the crevices between clumps, which is
+  // where an alpha-cut shell alone leaves the sky visible through the crown.
+  coreScaleMultiplier: 1.35,
   coreRoughness: 0.96,
   shellRoughness: 0.92,
   shellRootInset: -0.08,

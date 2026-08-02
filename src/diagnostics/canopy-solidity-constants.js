@@ -1,0 +1,17 @@
+export const CANOPY_SOLIDITY_CONSTANTS = Object.freeze({
+  queryValue: 'solidity',
+  resolution: 512,
+  fieldOfView: 42,
+  frameMargin: 1.08,
+  alphaThreshold: 64,
+  minimumHolePixels: 16,
+  minimumHoleRadius: 3,
+  crownYawCount: 4,
+  crownYawOffset: 27,
+  crownElevations: Object.freeze([10, 32]),
+  baseYawCount: 3,
+  baseYawOffset: 41,
+  baseElevations: Object.freeze([26]),
+  baseRadiusMultiplier: 2.3,
+  baseHeightMultiplier: 1.6,
+});

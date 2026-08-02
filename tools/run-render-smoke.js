@@ -45,9 +45,26 @@ function findBrowser() {
   return candidates.find((candidate) => fs.existsSync(candidate));
 }
 
+function collectReport(request, response, requestUrl) {
+  const name = requestUrl.searchParams.get('name') ?? 'qa-report';
+  const chunks = [];
+  request.on('data', (chunk) => chunks.push(chunk));
+  request.on('end', () => {
+    fs.writeFileSync(
+      path.join(outputDirectory, `${name}.json`),
+      Buffer.concat(chunks),
+    );
+    response.writeHead(204).end();
+  });
+}
+
 function serve(request, response) {
   const requestUrl = new URL(request.url, url);
   const pathname = decodeURIComponent(requestUrl.pathname);
+  if (pathname === '/__qa-report') {
+    collectReport(request, response, requestUrl);
+    return;
+  }
   if (pathname === '/__render-smoke-status') {
     if (activeCapture) {
       activeCapture.status = requestUrl.searchParams.get('status');
@@ -104,7 +121,7 @@ function runBrowser(browser, name, size) {
         '--force-device-scale-factor=1',
         `--user-data-dir=${profile}`,
         `--window-size=${size}`,
-        `--virtual-time-budget=${qaMode === 'stress' ? 120000 : 40000}`,
+        `--virtual-time-budget=${qaMode === 'render-smoke' ? 40000 : 120000}`,
         `--screenshot=${screenshot}`,
         '--dump-dom',
         url,
@@ -134,13 +151,17 @@ function runBrowser(browser, name, size) {
       if (error) reject(error);
       else resolve();
     };
+    const hasScreenshot = () =>
+      fs.existsSync(screenshot) && fs.statSync(screenshot).size > 0;
+    // The solidity probe gates on read-back pixels rather than on the captured
+    // image, so it must not wait for the virtual time budget to expire.
+    const requiresScreenshot = qaMode !== 'solidity';
     const poll = setInterval(() => {
       if (activeCapture?.status === 'error') {
         finish(new Error(`${name} render failed: ${activeCapture.error}`));
       } else if (
         (activeCapture?.status === 'ready' || qaMode === 'stress') &&
-        fs.existsSync(screenshot) &&
-        fs.statSync(screenshot).size > 0
+        (!requiresScreenshot || hasScreenshot())
       ) {
         finish();
       }
@@ -148,8 +169,7 @@ function runBrowser(browser, name, size) {
     const timer = setTimeout(() => {
       if (
         activeCapture?.status === 'ready' &&
-        fs.existsSync(screenshot) &&
-        fs.statSync(screenshot).size > 0
+        (!requiresScreenshot || hasScreenshot())
       ) {
         finish();
         return;
@@ -159,7 +179,7 @@ function runBrowser(browser, name, size) {
           `${name} browser capture timed out (${activeCapture?.status}): ${diagnostics}`,
         ),
       );
-    }, qaMode === 'stress' ? 180000 : 150000);
+    }, qaMode === 'render-smoke' ? 150000 : 300000);
     child.on('error', finish);
     child.on('close', (code) => {
       exitCode = code;
@@ -181,15 +201,19 @@ await new Promise((resolve, reject) => {
 try {
   if (qaMode === 'stress') {
     await runBrowser(browser, 'stress-720p', '1280,720');
+    console.log(
+      `Stress render passed: ${path.join(outputDirectory, 'stress-720p.png')}`,
+    );
+  } else if (qaMode === 'solidity') {
+    await runBrowser(browser, 'solidity', '1280,800');
+    console.log('Canopy solidity gate passed.');
   } else {
     await runBrowser(browser, 'desktop', '1440,900');
     await runBrowser(browser, 'mobile', '720,1440');
+    console.log(
+      `Render smoke tests passed: ${path.join(outputDirectory, 'desktop.png')} and mobile.png`,
+    );
   }
-  console.log(
-    qaMode === 'stress'
-      ? `Stress render passed: ${path.join(outputDirectory, 'stress-720p.png')}`
-      : `Render smoke tests passed: ${path.join(outputDirectory, 'desktop.png')} and mobile.png`,
-  );
 } finally {
   await new Promise((resolve) => server.close(resolve));
 }

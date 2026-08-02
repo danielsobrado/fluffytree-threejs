@@ -1,6 +1,4 @@
-import { hashUnit } from '../rendering/canopy-closure-math.js';
-
-const ROOT_TRIANGLES = 180;
+import { hashUnit } from '../rendering/deterministic-hash.js';
 
 function countBranches(tree, maximumOrder) {
   return tree.branches.filter((branch) => branch.order <= maximumOrder);
@@ -10,8 +8,8 @@ function structureTriangles(tree, maximumOrder, radialSegments, trunkSamples, br
   const branches = countBranches(tree, maximumOrder);
   const caps = branches.filter((branch) => branch.exposed).length * radialSegments;
   return (
-    ROOT_TRIANGLES +
     trunkSamples * radialSegments * 2 +
+    radialSegments * 2 +
     branches.length * branchSamples * radialSegments * 2 +
     caps
   );
@@ -30,7 +28,8 @@ export function analyzeTreeLodBudgets(tree) {
   const mediumShell = selectedShellCount(tree, 0.7, 0x517cc1b7);
   const lobeCount = tree.lobes.length;
   const lod0 =
-    structureTriangles(tree, 3, 10, 20, 10) +
+    structureTriangles(tree, 3, 10, 24, 10) +
+    lobeCount * 80 +
     (tree.shell.length + interiorShell) * foliage.shell.planesPerCluster * 2 +
     heroClusters * foliage.heroLeaves.leavesPerCluster * 2;
   const lod1 =

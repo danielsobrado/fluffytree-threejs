@@ -13,12 +13,12 @@ The repository is a deterministic, configuration-driven procedural tree system s
 - Gnarled trunks, primary limbs, recursive forks, and exposed terminal twigs.
 - Every foliage lobe records the branch that supports it.
 - Faceted tapered tube geometry with branch-order taper and configurable flare.
-- A terrain-embedded root collar overlaps the trunk tube.
-- The collar is capped below terrain and deliberately open at the hidden trunk join, preventing a visible horizontal cut face.
+- The trunk is one closed sweep: the root flare and its buttresses are a radius profile on the trunk tube itself, not a separate collar mesh, so there is no rim to see through.
+- The sweep starts below the terrain and is capped at both ends; ring placement is biased towards the base so the flare stays smooth.
 
 ## Painterly foliage and LOD
 
-- Low-poly clump cores create the dark interior canopy mass.
+- Low-poly clump cores create the dark interior canopy mass at every level of detail, including the hero level. An alpha-cut shell cannot tile a closed surface, so without the cores the sky shows through the crown.
 - Alpha-cut procedural leaf sprays cover exposed surfaces and silhouettes.
 - Sparse modeled hero leaves add close edge detail without filling the crown with geometry.
 - Crown-aware palette shading produces coherent cavity, sky, height, and sunward color.
@@ -66,6 +66,7 @@ The no-QA command still fetches remote `main`, validates required Pages files, a
 ```bash
 npm run check
 npm run qa:render
+npm run qa:solidity
 npm run qa:shape
 npm run qa:crown
 npm run qa:lod
@@ -78,7 +79,6 @@ Smaller development runs are available:
 ```bash
 npm run qa:shape:quick
 npm run qa:crown:quick
-npm run qa:occupancy:quick
 npm run qa:stress:render
 ```
 
@@ -89,6 +89,8 @@ The crown-volume battery extracts 16 proxy meshes per preset and repeats each ex
 The LOD budget gate measures every demo tree against fixed triangle, draw-call, and shadow-proxy limits.
 
 The deterministic 75-tree stress gate projects a 1280×720 view, checks mixed-LOD migration, and enforces the 100-draw and 128 MB budgets. `qa:stress:render` additionally captures that scene in a browser; the 30 FPS requirement must be measured on the stated Iris Xe/GTX 670-class hardware rather than software WebGL.
+
+The canopy solidity gate renders every demo tree alone at LOD0 against a transparent background from eight crown angles and three trunk angles. Background pixels that cannot reach the image border are counted as see-through openings, and only openings wide enough to contain a three-pixel radius are scored, so the stipple between leaf cards is ignored while a real window is not. Trunk views hide the foliage so a trunk defect is measured against the trunk. Limits live in `config/canopy-solidity-qa.yaml`, and a failing run writes the worst view of each preset to `qa-results/canopy-solidity/` with every counted opening flooded in magenta.
 
 The automated gates cover:
 
@@ -103,7 +105,8 @@ The automated gates cover:
 - Surface-shell distribution and macro-clump silhouette quality.
 - Descending triangle and draw-call budgets for all four LODs.
 - A 75-tree 720p distribution with batched far impostors and bounded GPU resources.
-- A terrain-embedded root collar with positive trunk overlap and no visible top cap.
+- A watertight trunk sweep with no boundary or non-manifold edges, capped below the terrain.
+- No see-through openings in the rendered crown or trunk from any measured angle.
 - The exact uploaded release identifier in the browser and visible demo titles.
 
 ## Structure
@@ -118,7 +121,7 @@ src/core/               Cross-cutting utilities
 src/diagnostics/        Browser and rendering diagnostics
 src/domain/             Validated domain configuration
 src/generation/         Renderer-independent procedural generation
-src/qa/                 Numeric topology, silhouette, shell, and occupancy analysis
+src/qa/                 Numeric topology, silhouette, shell, and screen-space solidity analysis
 src/rendering/          Three.js geometry, material, and mesh construction
 src/ui/                 DOM presentation
 styles/                 Page styling

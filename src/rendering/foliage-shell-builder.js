@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { FoliageShellGeometryFactory } from './foliage-shell-geometry-factory.js';
 import { FoliageShellMaterialFactory } from './foliage-shell-material-factory.js';
 import { addFoliageInstanceAttributes } from './instanced-foliage-attributes.js';
-import { hashUnit } from './canopy-closure-math.js';
+import { hashUnit } from './deterministic-hash.js';
 
 const LOCAL_OUTWARD = new THREE.Vector3(0, 0, 1);
 
