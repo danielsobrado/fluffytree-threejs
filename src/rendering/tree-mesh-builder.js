@@ -12,7 +12,9 @@ import { TreeImpostorBuilder } from './tree-impostor-builder.js';
 function createLevel(name, objects) {
   const group = new THREE.Group();
   group.name = name;
-  group.add(...objects);
+  // The hero level starts empty and a stress tree skips its near levels, and
+  // three logs an error for an add() call with no arguments.
+  if (objects.length > 0) group.add(...objects);
   configureObjectLodFade(group);
   return group;
 }
