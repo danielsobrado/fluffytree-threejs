@@ -11,6 +11,7 @@ export const FOLIAGE_RENDERING_CONSTANTS = Object.freeze({
   // but cannot fill a region the exterior pass never covered, so the triangle
   // budget goes to exterior coverage first and this layer takes what is left.
   heroInteriorDensity: 0.09,
+  mediumShellDensity: 0.75,
   // Cluster quads are unit sized, so this is what turns a cluster's generated
   // scale into its rendered card width. The coverage gate needs the same number
   // to express a surface gap in card widths.

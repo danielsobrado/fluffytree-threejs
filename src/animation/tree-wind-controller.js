@@ -9,6 +9,7 @@ export class TreeWindController {
     this.strength = strength;
     this.speed = speed;
     this.states = [];
+    this.wrappedTrees = new WeakSet();
   }
 
   register(tree, seed) {
@@ -27,6 +28,16 @@ export class TreeWindController {
         this.states.push(state);
       }
     });
+
+    const lodState = tree.userData?.lod;
+    if (!lodState?.buildHero || this.wrappedTrees.has(tree)) return;
+    const buildHero = lodState.buildHero;
+    lodState.buildHero = () => {
+      const result = buildHero();
+      this.register(tree, seed);
+      return result;
+    };
+    this.wrappedTrees.add(tree);
   }
 
   update(elapsedSeconds) {
@@ -35,5 +46,6 @@ export class TreeWindController {
 
   clear() {
     this.states.length = 0;
+    this.wrappedTrees = new WeakSet();
   }
 }

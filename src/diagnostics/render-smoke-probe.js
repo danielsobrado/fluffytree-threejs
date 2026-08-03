@@ -5,6 +5,7 @@ const RENDER_SMOKE_QUERY_VALUE = 'render-smoke';
 const STATUS_ATTRIBUTE = 'renderStatus';
 const ERROR_ATTRIBUTE = 'renderError';
 const CROWN_PROXY_NAME = 'crown-shadow-proxy';
+const STRUCTURE_PROXY_NAME = 'tree-structure-shadow-proxy';
 const HERO_LEAF_NAME = 'hero-leaf-shell';
 const STRUCTURE_NAME = 'tree-structure';
 
@@ -34,8 +35,9 @@ function validateReleaseTitles(root) {
 function collectSceneMetrics(scene) {
   const metrics = {
     treeCount: 0,
-    shadowProxyCount: 0,
-    crownTriangles: 0,
+    crownShadowProxyCount: 0,
+    structureShadowProxyCount: 0,
+    shadowTriangles: 0,
     leafClusterCount: 0,
     leafCount: 0,
     foliageCoreCount: 0,
@@ -51,18 +53,20 @@ function collectSceneMetrics(scene) {
   scene.traverse((object) => {
     if (object.userData?.tree) metrics.treeCount += 1;
 
-    if (object.name === CROWN_PROXY_NAME) {
-      metrics.shadowProxyCount += 1;
-      metrics.crownTriangles += Number(
-        object.userData?.shadowProxy?.triangleCount ?? 0,
-      );
+    const shadowProxy = object.userData?.shadowProxy;
+    if (shadowProxy) {
+      if (object.name === CROWN_PROXY_NAME) metrics.crownShadowProxyCount += 1;
+      if (object.name === STRUCTURE_PROXY_NAME) {
+        metrics.structureShadowProxyCount += 1;
+      }
+      metrics.shadowTriangles += Number(shadowProxy.triangleCount ?? 0);
 
       if (
-        object.userData?.shadowProxy?.visibleSurface !== false ||
+        shadowProxy.visibleSurface !== false ||
         object.material?.colorWrite !== false ||
         object.material?.depthWrite !== false
       ) {
-        throw new Error('A smooth crown blob is still visible in the color pass.');
+        throw new Error('A shadow proxy is still visible in the color pass.');
       }
     }
 
@@ -110,12 +114,13 @@ function collectSceneMetrics(scene) {
 
   if (
     metrics.treeCount === 0 ||
-    metrics.shadowProxyCount !== metrics.treeCount ||
-    metrics.crownTriangles === 0 ||
-    metrics.crownTriangles >
+    metrics.crownShadowProxyCount !== metrics.treeCount ||
+    metrics.structureShadowProxyCount !== metrics.treeCount ||
+    metrics.shadowTriangles === 0 ||
+    metrics.shadowTriangles >
       metrics.treeCount * RENDER_SMOKE_CONSTANTS.maximumShadowTrianglesPerTree
   ) {
-    throw new Error('Invisible crown shadow proxies are incomplete.');
+    throw new Error('Stable tree shadow proxies are incomplete or over budget.');
   }
 
   const perTree = (value) => metrics.treeCount * value;

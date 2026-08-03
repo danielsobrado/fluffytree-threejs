@@ -153,14 +153,12 @@ function runBrowser(browser, name, size) {
     };
     const hasScreenshot = () =>
       fs.existsSync(screenshot) && fs.statSync(screenshot).size > 0;
-    // The solidity probe gates on read-back pixels rather than on the captured
-    // image, so it must not wait for the virtual time budget to expire.
     const requiresScreenshot = qaMode !== 'solidity';
     const poll = setInterval(() => {
       if (activeCapture?.status === 'error') {
         finish(new Error(`${name} render failed: ${activeCapture.error}`));
       } else if (
-        (activeCapture?.status === 'ready' || qaMode === 'stress') &&
+        activeCapture?.status === 'ready' &&
         (!requiresScreenshot || hasScreenshot())
       ) {
         finish();

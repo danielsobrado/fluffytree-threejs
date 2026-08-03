@@ -30,49 +30,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check source and unit tests
-        run: npm run check
+      - name: Verify production tree pipeline
+        run: npm run verify
 
-      - name: Run desktop and mobile WebGL render smoke
-        run: npm run qa:render
-
-      - name: Upload volumetric canopy render evidence
-        if: always() && hashFiles('qa-results/render-smoke/**') != ''
+      - name: Upload QA evidence
+        if: always() && hashFiles('qa-results/**') != ''
         uses: actions/upload-artifact@v7
         with:
-          name: volumetric-canopy-render-smoke
-          path: qa-results/render-smoke
-          if-no-files-found: error
-
-      - name: Run deterministic control-shape QA
-        run: npm run qa:shape
-
-      - name: Upload control-shape report
-        if: always() && hashFiles('qa-results/tree-shape/**') != ''
-        uses: actions/upload-artifact@v7
-        with:
-          name: volumetric-canopy-tree-shape-qa-report
-          path: qa-results/tree-shape
-          if-no-files-found: error
-
-      - name: Run deterministic unified crown QA
-        run: npm run qa:crown
-
-      - name: Upload unified crown report
-        if: always() && hashFiles('qa-results/crown-volume/**') != ''
-        uses: actions/upload-artifact@v7
-        with:
-          name: volumetric-canopy-volume-qa-report
-          path: qa-results/crown-volume
-          if-no-files-found: error
-
-      - name: Run deterministic canopy occupancy QA
-        run: npm run qa:occupancy
-
-      - name: Upload canopy occupancy report
-        if: always() && hashFiles('qa-results/canopy-occupancy/**') != ''
-        uses: actions/upload-artifact@v7
-        with:
-          name: volumetric-canopy-occupancy-qa-report
-          path: qa-results/canopy-occupancy
+          name: procedural-tree-qa
+          path: qa-results
           if-no-files-found: error

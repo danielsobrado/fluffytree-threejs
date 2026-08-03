@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   calculateLodWeights,
+  remapUnavailableLodWeights,
   resolveStableLod,
 } from '../src/rendering/tree-lod-math.js';
 
@@ -33,4 +34,21 @@ test('LOD hysteresis prevents boundary flapping', () => {
   assert.equal(resolveStableLod(250, 0, SETTINGS), 1);
   assert.equal(resolveStableLod(320, 1, SETTINGS), 1);
   assert.equal(resolveStableLod(340, 1, SETTINGS), 0);
+});
+
+test('unavailable levels collapse into the nearest built representation', () => {
+  assert.deepEqual(
+    remapUnavailableLodWeights([0.6, 0.4, 0, 0], {
+      minimumLevel: 2,
+      heroReady: false,
+    }),
+    [0, 0, 1, 0],
+  );
+  assert.deepEqual(
+    remapUnavailableLodWeights([1, 0, 0, 0], {
+      minimumLevel: 0,
+      heroReady: false,
+    }),
+    [0, 1, 0, 0],
+  );
 });
