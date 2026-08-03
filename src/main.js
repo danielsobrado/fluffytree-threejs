@@ -19,6 +19,7 @@ const CONFIG_URLS = Object.freeze({
   release: './config/release.yaml',
   scene: './config/scene.yaml',
   trees: './config/tree-presets.yaml',
+  foliageContinuity: './config/foliage-continuity.yaml',
   stemManifoldQa: './config/stem-manifold-qa.yaml',
 });
 
@@ -50,15 +51,17 @@ async function bootstrap() {
       return;
     }
 
-    const [releaseConfig, sceneConfig, treeConfig] = await Promise.all([
-      loader.load(CONFIG_URLS.release),
-      loader.load(CONFIG_URLS.scene),
-      loader.load(CONFIG_URLS.trees),
-    ]);
+    const [releaseConfig, sceneConfig, treeConfig, continuityConfig] =
+      await Promise.all([
+        loader.load(CONFIG_URLS.release),
+        loader.load(CONFIG_URLS.scene),
+        loader.load(CONFIG_URLS.trees),
+        loader.load(CONFIG_URLS.foliageContinuity),
+      ]);
     const releaseVersion = formatReleaseVersion(releaseConfig);
     const overlayTitle = formatOverlayTitle(releaseConfig);
     applyDocumentTitle(releaseConfig);
-    const library = PresetLibrary.fromConfig(treeConfig);
+    const library = PresetLibrary.fromConfig(treeConfig, continuityConfig);
     const demo = new TreeDemo();
     demo.start(
       container,
