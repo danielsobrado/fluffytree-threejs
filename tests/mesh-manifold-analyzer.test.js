@@ -26,6 +26,7 @@ test('accepts a connected outward-facing closed two-manifold', () => {
   assert.equal(report.boundaryEdgeCount, 0);
   assert.equal(report.nonManifoldEdgeCount, 0);
   assert.equal(report.orientationConflictCount, 0);
+  assert.equal(report.selfIntersectionCount, 0);
   assert.equal(report.componentCount, 1);
   assert.equal(report.eulerCharacteristic, 2);
   assert.ok(report.signedVolume > 0);
@@ -75,4 +76,19 @@ test('rejects degenerate and duplicate triangles', () => {
   assert.equal(report.closedTwoManifold, false);
   assert.equal(report.duplicateTriangleCount, 1);
   assert.equal(report.degenerateTriangleCount, 1);
+});
+
+test('rejects interpenetrating closed surfaces', () => {
+  const translated = TETRAHEDRON_POSITIONS.map((value) => value + 0.2);
+  const positions = [...TETRAHEDRON_POSITIONS, ...translated];
+  const indices = [
+    ...TETRAHEDRON_INDICES,
+    ...TETRAHEDRON_INDICES.map((index) => index + 4),
+  ];
+  const report = analyzeIndexedManifold(positions, indices);
+
+  assert.equal(report.closedTwoManifold, false);
+  assert.ok(report.selfIntersectionCount > 0);
+  assert.ok(report.selfIntersectionTestedPairCount > 0);
+  assert.ok(report.selfIntersectionExamples.length > 0);
 });
