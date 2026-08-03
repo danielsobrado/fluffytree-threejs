@@ -155,6 +155,7 @@ export class FoliageShellBuilder {
       density,
       actualDensity: outerSelection.actualDensity,
       scaleCompensation: outerSelection.scaleCompensation,
+      maximumCoverageRatio: outerSelection.maximumCoverageRatio,
     };
     return shell;
   }

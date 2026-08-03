@@ -3,14 +3,22 @@ import test from 'node:test';
 import { selectFoliageLodInstances } from '../src/rendering/foliage-lod-selector.js';
 
 function createInstance(id, lobeId, angle, exposure = 0.5) {
+  const x = Math.cos(angle);
+  const z = Math.sin(angle);
   return {
     id,
     lobeId,
-    normal: {
-      x: Math.cos(angle),
-      y: Math.sin(angle * 0.5) * 0.35,
-      z: Math.sin(angle),
+    position: {
+      x: x + lobeId * 4,
+      y: 0,
+      z,
     },
+    normal: {
+      x,
+      y: Math.sin(angle * 0.5) * 0.35,
+      z,
+    },
+    coverageRadius: 0.6,
     exposure,
   };
 }
@@ -33,9 +41,10 @@ test('full-density foliage selection preserves every source instance', () => {
   assert.equal(selection.instances, instances);
   assert.equal(selection.actualDensity, 1);
   assert.equal(selection.scaleCompensation, 1);
+  assert.equal(selection.maximumCoverageRatio, 0);
 });
 
-test('reduced foliage selection is deterministic and proportionally covers every lobe', () => {
+test('reduced foliage selection is deterministic and covers every lobe', () => {
   const instances = [
     ...Array.from({ length: 8 }, (_, index) =>
       createInstance(index, 0, (index / 8) * Math.PI * 2),
@@ -53,11 +62,13 @@ test('reduced foliage selection is deterministic and proportionally covers every
     second.instances.map((instance) => instance.id),
   );
   assert.equal(first.instances.length, 6);
-  assert.equal(counts.get(0), 4);
-  assert.equal(counts.get(1), 2);
+  assert.ok(counts.get(0) >= 1);
+  assert.ok(counts.get(1) >= 1);
+  assert.equal(first.maximumCoverageRatio, second.maximumCoverageRatio);
+  assert.ok(Number.isFinite(first.maximumCoverageRatio));
 });
 
-test('surface strata retain the most exposed local representative', () => {
+test('single-slot lobe selection retains its most exposed anchor', () => {
   const instances = [
     createInstance(0, 0, 0, 0.1),
     createInstance(1, 0, Math.PI * 0.5, 0.4),
@@ -70,6 +81,22 @@ test('surface strata retain the most exposed local representative', () => {
     selection.instances.map((instance) => instance.id),
     [2],
   );
+});
+
+test('global selection represents separated surface regions before local duplicates', () => {
+  const instances = [
+    createInstance(0, 0, 0, 0.9),
+    createInstance(1, 0, 0.1, 0.8),
+    createInstance(2, 0, Math.PI, 0.7),
+    createInstance(3, 1, 0, 0.95),
+  ];
+  const selection = selectFoliageLodInstances(instances, 0.75);
+  const selectedIds = selection.instances.map((instance) => instance.id);
+
+  assert.equal(selectedIds.length, 3);
+  assert.ok(selectedIds.includes(2));
+  assert.ok(selectedIds.includes(3));
+  assert.ok(selectedIds.includes(0) || selectedIds.includes(1));
 });
 
 test('reduced foliage compensates projected card area without unbounded growth', () => {

@@ -38,7 +38,7 @@ function summarize(values_) {
   };
 }
 
-const report = { presets: {}, passed: true, seedCount };
+const report = { schemaVersion: 2, presets: {}, passed: true, seedCount };
 
 for (const [presetId, preset] of presets) {
   const thresholds = configuration.thresholds[presetId];
@@ -51,8 +51,11 @@ for (const [presetId, preset] of presets) {
   const gapCardRatios = [];
   const leafAreaIndices = [];
   const clusterCounts = [];
+  const candidateCoverageRatios = [];
+  const continuousTriangleCounts = [];
   const failures = [];
   let bareLobeTotal = 0;
+  let continuousUncoveredTotal = 0;
 
   for (let index = 0; index < seedCount; index += 1) {
     const seed =
@@ -65,9 +68,21 @@ for (const [presetId, preset] of presets) {
     gapCardRatios.push(metrics.gapCardRatio);
     leafAreaIndices.push(metrics.leafAreaIndex);
     clusterCounts.push(metrics.clusterCount);
+    candidateCoverageRatios.push(tree.shellCandidateCoverageRatio);
+    continuousTriangleCounts.push(metrics.continuous.trianglesVisited);
     bareLobeTotal += metrics.bareExposedLobes;
+    continuousUncoveredTotal += metrics.continuous.uncoveredTriangleCount;
 
     const seedFailures = [];
+    if (
+      tree.shellCandidateCoverageRatio >
+      thresholds.maximumCandidateCoverageRatio
+    ) {
+      seedFailures.push(
+        `candidateCoverageRatio ${tree.shellCandidateCoverageRatio.toFixed(6)} > ` +
+          `${thresholds.maximumCandidateCoverageRatio}`,
+      );
+    }
     if (metrics.gapCardRatio > thresholds.gapCardRatio) {
       seedFailures.push(
         `gapCardRatio ${metrics.gapCardRatio.toFixed(4)} > ${thresholds.gapCardRatio}`,
@@ -83,8 +98,19 @@ for (const [presetId, preset] of presets) {
         `bareExposedLobes ${metrics.bareExposedLobes} > ${thresholds.bareExposedLobes}`,
       );
     }
+    if (!metrics.continuous.passed) {
+      seedFailures.push(
+        `continuousCoverage uncovered=${metrics.continuous.uncoveredTriangleCount} ` +
+          `depth=${metrics.continuous.maximumDepthReached}`,
+      );
+    }
     if (seedFailures.length > 0) {
-      failures.push({ seed, failures: seedFailures, worst: metrics.worst });
+      failures.push({
+        seed,
+        failures: seedFailures,
+        worst: metrics.worst,
+        continuousWorst: metrics.continuous.worst,
+      });
     }
   }
 
@@ -95,21 +121,25 @@ for (const [presetId, preset] of presets) {
     treesAnalyzed: seedCount,
     failedTreeCount: failures.length,
     bareExposedLobeTotal: bareLobeTotal,
+    continuousUncoveredTriangleTotal: continuousUncoveredTotal,
+    candidateCoverageRatio: summarize(candidateCoverageRatios),
     gapRatio: summarize(gapRatios),
     gapCardRatio: summarize(gapCardRatios),
     leafAreaIndex: summarize(leafAreaIndices),
     clusterCount: summarize(clusterCounts),
+    continuousTrianglesVisited: summarize(continuousTriangleCounts),
     failures: failures.slice(0, configuration.report.maxFailures),
   };
 
   const summary = report.presets[presetId];
   console.log(
     `${presetId.padEnd(16)} ${passed ? 'PASS' : 'FAIL'} ` +
-      `gapRatio max=${summary.gapRatio.maximum.toFixed(3)} ` +
-      `gapCardRatio max=${summary.gapCardRatio.maximum.toFixed(3)} ` +
-      `leafArea min=${summary.leafAreaIndex.minimum.toFixed(2)} p50=${summary.leafAreaIndex.p50.toFixed(2)} ` +
-      `clusters p50=${summary.clusterCount.p50} max=${summary.clusterCount.maximum} ` +
-      `bareLobes=${bareLobeTotal}`,
+      `candidate max=${summary.candidateCoverageRatio.maximum.toFixed(3)} ` +
+      `gapCard max=${summary.gapCardRatio.maximum.toFixed(3)} ` +
+      `leafArea min=${summary.leafAreaIndex.minimum.toFixed(2)} ` +
+      `clusters p50=${summary.clusterCount.p50} ` +
+      `continuous uncovered=${continuousUncoveredTotal} ` +
+      `triangles p50=${summary.continuousTrianglesVisited.p50}`,
   );
   for (const failure of summary.failures) {
     console.log(`  seed ${failure.seed}: ${failure.failures.join('; ')}`);

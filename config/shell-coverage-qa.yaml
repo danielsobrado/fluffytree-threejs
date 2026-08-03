@@ -1,36 +1,25 @@
 # Leaf coverage gate.
 #
-# The solidity gate proves nothing shows *through* the canopy. This gate proves
-# the leaf cards actually reach the whole exposed crown surface, which is a
-# different failure: opaque cores with bald patches still score zero holes.
+# The solidity gate proves nothing shows through the opaque canopy mass. This
+# gate proves the rendered leaf cards cover the exposed crown surface.
 #
-# For every seeded tree an independent Fibonacci probe set is laid over each
-# lobe, twice as dense as the candidates the generator chose from and offset by
-# an unrelated phase. Each exposed probe is measured to the nearest leaf cluster
-# that faces the same way it does.
+# Generation first performs deterministic global max-cover selection. Every
+# exposed candidate must have a direction-compatible selected cluster within its
+# configured coverage radius.
 #
-#   gapCardRatio      maximum probe-to-cluster distance / the median rendered card width
-#   leafAreaIndex     total card area / exposed crown area
-#   bareExposedLobes  lobes with exposed surface and no cluster at all
+# QA then performs two independent checks:
 #
-# gapCardRatio is the metric that means something physically: below 1 the cards
-# at the worst point on the crown are still wider than the gap between them. The
-# limit is calibrated against the rendered result rather than derived. For scale,
-# the previous per-lobe selector measured 2.2 on columnar.
+# 1. An offset Fibonacci probe set measures the rendered result without replaying
+#    the generator candidate set.
+# 2. Adaptive icosphere subdivision certifies every potentially exposed surface
+#    patch. A patch passes only when one direction-compatible card covers the
+#    whole patch after adding conservative world-space and normal uncertainty.
+#    Patches that cannot be proven hidden or covered are subdivided.
 #
-# leafAreaIndex is what makes one preset read as denser foliage than another. It
-# does not follow from the gap metrics: a crown can be evenly covered and still
-# look thin if its cards are small for its surface. Columnar measured 4.83 here
-# while the other two sat above 7, which is exactly the density difference that
-# was visible on the deployed site.
-#
-# The three gated metrics are independent: a crown can be evenly covered and
-# still look thin, be dense on average and still have one bald lobe, or have
-# every lobe populated and still show a hole between two of them.
-#
-# This is a sampled bound, not a continuous proof: distance to the nearest
-# cluster is 1-Lipschitz, so a point between probes can exceed the reported gap
-# by at most the probe spacing.
+# The continuous proof compares distance with each selected cluster's actual
+# rendered card width. The 0.95 limit retains a small safety margin below one
+# complete card width while allowing the subdivision uncertainty at the accepted
+# terminal size.
 
 run:
   seedCount: 24
@@ -40,37 +29,53 @@ run:
 probe:
   probeDensityMultiplier: 2
   probeExposureMargin: 0.05
+  continuous:
+    maximumGapCardRatio: 0.95
+    maximumSubdivisionDepth: 8
+    minimumDirectionDiameter: 0.004
+    exposureMargin: 0.05
+    normalUncertaintyScale: 1
+    minimumCoverageNormalDot: 0.2588
+    maximumFailureExamples: 12
 
 thresholds:
   roundOrchard:
+    maximumCandidateCoverageRatio: 1.000001
     gapCardRatio: 0.85
     minimumLeafAreaIndex: 6.5
     bareExposedLobes: 0
   columnar:
+    maximumCandidateCoverageRatio: 1.000001
     gapCardRatio: 0.85
     minimumLeafAreaIndex: 6.5
     bareExposedLobes: 0
   irregularAutumn:
+    maximumCandidateCoverageRatio: 1.000001
     gapCardRatio: 0.85
     minimumLeafAreaIndex: 6.5
     bareExposedLobes: 0
   bonsaiInformal:
+    maximumCandidateCoverageRatio: 1.000001
     gapCardRatio: 0.85
     minimumLeafAreaIndex: 6.5
     bareExposedLobes: 0
   bonsaiWindswept:
+    maximumCandidateCoverageRatio: 1.000001
     gapCardRatio: 0.85
     minimumLeafAreaIndex: 6.5
     bareExposedLobes: 0
   bonsaiLiterati:
+    maximumCandidateCoverageRatio: 1.000001
     gapCardRatio: 0.85
     minimumLeafAreaIndex: 6.5
     bareExposedLobes: 0
   roundBush:
+    maximumCandidateCoverageRatio: 1.000001
     gapCardRatio: 0.85
     minimumLeafAreaIndex: 6.5
     bareExposedLobes: 0
   autumnBush:
+    maximumCandidateCoverageRatio: 1.000001
     gapCardRatio: 0.85
     minimumLeafAreaIndex: 6.5
     bareExposedLobes: 0
