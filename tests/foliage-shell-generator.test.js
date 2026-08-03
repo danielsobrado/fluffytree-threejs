@@ -5,6 +5,7 @@ import { TreeGenerator } from '../src/generation/tree-generator.js';
 import { createTestPreset } from './fixtures/tree-preset-fixture.js';
 
 const NORMAL_TOLERANCE = 1e-9;
+const COVERAGE_TOLERANCE = 1e-12;
 
 function groupByLobe(instances) {
   const groups = new Map();
@@ -18,12 +19,16 @@ function groupByLobe(instances) {
   return groups;
 }
 
-test('every lobe carries clusters and only exposed candidates are used', () => {
+test('every lobe carries clusters and exposed candidates satisfy max-cover', () => {
   const preset = createTestPreset();
   const tree = new TreeGenerator().generate(preset, 8128);
   const groups = groupByLobe(tree.shell);
 
   assert.ok(tree.shell.length > 0);
+  assert.ok(
+    tree.shellCandidateCoverageRatio <= 1 + COVERAGE_TOLERANCE,
+    `candidate coverage ratio ${tree.shellCandidateCoverageRatio}`,
+  );
   for (const lobe of tree.lobes) {
     const count = groups.get(lobe.id)?.length ?? 0;
     assert.ok(count >= 1, `lobe ${lobe.id} rendered as bare core`);
@@ -56,7 +61,6 @@ test('selected clusters keep a covering separation from compatible neighbours', 
         instance.position.y - other.position.y,
         instance.position.z - other.position.z,
       );
-      // The bare-lobe fallback is allowed to sit inside another cluster's radius.
       if (distance < other.coverageRadius) {
         assert.equal(
           tree.shell.filter((entry) => entry.lobeId === instance.lobeId).length,
@@ -110,6 +114,10 @@ test('foliage shell uses a seed stream independent from phase 1 geometry', () =>
   assert.deepEqual(tree.lobes, replay.lobes);
   assert.deepEqual(tree.branches, replay.branches);
   assert.deepEqual(tree.shell, replay.shell);
+  assert.equal(
+    tree.shellCandidateCoverageRatio,
+    replay.shellCandidateCoverageRatio,
+  );
   assert.deepEqual(tree.lobeExposure, replay.lobeExposure);
   assert.deepEqual(tree.crownCenter, replay.crownCenter);
 });
