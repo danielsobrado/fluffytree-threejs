@@ -1,11 +1,15 @@
 import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
+import { selectDeterministicFoliageMaxCover } from './foliage-max-cover-selector.js';
+import {
+  calculateLobeClearance,
+  clearanceToExposure,
+  prepareExposureLobes,
+} from './lobe-exposure.js';
 import {
   lobeSurfaceNormal,
   normalizeVector,
-  normalizedRotatedPointDistance,
   pointOnLobeSurface,
 } from './lobe-geometry.js';
-import { SpatialHashGrid } from './spatial-hash-grid.js';
 import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js';
 
 function clamp01(value) {
@@ -45,43 +49,6 @@ function createFibonacciDirection(index, count, phase) {
   };
 }
 
-/**
- * Exposure saturates once a point clears every other lobe by this much, so a lobe
- * whose bounding sphere is farther away than that cannot change the result and is
- * skipped. The normalised distance is at least the world distance divided by the
- * lobe's largest semi-axis, which makes the test exact rather than approximate.
- */
-const CLEARANCE_SATURATION =
-  FOLIAGE_SHELL_CONSTANTS.clearanceRange - FOLIAGE_SHELL_CONSTANTS.clearanceOffset;
-
-function calculateClearance(point, lobes, ownerLobeId) {
-  let minimum = CLEARANCE_SATURATION;
-
-  for (const lobe of lobes) {
-    if (lobe.id === ownerLobeId) continue;
-
-    const dx = point.x - lobe.position.x;
-    const dy = point.y - lobe.position.y;
-    const dz = point.z - lobe.position.z;
-    const reach = lobe.boundingRadius * (1 + CLEARANCE_SATURATION);
-    if (dx * dx + dy * dy + dz * dz > reach * reach) continue;
-
-    minimum = Math.min(
-      minimum,
-      normalizedRotatedPointDistance(point, lobe) - 1,
-    );
-  }
-
-  return minimum;
-}
-
-function distanceSquared(left, right) {
-  const x = left.x - right.x;
-  const y = left.y - right.y;
-  const z = left.z - right.z;
-  return x * x + y * y + z * z;
-}
-
 function normalDot(left, right) {
   return left.x * right.x + left.y * right.y + left.z * right.z;
 }
@@ -104,15 +71,12 @@ function createCandidate(
     y: surfacePoint.y + normal.y * radialOffset,
     z: surfacePoint.z + normal.z * radialOffset,
   };
-  const clearance = calculateClearance(surfacePoint, lobes, lobe.id);
+  const clearance = calculateLobeClearance(surfacePoint, lobes, lobe.id);
   const cardWidth =
     meanScale *
     settings.cardScaleSample *
     FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier;
-  const exposure = clamp01(
-    (clearance + FOLIAGE_SHELL_CONSTANTS.clearanceOffset) /
-      FOLIAGE_SHELL_CONSTANTS.clearanceRange,
-  );
+  const exposure = clearanceToExposure(clearance);
   const outward = normalizeVector({
     x: surfacePoint.x - crownCenter.x,
     y: surfacePoint.y - crownCenter.y,
@@ -159,48 +123,6 @@ function compareCandidates(left, right) {
   );
 }
 
-/**
- * Deterministic maximal Poisson-disk selection over the whole crown.
- *
- * Candidates are visited in score order and accepted unless an already accepted
- * cluster covers them: near enough in space and facing a similar way, so a card
- * on the far side of a thin crown cannot claim to cover this one. Because the
- * pass only stops when no candidate can still be added, every rejected candidate
- * has a compatible cluster within that cluster's covering radius. That is the
- * property the previous per-lobe score-and-normal-separation selection lacked:
- * it balanced exposure against normal difference and left whole lobes bare.
- */
-function selectCoveringCandidates(candidates, cellSize) {
-  const grid = new SpatialHashGrid(cellSize);
-  const selected = [];
-
-  for (const candidate of candidates) {
-    const covering = grid.findNear(candidate.position, (accepted) => {
-      const radius = accepted.coverageRadius;
-      return (
-        distanceSquared(candidate.position, accepted.position) < radius * radius &&
-        normalDot(candidate.normal, accepted.normal) >=
-          FOLIAGE_SHELL_CONSTANTS.minimumCoverageNormalDot
-      );
-    });
-
-    if (covering) continue;
-
-    grid.insert(candidate.position, candidate);
-    selected.push(candidate);
-  }
-
-  return selected;
-}
-
-/**
- * A lobe with no accepted cluster renders as bare core wherever it reaches the
- * crown surface. Its best candidate is added unconditionally, even when the lobe
- * looked fully buried at candidate density, because a denser look at the same
- * surface can still find exposed ground there. One extra card per lobe is
- * negligible, and it makes "every lobe carries a leaf card" true without
- * qualification.
- */
 function coverEveryLobe(selected, bestByLobe) {
   const covered = new Set(selected.map((candidate) => candidate.lobeId));
   const additions = [];
@@ -216,16 +138,10 @@ function coverEveryLobe(selected, bestByLobe) {
 export class FoliageShellGenerator {
   generate(preset, sourceLobes, random) {
     const settings = preset.foliage.shell;
-    // Cached once so the clearance scan can reject distant lobes without a
-    // rotation, and so every candidate on a lobe shares one derived value.
-    const lobes = sourceLobes.map((lobe) => ({
-      ...lobe,
-      boundingRadius: Math.max(lobe.scale.x, lobe.scale.y, lobe.scale.z),
-    }));
+    const lobes = prepareExposureLobes(sourceLobes);
     const crownCenter = calculateCrownCenter(lobes);
     const bestByLobe = new Map();
     const exposed = [];
-    let maximumCoverageRadius = 0;
 
     for (const lobe of lobes) {
       const phase = random.range(0, FOLIAGE_SHELL_CONSTANTS.tau);
@@ -243,23 +159,19 @@ export class FoliageShellGenerator {
         );
 
         if (!best || compareCandidates(candidate, best) < 0) best = candidate;
-        if (candidate.exposure < settings.exposureThreshold) continue;
-
-        exposed.push(candidate);
-        maximumCoverageRadius = Math.max(
-          maximumCoverageRadius,
-          candidate.coverageRadius,
-        );
+        if (candidate.exposure >= settings.exposureThreshold) exposed.push(candidate);
       }
 
       bestByLobe.set(lobe.id, best);
     }
 
     exposed.sort(compareCandidates);
-    const selected = selectCoveringCandidates(
-      exposed,
-      Math.max(maximumCoverageRadius, FOLIAGE_SHELL_CONSTANTS.minimumCellSize),
-    );
+    const maxCover = selectDeterministicFoliageMaxCover(exposed, {
+      targetCount: exposed.length,
+      stopCoverageRatio: 1,
+      minimumPerLobe: false,
+    });
+    const selected = [...maxCover.selected];
     selected.push(...coverEveryLobe(selected, bestByLobe));
     selected.sort(compareCandidates);
 
@@ -299,6 +211,7 @@ export class FoliageShellGenerator {
     return {
       instances,
       lobeExposure,
+      maximumCandidateCoverageRatio: maxCover.maximumCoverageRatio,
     };
   }
 }
