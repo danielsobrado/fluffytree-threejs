@@ -66,3 +66,26 @@ export function calculateLodWeights(projectedPixels, settings) {
   );
   return weights;
 }
+
+export function remapUnavailableLodWeights(
+  sourceWeights,
+  { minimumLevel = 0, heroReady = true } = {},
+) {
+  const weights = [...sourceWeights];
+  const firstAvailableLevel = Math.min(
+    weights.length - 1,
+    Math.max(0, Math.trunc(minimumLevel)),
+  );
+
+  for (let index = 0; index < firstAvailableLevel; index += 1) {
+    weights[firstAvailableLevel] += weights[index];
+    weights[index] = 0;
+  }
+
+  if (firstAvailableLevel === 0 && !heroReady) {
+    weights[1] += weights[0];
+    weights[0] = 0;
+  }
+
+  return weights;
+}
