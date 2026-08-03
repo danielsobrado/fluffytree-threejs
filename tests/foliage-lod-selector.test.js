@@ -57,6 +57,7 @@ test('reduced foliage selection is deterministic and covers every lobe', () => {
   const second = selectFoliageLodInstances(instances, 0.5);
   const counts = countByLobe(first.instances);
 
+  assert.equal(first, second);
   assert.deepEqual(
     first.instances.map((instance) => instance.id),
     second.instances.map((instance) => instance.id),
