@@ -17,6 +17,7 @@ function createEmptySurfaceSamples(lobes) {
   return {
     instances: [],
     lobeExposure: lobes.map(() => 1),
+    maximumCandidateCoverageRatio: 0,
   };
 }
 
@@ -110,6 +111,7 @@ export class TreeGenerator {
       lobeConnections,
       lobeExposure: Object.freeze(shell.lobeExposure),
       shell: Object.freeze(shell.instances),
+      shellCandidateCoverageRatio: shell.maximumCandidateCoverageRatio,
       trunk: Object.freeze(structure.trunk),
       branches: Object.freeze(structure.branches),
       branchGraph: Object.freeze({
