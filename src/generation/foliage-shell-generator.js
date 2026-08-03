@@ -172,7 +172,7 @@ export class FoliageShellGenerator {
     exposed.sort(compareCandidates);
     const maxCover = selectDeterministicFoliageMaxCover(exposed, {
       targetCount: exposed.length,
-      stopCoverageRatio: 0.8,
+      stopCoverageRatio: 0.5,
       minimumPerLobe: false,
     });
     const selected = [...maxCover.selected];
@@ -192,6 +192,7 @@ export class FoliageShellGenerator {
       return {
         id: index,
         lobeId: candidate.lobeId,
+        surfacePoint: candidate.surfacePoint,
         position: candidate.position,
         normal: candidate.normal,
         scale: candidate.scale,

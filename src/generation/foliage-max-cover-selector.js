@@ -62,6 +62,13 @@ function distance(left, right) {
   );
 }
 
+function compareCoveragePriorityForSort(left, right) {
+  return (
+    Number(right.coverageRadius) - Number(left.coverageRadius) ||
+    compareItemPriorityForSort(left, right)
+  );
+}
+
 function coverageTargetPosition(item) {
   return item.surfacePoint ?? item.position;
 }
@@ -127,7 +134,10 @@ function selectCompleteCoverage(items, stopCoverageRatio) {
   let maximumCoverageRatio = 0;
   let worst = null;
 
-  for (const candidate of [...items].sort(compareItemPriorityForSort)) {
+  // Larger rendered cards can cover every point a colocated smaller card can.
+  // Taking them first avoids allowing a small random card to suppress a nearby
+  // larger candidate and then leave a gap between finite surface samples.
+  for (const candidate of [...items].sort(compareCoveragePriorityForSort)) {
     const nearest = findNearbyCoverageRatio(grid, candidate);
 
     if (

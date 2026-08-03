@@ -45,9 +45,9 @@ test('complete selection uses each selected card actual coverage radius', () => 
 
   assert.deepEqual(
     result.selected.map((item) => item.id),
-    [0, 1],
+    [1],
   );
-  assert.equal(result.maximumCoverageRatio, 0);
+  assert.equal(result.maximumCoverageRatio, 0.25);
 });
 
 test('complete selection is independent from input order', () => {

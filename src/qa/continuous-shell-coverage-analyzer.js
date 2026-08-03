@@ -21,16 +21,26 @@ import {
 } from './shell-coverage-cluster-index.js';
 
 function createTriangleSamples(lobe, triangle) {
+  const children = subdivideDirectionTriangle(triangle);
   const directions = [
     triangle.a,
     triangle.b,
     triangle.c,
+    children[0].b,
+    children[1].c,
+    children[0].c,
     directionTriangleCentroid(triangle),
   ];
 
   return {
     positions: directions.map((direction) => pointOnLobeSurface(lobe, direction)),
     normals: directions.map((direction) => lobeSurfaceNormal(lobe, direction)),
+    // The four midpoint children exactly tile the parent spherical triangle.
+    // Every point in the parent is therefore within one child diameter of at
+    // least one sampled child vertex.
+    directionRadius: Math.max(
+      ...children.map((child) => directionTriangleDiameter(child)),
+    ),
   };
 }
 
@@ -99,8 +109,10 @@ function createFailureRecord(
   exposureUpperBound,
   coverageRatioUpperBound,
   samples,
+  kind,
 ) {
   return Object.freeze({
+    kind,
     lobeId: lobe.id,
     depth,
     directionDiameter,
@@ -153,8 +165,8 @@ export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
       maximumDepthReached = Math.max(maximumDepthReached, depth);
 
       const directionDiameter = directionTriangleDiameter(triangle);
-      const worldUncertainty = maximumScale(lobe) * directionDiameter;
-  const samples = createTriangleSamples(lobe, triangle);
+      const samples = createTriangleSamples(lobe, triangle);
+      const worldUncertainty = maximumScale(lobe) * samples.directionRadius;
       const sampleExposures = calculateSampleExposures(
         samples,
         lobes,
@@ -171,20 +183,37 @@ export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
         continue;
       }
 
-      const coverageUpperBound = findTriangleCoverageUpperBound(
-        clusterIndex,
-        samples,
-        {
-          worldUncertainty,
-          normalUncertainty: calculateNormalUncertainty(
-            lobe,
-            directionDiameter,
-            options.normalUncertaintyScale,
-          ),
-          minimumCoverageNormalDot: options.minimumCoverageNormalDot,
-          targetRatio: options.maximumCoverageRatio,
-        },
+      const potentiallyExposedThreshold =
+        exposureThreshold - exposureLipschitz * worldUncertainty;
+      const normalUncertainty = calculateNormalUncertainty(
+        lobe,
+        samples.directionRadius,
+        options.normalUncertaintyScale,
       );
+      let coverageUpperBound = 0;
+
+      for (let index = 0; index < samples.positions.length; index += 1) {
+        if (sampleExposures[index] < potentiallyExposedThreshold) continue;
+
+        const sampleCoverageUpperBound = findTriangleCoverageUpperBound(
+          clusterIndex,
+          {
+            positions: [samples.positions[index]],
+            normals: [samples.normals[index]],
+          },
+          {
+            worldUncertainty,
+            normalUncertainty,
+            minimumCoverageNormalDot: options.minimumCoverageNormalDot,
+            targetRatio: options.maximumCoverageRatio,
+          },
+        );
+        coverageUpperBound = Math.max(
+          coverageUpperBound,
+          sampleCoverageUpperBound,
+        );
+        if (coverageUpperBound > options.maximumCoverageRatio) break;
+      }
 
       if (coverageUpperBound <= options.maximumCoverageRatio) {
         coveredTriangleCount += 1;
@@ -218,6 +247,7 @@ export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
           sampleExposures[index],
           coverageRatio,
           { positions: [samples.positions[index]] },
+          'sample',
         );
         worst = failure;
         if (failures.length < options.maximumFailureExamples) {
@@ -259,6 +289,7 @@ export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
         exposureUpperBound,
         coverageUpperBound,
         samples,
+        'unresolved',
       );
       if (
         !worst ||

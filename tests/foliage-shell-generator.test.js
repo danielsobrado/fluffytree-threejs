@@ -58,9 +58,9 @@ test('selected clusters keep a covering separation from compatible neighbours', 
       if (dot < 0.2588) continue;
 
       const distance = Math.hypot(
-        instance.position.x - other.position.x,
-        instance.position.y - other.position.y,
-        instance.position.z - other.position.z,
+        instance.surfacePoint.x - other.position.x,
+        instance.surfacePoint.y - other.position.y,
+        instance.surfacePoint.z - other.position.z,
       );
       if (distance < other.coverageRadius) {
         assert.equal(
