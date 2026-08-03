@@ -36,6 +36,13 @@ function collectLevelMetrics(root) {
   return Object.freeze(metrics);
 }
 
+function disposeImpostor(impostor) {
+  for (const resource of impostor.material.userData.disposables ?? []) {
+    resource.dispose();
+  }
+  impostor.material.dispose();
+}
+
 function createShadowProxy(treeData, branchMeshBuilder, crownShadowProxyBuilder) {
   const group = new THREE.Group();
   group.name = 'tree-shadow-proxy';
@@ -150,10 +157,10 @@ export class TreeMeshBuilder {
           ]
         : [],
     );
-    const lod3 = createLevel(
-      'tree-lod-3',
-      [this.impostorBuilder.build(treeData, { rotationY: impostorRotationY })],
-    );
+    let impostor = this.impostorBuilder.build(treeData, {
+      rotationY: impostorRotationY,
+    });
+    const lod3 = createLevel('tree-lod-3', [impostor]);
     const shadowProxy = createShadowProxy(
       treeData,
       this.branchMeshBuilder,
@@ -207,6 +214,20 @@ export class TreeMeshBuilder {
       onHeroBuilt?.(lod0);
     };
 
+    const rebuildImpostor = (rotationY) => {
+      const currentRotation = impostor.userData.impostor?.rotationY ?? 0;
+      if (Math.abs(currentRotation - rotationY) <= Number.EPSILON) return;
+
+      lod3.remove(impostor);
+      disposeImpostor(impostor);
+      impostor = this.impostorBuilder.build(treeData, { rotationY });
+      lod3.add(impostor);
+      configureObjectLodFade(lod3);
+      lod3.userData.lod = { index: 3, ...collectLevelMetrics(lod3) };
+      setObjectLodFade(lod3, 0);
+      if (root.userData.tree) root.userData.tree.lodCosts[3] = lod3.userData.lod;
+    };
+
     root.userData.tree = {
       presetId: treeData.presetId,
       seed: treeData.seed,
@@ -224,6 +245,7 @@ export class TreeMeshBuilder {
       minimumLevel: minimumLod,
       heroReady: false,
       buildHero,
+      rebuildImpostor,
     };
     root.add(...levels, shadowProxy);
     if (!deferHero && minimumLod === 0) buildHero();
