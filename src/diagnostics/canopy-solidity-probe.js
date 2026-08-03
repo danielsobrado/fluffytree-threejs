@@ -207,8 +207,7 @@ export class CanopySolidityProbe {
   measureTree({ renderer, scene, tree, target, pixels, resolution }) {
     const lodState = tree.userData.lod;
     lodState.buildHero?.();
-    const levels = lodState.levels;
-    const heroLevel = levels[0];
+    const heroLevel = lodState.levels[0];
     const structure = findStructure(heroLevel);
 
     if (!structure) {
@@ -284,7 +283,7 @@ export class CanopySolidityProbe {
 
     try {
       for (const state of this.lodStates) {
-        this.applyLodState(levels, state);
+        this.applyLodState(lodState, state);
         this.setFoliageVisible(heroLevel, true);
         for (const view of crownViews) captureView(view, state);
       }
@@ -292,7 +291,7 @@ export class CanopySolidityProbe {
       const baselineState = this.lodStates.find(
         (state) => state.id === BASELINE_LOD_STATE,
       );
-      this.applyLodState(levels, baselineState);
+      this.applyLodState(lodState, baselineState);
       this.setFoliageVisible(heroLevel, false);
       for (const view of baseViews) captureView(view, baselineState);
 
@@ -340,11 +339,26 @@ export class CanopySolidityProbe {
     };
   }
 
-  applyLodState(levels, state) {
+  applyLodState(lodState, state) {
     if (!state) throw new Error('A canopy solidity LOD state is required.');
+
     for (const assignment of state.assignments) {
+      if (
+        assignment.index === 3 &&
+        lodState.billboardBatch &&
+        lodState.billboardBatchManager
+      ) {
+        setObjectLodFade(lodState.levels[3], 0);
+        lodState.billboardBatchManager.setFade(
+          lodState.billboardBatch,
+          assignment.fade,
+          assignment.invert,
+        );
+        continue;
+      }
+
       setObjectLodFade(
-        levels[assignment.index],
+        lodState.levels[assignment.index],
         assignment.fade,
         assignment.invert,
       );
@@ -405,10 +419,37 @@ export class CanopySolidityProbe {
     }
   }
 
+  isolateBillboard(lodState) {
+    const manager = lodState.billboardBatchManager;
+    const currentHandle = lodState.billboardBatch;
+
+    if (!manager || !currentHandle) return () => {};
+
+    const snapshots = currentHandle.batch.state.entries
+      .map((entry) => entry.userData.lod.billboardBatch)
+      .filter(Boolean)
+      .map((handle) => ({
+        handle,
+        fade: handle.batch.state.fades[handle.index],
+        invert: handle.batch.state.inverted[handle.index] === 1,
+      }));
+
+    for (const snapshot of snapshots) {
+      manager.setFade(snapshot.handle, 0, false);
+    }
+
+    return () => {
+      for (const snapshot of snapshots) {
+        manager.setFade(snapshot.handle, snapshot.fade, snapshot.invert);
+      }
+    };
+  }
+
   isolateTree(tree, lodState) {
     const previousTreeVisible = tree.visible;
     const previousProxyVisible = lodState.shadowProxy.visible;
     const previousWind = [];
+    const restoreBillboard = this.isolateBillboard(lodState);
 
     tree.visible = true;
     lodState.shadowProxy.visible = false;
@@ -427,6 +468,7 @@ export class CanopySolidityProbe {
     });
 
     return () => {
+      restoreBillboard();
       tree.visible = previousTreeVisible;
       lodState.shadowProxy.visible = previousProxyVisible;
       for (const entry of previousWind) entry.state.time = entry.time;
