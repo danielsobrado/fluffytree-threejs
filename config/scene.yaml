@@ -19,7 +19,7 @@ renderer:
 
 lod:
   nearPixels: 300
-  mediumPixels: 110
+  mediumPixels: 78
   farPixels: 35
   cullPixels: 12
   hysteresis: 0.12
@@ -48,3 +48,27 @@ layout:
     seed: 155921
     position: [5.4, 0, 0.5]
     rotationY: 0.42
+  - preset: roundBush
+    seed: 210773
+    position: [-7.6, 0, 6.2]
+    rotationY: 0.6
+  - preset: autumnBush
+    seed: 224737
+    position: [-2.4, 0, 5.1]
+    rotationY: -1.1
+  - preset: roundBush
+    seed: 238411
+    position: [2.4, 0, 6.6]
+    rotationY: 2.2
+  - preset: autumnBush
+    seed: 252041
+    position: [8.6, 0, 5.2]
+    rotationY: -0.4
+  - preset: roundBush
+    seed: 265811
+    position: [-6.2, 0, 1.2]
+    rotationY: 1.7
+  - preset: autumnBush
+    seed: 279431
+    position: [4.4, 0, 4.6]
+    rotationY: 0.9

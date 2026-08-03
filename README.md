@@ -8,7 +8,8 @@ The repository is a deterministic, configuration-driven procedural tree system s
 
 ## Procedural structure
 
-- Rounded orchard, columnar, and irregular vase-shaped crown families.
+- Rounded orchard, columnar, and irregular vase-shaped crown families, plus ground bushes.
+- Bushes are presets, not a separate system: a short stem and a low wide crown through the same generator, renderer, LOD tiers and foliage gates.
 - Deterministic macro-clumps composed around a parented branch graph.
 - Gnarled trunks, primary limbs, recursive forks, and exposed terminal twigs.
 - Every foliage lobe records the branch that supports it.
@@ -23,7 +24,7 @@ The repository is a deterministic, configuration-driven procedural tree system s
 - Every lobe carries at least one cluster, so no lobe can render as bare core.
 - Sparse modeled hero leaves add close edge detail without filling the crown with geometry.
 - Crown-aware palette shading produces coherent cavity, sky, height, and sunward color.
-- Shader wind moves foliage without rotating the trunk or updating instance matrices on the CPU.
+- Shader wind moves foliage without rotating the trunk or updating instance matrices on the CPU. The per-instance phase comes from the instance matrix, so clusters flutter independently, and the solidity gate measures that the canopy actually moves between two wind phases.
 - Four projected-size levels retain the same generated silhouette from full geometry to a two-triangle impostor.
 - Stable hysteresis prevents LOD boundary flapping.
 - Complementary screen-door fades hide representation changes without transparent sorting.
@@ -114,6 +115,8 @@ The automated gates cover:
 - A watertight trunk sweep with no boundary or non-manifold edges, capped below the terrain.
 - No see-through openings in the rendered crown or trunk from any measured angle.
 - No exposed crown surface farther from a compatible leaf cluster than a leaf card is wide.
+- Leaf area per unit of exposed crown surface within range, so one preset cannot read as noticeably thinner foliage than another.
+- Shader wind visibly displaces the canopy.
 - The exact uploaded release identifier in the browser and visible demo titles.
 
 ## Structure

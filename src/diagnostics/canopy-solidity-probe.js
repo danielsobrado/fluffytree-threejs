@@ -67,11 +67,25 @@ function createCrownFrame(level) {
 
 function createBaseFrame(tree, structure) {
   const rootBase = structure.userData.structure.rootBase;
-  const flareHeight = structure.userData.structure.rootFlareHeight;
-  const radius = rootBase.radius * CANOPY_SOLIDITY_CONSTANTS.baseRadiusMultiplier;
+  // The base group judges the trunk sweep, so the frame stops below the first
+  // branch. On a bush the branches start inside the flare band, and a frame that
+  // reached them would score the daylight between limbs as a trunk defect.
+  const flareHeight = Math.min(
+    structure.userData.structure.rootFlareHeight,
+    structure.userData.structure.lowestBranchHeight ?? Number.POSITIVE_INFINITY,
+  );
+  const flareSpan = flareHeight - rootBase.y;
+  // The root flare occupies the same height band on every preset, so the frame
+  // follows that band rather than a fraction of the tree. A frame sized for a
+  // full grown trunk would reach into a bush's branches and score the gaps
+  // between them as trunk defects.
+  const radius = Math.max(
+    rootBase.radius * CANOPY_SOLIDITY_CONSTANTS.baseRadiusMultiplier,
+    flareSpan * CANOPY_SOLIDITY_CONSTANTS.baseHeightMultiplier * 0.5,
+  );
   const center = new THREE.Vector3(
     rootBase.x,
-    flareHeight * CANOPY_SOLIDITY_CONSTANTS.baseHeightMultiplier * 0.5,
+    (rootBase.y + flareHeight) * 0.5,
     rootBase.z,
   );
   tree.localToWorld(center);
@@ -209,6 +223,7 @@ export class CanopySolidityProbe {
     const views = [];
     const holeMask = new Uint8Array(resolution * resolution);
     let worst = null;
+    let windMovedRatio = 0;
 
     try {
       for (const view of this.views) {
@@ -248,12 +263,25 @@ export class CanopySolidityProbe {
           };
         }
       }
+      this.setFoliageVisible(level, true);
+      windMovedRatio = this.measureWind({
+        renderer,
+        scene,
+        camera,
+        frame: frames.crown,
+        view: this.views[0],
+        target,
+        pixels,
+        resolution,
+        tree,
+      });
     } finally {
       this.setFoliageVisible(level, true);
       restoreTree();
     }
 
     return {
+      windMovedRatio: windMovedRatio,
       presetId: tree.userData.tree.presetId,
       seed: tree.userData.tree.seed,
       trunkClosed: structure.userData.structure.trunkClosed === true,
@@ -265,6 +293,58 @@ export class CanopySolidityProbe {
       worstView: worst ? { name: worst.name, image: worst.image } : null,
       views,
     };
+  }
+
+  /**
+   * Fraction of canopy pixels that change between two wind phases. Shader wind is
+   * invisible in a still capture, so without this a broken uniform or a severed
+   * animation loop would leave every other gate green.
+   */
+  measureWind({ renderer, scene, camera, frame, view, target, pixels, resolution, tree }) {
+    const states = [];
+    tree.traverse((object) => {
+      const materials = Array.isArray(object.material)
+        ? object.material
+        : object.material
+          ? [object.material]
+          : [];
+      for (const material of materials) {
+        const state = material.userData.windState;
+        if (state && !states.includes(state)) states.push(state);
+      }
+    });
+
+    if (states.length === 0) return 0;
+
+    this.placeCamera(camera, frame, view);
+    const capture = (time) => {
+      for (const state of states) state.time = time;
+      renderer.setRenderTarget(target);
+      renderer.clear();
+      renderer.render(scene, camera);
+      renderer.readRenderTargetPixels(target, 0, 0, resolution, resolution, pixels);
+      return pixels.slice();
+    };
+
+    const first = capture(0);
+    const second = capture(CANOPY_SOLIDITY_CONSTANTS.windSamplePhase);
+    let canopyPixels = 0;
+    let movedPixels = 0;
+
+    for (let index = 0; index < resolution * resolution; index += 1) {
+      const offset = index * 4;
+      if (first[offset + 3] <= CANOPY_SOLIDITY_CONSTANTS.alphaThreshold) continue;
+
+      canopyPixels += 1;
+      const difference =
+        Math.abs(first[offset] - second[offset]) +
+        Math.abs(first[offset + 1] - second[offset + 1]) +
+        Math.abs(first[offset + 2] - second[offset + 2]) +
+        Math.abs(first[offset + 3] - second[offset + 3]);
+      if (difference > CANOPY_SOLIDITY_CONSTANTS.windPixelDifference) movedPixels += 1;
+    }
+
+    return canopyPixels === 0 ? 0 : movedPixels / canopyPixels;
   }
 
   setFoliageVisible(level, visible) {

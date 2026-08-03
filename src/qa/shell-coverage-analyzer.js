@@ -17,6 +17,32 @@ function averageScale(lobe) {
   return (lobe.scale.x + lobe.scale.y + lobe.scale.z) / 3;
 }
 
+/**
+ * Area scale of the sphere-to-ellipsoid map at a direction, so exposed surface
+ * can be integrated on the shape the crown actually has rather than on a sphere.
+ */
+function areaJacobian(scale, direction) {
+  return (
+    scale.x *
+    scale.y *
+    scale.z *
+    Math.sqrt(
+      (direction.x / scale.x) ** 2 +
+        (direction.y / scale.y) ** 2 +
+        (direction.z / scale.z) ** 2,
+    )
+  );
+}
+
+function coveringRadius(lobe, settings) {
+  return (
+    averageScale(lobe) *
+    settings.cardScaleSample *
+    FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier *
+    settings.coverageCardRatio
+  );
+}
+
 function createProbeDirection(index, count, phase) {
   const y = 1 - 2 * ((index + 0.5) / count);
   const radius = Math.sqrt(Math.max(0, 1 - y * y));
@@ -139,11 +165,12 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
   let totalGap = 0;
   let measuredProbes = 0;
   let bareExposedLobes = 0;
+  let exposedArea = 0;
   let worst = null;
   const gaps = [];
 
   for (const lobe of lobes) {
-    const allowedRadius = averageScale(lobe) * settings.coverageRadiusRatio;
+    const allowedRadius = coveringRadius(lobe, settings);
     // A phase unrelated to the generator's own per-lobe phase.
     const phase = ((lobe.id + 1) * FOLIAGE_SHELL_CONSTANTS.goldenAngle * 7.3) %
       FOLIAGE_SHELL_CONSTANTS.tau;
@@ -153,6 +180,12 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
       const direction = createProbeDirection(index, probeCount, phase);
       const surfacePoint = pointOnLobeSurface(lobe, direction);
       const exposure = calculateExposure(surfacePoint, lobes, lobe.id);
+
+      if (exposure >= settings.exposureThreshold) {
+        exposedArea +=
+          (4 * Math.PI * areaJacobian(lobe.scale, direction)) / probeCount;
+      }
+
       if (exposure < settings.exposureThreshold + exposureMargin) continue;
 
       exposedProbes += 1;
@@ -189,7 +222,7 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
       ? 0
       : gaps[Math.min(gaps.length - 1, Math.round((gaps.length - 1) * ratio))];
   const maximumAllowed = Math.max(
-    ...lobes.map((lobe) => averageScale(lobe) * settings.coverageRadiusRatio),
+    ...lobes.map((lobe) => coveringRadius(lobe, settings)),
   );
   // The physically meaningful comparison: a gap wider than a leaf card means the
   // cards cannot overlap there however well they are distributed.
@@ -205,6 +238,13 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
     cardWidths.length === 0
       ? 0
       : cardWidths[Math.floor(cardWidths.length / 2)];
+  // Total card area over exposed crown area. This is what makes one preset read
+  // as denser foliage than another, independent of lobe size or card size, so it
+  // is gated rather than left to whatever the covering radius happens to produce.
+  const totalCardArea = cardWidths.reduce(
+    (total, width) => total + width * width * settings.planesPerCluster,
+    0,
+  );
 
   return Object.freeze({
     probeCount: measuredProbes,
@@ -216,6 +256,8 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
     gapRatio: maximumAllowed === 0 ? 0 : maximumGap / maximumAllowed,
     medianCardWidth,
     gapCardRatio: medianCardWidth === 0 ? 0 : maximumGap / medianCardWidth,
+    exposedArea,
+    leafAreaIndex: exposedArea === 0 ? 0 : totalCardArea / exposedArea,
     bareExposedLobes,
     worst,
   });

@@ -70,6 +70,13 @@ export function evaluateSolidityReport(trees, thresholds) {
       continue;
     }
 
+    const minimumWind = presetThresholds.minimumWindMovedRatio;
+    if (minimumWind !== undefined && tree.windMovedRatio < minimumWind) {
+      failures.push(
+        `${tree.presetId} windMovedRatio ${tree.windMovedRatio.toFixed(4)} < ${minimumWind}`,
+      );
+    }
+
     for (const view of tree.views) {
       const groupThresholds = presetThresholds[view.group];
 

@@ -118,6 +118,10 @@ export class BranchMeshBuilder {
           calculateRootFlareScale(treeData.trunk.flare, trunkPath[0].y),
       },
       rootFlareHeight: getRootFlareTopHeight(),
+      lowestBranchHeight: treeData.branches.reduce(
+        (lowest, branch) => Math.min(lowest, branch.points[0].y),
+        Number.POSITIVE_INFINITY,
+      ),
       branchCount: branchGeometries.length,
       maximumBranchOrder: maxBranchOrder,
     };

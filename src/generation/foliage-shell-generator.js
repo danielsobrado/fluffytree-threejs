@@ -6,6 +6,7 @@ import {
   pointOnLobeSurface,
 } from './lobe-geometry.js';
 import { SpatialHashGrid } from './spatial-hash-grid.js';
+import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js';
 
 function clamp01(value) {
   return Math.min(1, Math.max(0, value));
@@ -44,18 +45,34 @@ function createFibonacciDirection(index, count, phase) {
   };
 }
 
+/**
+ * Exposure saturates once a point clears every other lobe by this much, so a lobe
+ * whose bounding sphere is farther away than that cannot change the result and is
+ * skipped. The normalised distance is at least the world distance divided by the
+ * lobe's largest semi-axis, which makes the test exact rather than approximate.
+ */
+const CLEARANCE_SATURATION =
+  FOLIAGE_SHELL_CONSTANTS.clearanceRange - FOLIAGE_SHELL_CONSTANTS.clearanceOffset;
+
 function calculateClearance(point, lobes, ownerLobeId) {
-  let minimum = Number.POSITIVE_INFINITY;
+  let minimum = CLEARANCE_SATURATION;
 
   for (const lobe of lobes) {
     if (lobe.id === ownerLobeId) continue;
+
+    const dx = point.x - lobe.position.x;
+    const dy = point.y - lobe.position.y;
+    const dz = point.z - lobe.position.z;
+    const reach = lobe.boundingRadius * (1 + CLEARANCE_SATURATION);
+    if (dx * dx + dy * dy + dz * dz > reach * reach) continue;
+
     minimum = Math.min(
       minimum,
       normalizedRotatedPointDistance(point, lobe) - 1,
     );
   }
 
-  return minimum === Number.POSITIVE_INFINITY ? 1 : minimum;
+  return minimum;
 }
 
 function distanceSquared(left, right) {
@@ -88,6 +105,10 @@ function createCandidate(
     z: surfacePoint.z + normal.z * radialOffset,
   };
   const clearance = calculateClearance(surfacePoint, lobes, lobe.id);
+  const cardWidth =
+    meanScale *
+    settings.cardScaleSample *
+    FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier;
   const exposure = clamp01(
     (clearance + FOLIAGE_SHELL_CONSTANTS.clearanceOffset) /
       FOLIAGE_SHELL_CONSTANTS.clearanceRange,
@@ -117,7 +138,7 @@ function createCandidate(
     exposure,
     clearance,
     score,
-    coverageRadius: meanScale * settings.coverageRadiusRatio,
+    coverageRadius: cardWidth * settings.coverageCardRatio,
     scale: meanScale * random.range(settings.sizeRatio[0], settings.sizeRatio[1]),
     widthRatio: random.range(settings.widthRatio[0], settings.widthRatio[1]),
     outwardRatio: random.range(
@@ -193,8 +214,14 @@ function coverEveryLobe(selected, bestByLobe) {
 }
 
 export class FoliageShellGenerator {
-  generate(preset, lobes, random) {
+  generate(preset, sourceLobes, random) {
     const settings = preset.foliage.shell;
+    // Cached once so the clearance scan can reject distant lobes without a
+    // rotation, and so every candidate on a lobe shares one derived value.
+    const lobes = sourceLobes.map((lobe) => ({
+      ...lobe,
+      boundingRadius: Math.max(lobe.scale.x, lobe.scale.y, lobe.scale.z),
+    }));
     const crownCenter = calculateCrownCenter(lobes);
     const bestByLobe = new Map();
     const exposed = [];

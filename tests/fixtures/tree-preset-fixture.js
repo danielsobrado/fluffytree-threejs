@@ -99,7 +99,7 @@ export function createTestPreset(overrides = {}) {
       },
       shell: {
         candidatesPerLobe: 256,
-        coverageRadiusRatio: 0.13,
+        coverageCardRatio: 0.43,
         sizeRatio: [0.12, 0.18],
         widthRatio: [0.72, 1.05],
         outwardRatio: [1, 1.35],

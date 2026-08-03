@@ -14,4 +14,6 @@ export const CANOPY_SOLIDITY_CONSTANTS = Object.freeze({
   baseElevations: Object.freeze([26]),
   baseRadiusMultiplier: 2.3,
   baseHeightMultiplier: 1.6,
+  windSamplePhase: 1.7,
+  windPixelDifference: 24,
 });

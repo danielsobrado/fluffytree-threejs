@@ -49,6 +49,7 @@ for (const [presetId, preset] of presets) {
 
   const gapRatios = [];
   const gapCardRatios = [];
+  const leafAreaIndices = [];
   const clusterCounts = [];
   const failures = [];
   let bareLobeTotal = 0;
@@ -62,18 +63,19 @@ for (const [presetId, preset] of presets) {
     const metrics = analyzeShellCoverage(tree, preset, configuration.probe);
     gapRatios.push(metrics.gapRatio);
     gapCardRatios.push(metrics.gapCardRatio);
+    leafAreaIndices.push(metrics.leafAreaIndex);
     clusterCounts.push(metrics.clusterCount);
     bareLobeTotal += metrics.bareExposedLobes;
 
     const seedFailures = [];
-    if (metrics.gapRatio > thresholds.gapRatio) {
-      seedFailures.push(
-        `gapRatio ${metrics.gapRatio.toFixed(4)} > ${thresholds.gapRatio}`,
-      );
-    }
     if (metrics.gapCardRatio > thresholds.gapCardRatio) {
       seedFailures.push(
         `gapCardRatio ${metrics.gapCardRatio.toFixed(4)} > ${thresholds.gapCardRatio}`,
+      );
+    }
+    if (metrics.leafAreaIndex < thresholds.minimumLeafAreaIndex) {
+      seedFailures.push(
+        `leafAreaIndex ${metrics.leafAreaIndex.toFixed(3)} < ${thresholds.minimumLeafAreaIndex}`,
       );
     }
     if (metrics.bareExposedLobes > thresholds.bareExposedLobes) {
@@ -95,6 +97,7 @@ for (const [presetId, preset] of presets) {
     bareExposedLobeTotal: bareLobeTotal,
     gapRatio: summarize(gapRatios),
     gapCardRatio: summarize(gapCardRatios),
+    leafAreaIndex: summarize(leafAreaIndices),
     clusterCount: summarize(clusterCounts),
     failures: failures.slice(0, configuration.report.maxFailures),
   };
@@ -104,6 +107,7 @@ for (const [presetId, preset] of presets) {
     `${presetId.padEnd(16)} ${passed ? 'PASS' : 'FAIL'} ` +
       `gapRatio max=${summary.gapRatio.maximum.toFixed(3)} ` +
       `gapCardRatio max=${summary.gapCardRatio.maximum.toFixed(3)} ` +
+      `leafArea min=${summary.leafAreaIndex.minimum.toFixed(2)} p50=${summary.leafAreaIndex.p50.toFixed(2)} ` +
       `clusters p50=${summary.clusterCount.p50} max=${summary.clusterCount.maximum} ` +
       `bareLobes=${bareLobeTotal}`,
   );

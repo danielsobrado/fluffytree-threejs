@@ -10,7 +10,7 @@
 # that faces the same way it does.
 #
 #   gapCardRatio      maximum probe-to-cluster distance / the median rendered card width
-#   gapRatio          the same distance / the preset's configured covering radius
+#   leafAreaIndex     total card area / exposed crown area
 #   bareExposedLobes  lobes with exposed surface and no cluster at all
 #
 # gapCardRatio is the metric that means something physically: below 1 the cards
@@ -18,10 +18,15 @@
 # limit is calibrated against the rendered result rather than derived. For scale,
 # the previous per-lobe selector measured 2.2 on columnar.
 #
-# gapRatio only asks whether selection honoured the radius it was configured
-# with, so tightening that radius mechanically raises it. It sits above 1 because
-# the probes are denser than the candidates selection had to choose from. It is a
-# sanity check on the algorithm, not a coverage bound.
+# leafAreaIndex is what makes one preset read as denser foliage than another. It
+# does not follow from the gap metrics: a crown can be evenly covered and still
+# look thin if its cards are small for its surface. Columnar measured 4.83 here
+# while the other two sat above 7, which is exactly the density difference that
+# was visible on the deployed site.
+#
+# The three gated metrics are independent: a crown can be evenly covered and
+# still look thin, be dense on average and still have one bald lobe, or have
+# every lobe populated and still show a hole between two of them.
 #
 # This is a sampled bound, not a continuous proof: distance to the nearest
 # cluster is 1-Lipschitz, so a point between probes can exceed the reported gap
@@ -38,16 +43,24 @@ probe:
 
 thresholds:
   roundOrchard:
-    gapRatio: 1.5
     gapCardRatio: 0.85
+    minimumLeafAreaIndex: 6.5
     bareExposedLobes: 0
   columnar:
-    gapRatio: 1.5
     gapCardRatio: 0.85
+    minimumLeafAreaIndex: 6.5
     bareExposedLobes: 0
   irregularAutumn:
-    gapRatio: 1.5
     gapCardRatio: 0.85
+    minimumLeafAreaIndex: 6.5
+    bareExposedLobes: 0
+  roundBush:
+    gapCardRatio: 0.85
+    minimumLeafAreaIndex: 6.5
+    bareExposedLobes: 0
+  autumnBush:
+    gapCardRatio: 0.85
+    minimumLeafAreaIndex: 6.5
     bareExposedLobes: 0
 
 report:

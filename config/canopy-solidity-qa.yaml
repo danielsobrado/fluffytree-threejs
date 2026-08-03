@@ -20,6 +20,7 @@
 
 thresholds:
   roundOrchard:
+    minimumWindMovedRatio: 0.15
     crown:
       holeRatio: 0.003
       largestHoleRatio: 0.002
@@ -29,6 +30,7 @@ thresholds:
       largestHoleRatio: 0.001
       coverageRatio: 0.04
   columnar:
+    minimumWindMovedRatio: 0.15
     crown:
       holeRatio: 0.003
       largestHoleRatio: 0.002
@@ -38,6 +40,7 @@ thresholds:
       largestHoleRatio: 0.001
       coverageRatio: 0.04
   irregularAutumn:
+    minimumWindMovedRatio: 0.15
     crown:
       holeRatio: 0.003
       largestHoleRatio: 0.002
@@ -46,3 +49,24 @@ thresholds:
       holeRatio: 0.001
       largestHoleRatio: 0.001
       coverageRatio: 0.04
+  roundBush:
+    minimumWindMovedRatio: 0.15
+    crown:
+      holeRatio: 0.003
+      largestHoleRatio: 0.002
+      coverageRatio: 0.04
+    base:
+      holeRatio: 0.001
+      largestHoleRatio: 0.001
+      coverageRatio: 0.02
+
+  autumnBush:
+    minimumWindMovedRatio: 0.15
+    crown:
+      holeRatio: 0.003
+      largestHoleRatio: 0.002
+      coverageRatio: 0.04
+    base:
+      holeRatio: 0.001
+      largestHoleRatio: 0.001
+      coverageRatio: 0.02

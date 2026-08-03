@@ -94,7 +94,7 @@ const REQUIRED_HERO_LEAF_FIELDS = [
 
 const REQUIRED_SHELL_FIELDS = [
   'candidatesPerLobe',
-  'coverageRadiusRatio',
+  'coverageCardRatio',
   'sizeRatio',
   'widthRatio',
   'outwardRatio',
@@ -308,16 +308,42 @@ function validateCoreTuning(id, core) {
   requireRange(core.brightness, 0.2, 1, `${id}.foliage.core.brightness`);
 }
 
+function midpoint(pair) {
+  return (Number(pair[0]) + Number(pair[1])) / 2;
+}
+
+function createShellConfig(id, shell) {
+  const sizeRatio = validatePair(shell.sizeRatio, `${id}.foliage.shell.sizeRatio`);
+  const widthRatio = validatePair(
+    shell.widthRatio,
+    `${id}.foliage.shell.widthRatio`,
+  );
+
+  return Object.freeze({
+    ...shell,
+    sizeRatio,
+    widthRatio,
+    outwardRatio: validatePair(
+      shell.outwardRatio,
+      `${id}.foliage.shell.outwardRatio`,
+    ),
+    // Representative card scale, in lobe-scale units. The covering radius is
+    // expressed as a fraction of the rendered card, so leaf area per unit of
+    // crown surface no longer changes when a preset resizes its cards.
+    cardScaleSample: midpoint(sizeRatio) * midpoint(widthRatio),
+  });
+}
+
 function validateShellTuning(id, shell) {
   requirePositiveInteger(
     shell.candidatesPerLobe,
     `${id}.foliage.shell.candidatesPerLobe`,
   );
   requireRange(
-    shell.coverageRadiusRatio,
-    0.02,
-    0.5,
-    `${id}.foliage.shell.coverageRadiusRatio`,
+    shell.coverageCardRatio,
+    0.15,
+    1.5,
+    `${id}.foliage.shell.coverageCardRatio`,
   );
   requirePositiveInteger(
     shell.planesPerCluster,
@@ -380,21 +406,7 @@ function createFoliageConfig(id, foliage) {
     volume: Object.freeze({ ...foliage.volume }),
     core: Object.freeze({ ...foliage.core }),
     heroLeaves: Object.freeze({ ...foliage.heroLeaves }),
-    shell: Object.freeze({
-      ...foliage.shell,
-      sizeRatio: validatePair(
-        foliage.shell.sizeRatio,
-        `${id}.foliage.shell.sizeRatio`,
-      ),
-      widthRatio: validatePair(
-        foliage.shell.widthRatio,
-        `${id}.foliage.shell.widthRatio`,
-      ),
-      outwardRatio: validatePair(
-        foliage.shell.outwardRatio,
-        `${id}.foliage.shell.outwardRatio`,
-      ),
-    }),
+    shell: createShellConfig(id, foliage.shell),
   });
 }
 
