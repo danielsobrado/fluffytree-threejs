@@ -14,5 +14,7 @@ export const FOLIAGE_SHELL_CONSTANTS = Object.freeze({
   // side is covered. cos(75 degrees).
   minimumCoverageNormalDot: 0.2588,
   minimumCellSize: 1e-4,
+  maximumCoverageSearchRings: 3,
+  coverageRatioEpsilon: 1e-12,
   seedSalt: 0x9e3779b9,
 });
