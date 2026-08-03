@@ -16,5 +16,6 @@ export const FOLIAGE_SHELL_CONSTANTS = Object.freeze({
   minimumCellSize: 1e-4,
   maximumCoverageSearchRings: 3,
   coverageRatioEpsilon: 1e-12,
+  maxCoverNormalWeight: 0.35,
   seedSalt: 0x9e3779b9,
 });
