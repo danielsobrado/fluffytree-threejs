@@ -270,6 +270,7 @@ export function selectHierarchicalFoliageMaxCover(
       'Hierarchical max-cover targetCount cannot be smaller than lobe anchors.',
     );
   }
+  if (minimumPerLobe && anchors.length === boundedTarget) return anchors;
 
   const representatives = createRepresentatives(items, boundedTarget);
   return minimumPerLobe
