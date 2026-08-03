@@ -36,6 +36,23 @@ function writeWorstViewImage(tree) {
   return file;
 }
 
+function maximum(views, metric) {
+  return views.length === 0 ? 0 : Math.max(...views.map((view) => view[metric]));
+}
+
+function minimum(views, metric) {
+  const values = views.map((view) => view[metric]).filter(Number.isFinite);
+  return values.length === 0 ? 0 : Math.min(...values);
+}
+
+function worstCrownView(views) {
+  return [...views].sort(
+    (left, right) =>
+      right.holeRatio - left.holeRatio ||
+      left.coverageRetention - right.coverageRetention,
+  )[0];
+}
+
 if (fs.existsSync(reportPath)) {
   const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
   const images = report.trees.map(writeWorstViewImage).filter(Boolean);
@@ -44,14 +61,15 @@ if (fs.existsSync(reportPath)) {
   for (const tree of report.trees) {
     const crown = tree.views.filter((view) => view.group === 'crown');
     const base = tree.views.filter((view) => view.group === 'base');
-    const worst = (views, metric) =>
-      views.length === 0 ? 0 : Math.max(...views.map((view) => view[metric]));
+    const worst = worstCrownView(crown);
     console.log(
       `${tree.presetId.padEnd(16)} trunkClosed=${tree.trunkClosed} ` +
-        `crown hole=${worst(crown, 'holeRatio').toFixed(5)} ` +
-        `largest=${worst(crown, 'largestHoleRatio').toFixed(5)} | ` +
-        `base hole=${worst(base, 'holeRatio').toFixed(5)} ` +
-        `largest=${worst(base, 'largestHoleRatio').toFixed(5)}`,
+        `worst=${worst?.lodState ?? 'n/a'} ` +
+        `hole=${(worst?.holeRatio ?? 0).toFixed(5)} ` +
+        `largest=${(worst?.largestHoleRatio ?? 0).toFixed(5)} ` +
+        `retention=${minimum(crown, 'coverageRetention').toFixed(3)} | ` +
+        `base hole=${maximum(base, 'holeRatio').toFixed(5)} ` +
+        `largest=${maximum(base, 'largestHoleRatio').toFixed(5)}`,
     );
   }
 
