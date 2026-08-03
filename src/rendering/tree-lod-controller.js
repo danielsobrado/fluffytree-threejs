@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { setObjectLodFade } from './lod-dither-fade.js';
-import { calculateLodWeights, resolveStableLod } from './tree-lod-math.js';
+import {
+  calculateLodWeights,
+  remapUnavailableLodWeights,
+  resolveStableLod,
+} from './tree-lod-math.js';
 
 export class TreeLodController {
   constructor(settings, generationQueue = null) {
@@ -28,14 +32,23 @@ export class TreeLodController {
       const distance = Math.max(0.001, camera.position.distanceTo(this.worldPosition));
       const projectedPixels =
         (entry.tree.userData.tree.height / distance) * focalPixels;
-      entry.stableLevel = resolveStableLod(
-        projectedPixels,
-        entry.stableLevel,
-        this.settings,
-      );
       const lodState = entry.tree.userData.lod;
+      const minimumLevel = lodState.minimumLevel ?? 0;
+      entry.stableLevel = Math.max(
+        minimumLevel,
+        resolveStableLod(
+          projectedPixels,
+          entry.stableLevel,
+          this.settings,
+        ),
+      );
+
       const prewarmPixels = this.settings.nearPixels * (1 - this.settings.hysteresis);
-      if (!lodState.heroReady && projectedPixels >= prewarmPixels) {
+      if (
+        minimumLevel === 0 &&
+        !lodState.heroReady &&
+        projectedPixels >= prewarmPixels
+      ) {
         const task = () => lodState.buildHero?.();
         if (this.generationQueue) {
           this.generationQueue.enqueue(`${entry.tree.uuid}:hero`, task);
@@ -43,16 +56,18 @@ export class TreeLodController {
           task();
         }
       }
-      const weights = calculateLodWeights(projectedPixels, this.settings);
-      if (!lodState.heroReady) {
-        weights[1] += weights[0];
-        weights[0] = 0;
-      }
+
+      const weights = remapUnavailableLodWeights(
+        calculateLodWeights(projectedPixels, this.settings),
+        { minimumLevel, heroReady: lodState.heroReady },
+      );
       const visibleLevels = weights
         .map((weight, index) => ({ weight, index }))
         .filter(({ weight }) => weight > 0.001);
       lodState.levels.forEach((level, index) => {
-        const visibleIndex = visibleLevels.findIndex((entry) => entry.index === index);
+        const visibleIndex = visibleLevels.findIndex(
+          (visible) => visible.index === index,
+        );
         if (index === 3 && lodState.billboardBatch) {
           setObjectLodFade(level, 0);
           lodState.billboardBatchManager.setFade(
@@ -64,6 +79,7 @@ export class TreeLodController {
           setObjectLodFade(level, weights[index], visibleIndex === 1);
         }
       });
+
       const castsShadow =
         projectedPixels >= this.settings.shadowPixels && entry.stableLevel <= 1;
       const proxy = lodState.shadowProxy;
