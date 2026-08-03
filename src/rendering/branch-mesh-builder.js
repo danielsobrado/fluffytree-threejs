@@ -33,6 +33,8 @@ export class BranchMeshBuilder {
       radialSegments = 10,
       trunkCurveSamples = TREE_STRUCTURE_RENDERING_CONSTANTS.trunkCurveSamples,
       branchCurveSamples = TREE_STRUCTURE_RENDERING_CONSTANTS.branchCurveSamples,
+      castShadow = true,
+      receiveShadow = true,
       name = 'tree-structure',
     } = {},
   ) {
@@ -103,8 +105,8 @@ export class BranchMeshBuilder {
     const material = this.materialFactory.create({ height: treeData.height });
     const mesh = new THREE.Mesh(merged, material);
     mesh.name = name;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    mesh.castShadow = castShadow;
+    mesh.receiveShadow = receiveShadow;
     mesh.userData.structure = {
       trunkClosed: trunkBoundary.closed,
       trunkBoundaryEdges: trunkBoundary.boundaryEdges,
