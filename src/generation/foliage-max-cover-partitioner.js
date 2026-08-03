@@ -177,37 +177,16 @@ function selectNodeRepresentative(node) {
   return representative;
 }
 
-export function selectHierarchicalFoliageMaxCover(
-  items,
-  targetCount,
-  { minimumPerLobe = true } = {},
-) {
-  if (!Number.isSafeInteger(targetCount) || targetCount < 0) {
-    throw new RangeError('Hierarchical max-cover targetCount must be non-negative.');
-  }
-  if (items.length === 0 || targetCount === 0) return [];
-
-  const boundedTarget = Math.min(targetCount, items.length);
-  const anchors = minimumPerLobe ? selectLobeAnchors(items) : [];
-  if (anchors.length > boundedTarget) {
-    throw new RangeError(
-      'Hierarchical max-cover targetCount cannot be smaller than lobe anchors.',
-    );
-  }
-
-  const anchorSet = new Set(anchors);
-  const remaining = items.filter((item) => !anchorSet.has(item));
-  const remainingTarget = boundedTarget - anchors.length;
-  if (remainingTarget === 0) return anchors;
-  if (remainingTarget >= remaining.length) return [...anchors, ...remaining];
+function createRepresentatives(items, targetCount) {
+  if (targetCount >= items.length) return [...items];
 
   const heap = new StableMaxHeap(compareNodes);
   const leaves = [];
   let serial = 0;
-  heap.push(createNode(createFeatureEntries(remaining), serial));
+  heap.push(createNode(createFeatureEntries(items), serial));
   serial += 1;
 
-  while (heap.size + leaves.length < remainingTarget) {
+  while (heap.size + leaves.length < targetCount) {
     const node = heap.pop();
     if (!node) break;
 
@@ -222,8 +201,78 @@ export function selectHierarchicalFoliageMaxCover(
   }
 
   while (heap.size > 0) leaves.push(heap.pop());
-  const representatives = leaves
-    .slice(0, remainingTarget)
-    .map(selectNodeRepresentative);
-  return [...anchors, ...representatives];
+  return leaves.slice(0, targetCount).map(selectNodeRepresentative);
+}
+
+function countByLobe(items) {
+  const counts = new Map();
+  for (const item of items) {
+    counts.set(item.lobeId, (counts.get(item.lobeId) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function findLowestPriorityRemovable(selected, counts) {
+  let removableIndex = -1;
+
+  for (let index = 0; index < selected.length; index += 1) {
+    const candidate = selected[index];
+    if ((counts.get(candidate.lobeId) ?? 0) <= 1) continue;
+
+    if (
+      removableIndex < 0 ||
+      compareItemPriority(candidate, selected[removableIndex]) < 0
+    ) {
+      removableIndex = index;
+    }
+  }
+
+  return removableIndex;
+}
+
+function enforceLobeAnchors(selected, anchors) {
+  const result = [...selected];
+  const counts = countByLobe(result);
+
+  for (const anchor of anchors) {
+    if ((counts.get(anchor.lobeId) ?? 0) > 0) continue;
+
+    const removableIndex = findLowestPriorityRemovable(result, counts);
+    if (removableIndex < 0) {
+      throw new Error('Unable to preserve one foliage representative per lobe.');
+    }
+
+    const removed = result[removableIndex];
+    result[removableIndex] = anchor;
+    counts.set(removed.lobeId, counts.get(removed.lobeId) - 1);
+    counts.set(anchor.lobeId, 1);
+  }
+
+  return result;
+}
+
+export function selectHierarchicalFoliageMaxCover(
+  items,
+  targetCount,
+  { minimumPerLobe = true } = {},
+) {
+  if (!Number.isSafeInteger(targetCount) || targetCount < 0) {
+    throw new RangeError(
+      'Hierarchical max-cover targetCount must be non-negative.',
+    );
+  }
+  if (items.length === 0 || targetCount === 0) return [];
+
+  const boundedTarget = Math.min(targetCount, items.length);
+  const anchors = minimumPerLobe ? selectLobeAnchors(items) : [];
+  if (anchors.length > boundedTarget) {
+    throw new RangeError(
+      'Hierarchical max-cover targetCount cannot be smaller than lobe anchors.',
+    );
+  }
+
+  const representatives = createRepresentatives(items, boundedTarget);
+  return minimumPerLobe
+    ? enforceLobeAnchors(representatives, anchors)
+    : representatives;
 }
