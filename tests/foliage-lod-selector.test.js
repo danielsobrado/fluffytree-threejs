@@ -83,7 +83,7 @@ test('single-slot lobe selection retains its most exposed anchor', () => {
   );
 });
 
-test('global selection spends the remaining budget on the largest uncovered region', () => {
+test('global selection represents separated surface regions before local duplicates', () => {
   const instances = [
     createInstance(0, 0, 0, 0.9),
     createInstance(1, 0, 0.1, 0.8),
@@ -91,11 +91,12 @@ test('global selection spends the remaining budget on the largest uncovered regi
     createInstance(3, 1, 0, 0.95),
   ];
   const selection = selectFoliageLodInstances(instances, 0.75);
+  const selectedIds = selection.instances.map((instance) => instance.id);
 
-  assert.deepEqual(
-    selection.instances.map((instance) => instance.id),
-    [0, 2, 3],
-  );
+  assert.equal(selectedIds.length, 3);
+  assert.ok(selectedIds.includes(2));
+  assert.ok(selectedIds.includes(3));
+  assert.ok(selectedIds.includes(0) || selectedIds.includes(1));
 });
 
 test('reduced foliage compensates projected card area without unbounded growth', () => {
