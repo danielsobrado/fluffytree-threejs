@@ -3,6 +3,7 @@ import { FoliageShellGeometryFactory } from './foliage-shell-geometry-factory.js
 import { FoliageShellMaterialFactory } from './foliage-shell-material-factory.js';
 import { addFoliageInstanceAttributes } from './instanced-foliage-attributes.js';
 import { hashUnit } from './deterministic-hash.js';
+import { selectFoliageLodInstances } from './foliage-lod-selector.js';
 
 const LOCAL_OUTWARD = new THREE.Vector3(0, 0, 1);
 
@@ -80,9 +81,8 @@ export class FoliageShellBuilder {
       name = 'foliage-shell',
     },
   ) {
-    const outerInstances = treeData.shell.filter(
-      (instance) => hashUnit(treeData.seed, instance.id, 0x517cc1b7) <= density,
-    );
+    const outerSelection = selectFoliageLodInstances(treeData.shell, density);
+    const outerInstances = outerSelection.instances;
     const interiorInstances = createInteriorInstances(
       treeData,
       outerInstances,
@@ -91,9 +91,7 @@ export class FoliageShellBuilder {
       interiorScaleRatio,
     );
     const instances = [...outerInstances, ...interiorInstances];
-    const geometry = this.geometryFactory.create(
-      planesPerCluster,
-    );
+    const geometry = this.geometryFactory.create(planesPerCluster);
     addFoliageInstanceAttributes(geometry, instances, {
       getExposure: (instance) => instance.exposure,
       getCrownDirection: (instance) =>
@@ -117,6 +115,8 @@ export class FoliageShellBuilder {
     const quaternion = new THREE.Quaternion();
     const twist = new THREE.Quaternion();
     const scale = new THREE.Vector3();
+    const compensatedScaleMultiplier =
+      scaleMultiplier * outerSelection.scaleCompensation;
 
     instances.forEach((instance, index) => {
       position.set(
@@ -131,9 +131,9 @@ export class FoliageShellBuilder {
       twist.setFromAxisAngle(LOCAL_OUTWARD, instance.rotation);
       quaternion.multiply(twist);
       scale.set(
-        instance.scale * instance.widthRatio * scaleMultiplier,
-        instance.scale * instance.widthRatio * scaleMultiplier,
-        instance.scale * instance.outwardRatio * scaleMultiplier,
+        instance.scale * instance.widthRatio * compensatedScaleMultiplier,
+        instance.scale * instance.widthRatio * compensatedScaleMultiplier,
+        instance.scale * instance.outwardRatio * compensatedScaleMultiplier,
       );
       matrix.compose(position, quaternion, scale);
       shell.setMatrixAt(index, matrix);
@@ -153,6 +153,8 @@ export class FoliageShellBuilder {
       interiorInstanceCount: interiorInstances.length,
       planesPerCluster,
       density,
+      actualDensity: outerSelection.actualDensity,
+      scaleCompensation: outerSelection.scaleCompensation,
     };
     return shell;
   }
