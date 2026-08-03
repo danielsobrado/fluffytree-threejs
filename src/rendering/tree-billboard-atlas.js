@@ -22,7 +22,7 @@ export function calculateBillboardAtlasSlot(index, layout) {
     column,
     row,
     offsetX: column / layout.columns,
-    offsetY: row / layout.rows,
+    offsetY: (layout.rows - row - 1) / layout.rows,
     scaleX: 1 / layout.columns,
     scaleY: 1 / layout.rows,
   });
