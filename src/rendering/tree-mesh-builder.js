@@ -12,8 +12,6 @@ import { TreeImpostorBuilder } from './tree-impostor-builder.js';
 function createLevel(name, objects) {
   const group = new THREE.Group();
   group.name = name;
-  // The hero level starts empty and a stress tree skips its near levels, and
-  // three logs an error for an add() call with no arguments.
   if (objects.length > 0) group.add(...objects);
   configureObjectLodFade(group);
   return group;
@@ -36,6 +34,32 @@ function collectLevelMetrics(root) {
     metrics.triangles += geometryTriangles(object);
   });
   return Object.freeze(metrics);
+}
+
+function createShadowProxy(treeData, branchMeshBuilder, crownShadowProxyBuilder) {
+  const group = new THREE.Group();
+  group.name = 'tree-shadow-proxy';
+  group.visible = false;
+
+  const structure = branchMeshBuilder.build(treeData, {
+    maxBranchOrder: 1,
+    radialSegments: 6,
+    trunkCurveSamples: 8,
+    branchCurveSamples: 4,
+    castShadow: true,
+    receiveShadow: false,
+    name: 'tree-structure-shadow-proxy',
+  });
+  structure.material.colorWrite = false;
+  structure.material.depthWrite = false;
+  structure.renderOrder = -1;
+  structure.userData.shadowProxy = {
+    visibleSurface: false,
+    triangleCount: geometryTriangles(structure),
+  };
+
+  group.add(structure, crownShadowProxyBuilder.build(treeData));
+  return group;
 }
 
 export class TreeMeshBuilder {
@@ -63,6 +87,8 @@ export class TreeMeshBuilder {
       sunDirection = new THREE.Vector3(1, 1, 1),
       deferHero = false,
       minimumLod = 0,
+      impostorRotationY = 0,
+      onHeroBuilt = null,
     } = {},
   ) {
     const root = new THREE.Group();
@@ -84,6 +110,7 @@ export class TreeMeshBuilder {
               radialSegments: 8,
               trunkCurveSamples: 14,
               branchCurveSamples: 7,
+              castShadow: false,
               name: 'tree-structure-lod1',
             }),
             this.foliageCoreBuilder.build(treeData, {
@@ -94,7 +121,7 @@ export class TreeMeshBuilder {
             }),
             this.foliageShellBuilder.build(treeData, {
               ...foliageResources,
-              density: 0.75,
+              density: FOLIAGE_RENDERING_CONSTANTS.mediumShellDensity,
               planesPerCluster: 1,
               scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier,
               name: 'foliage-shell-lod1',
@@ -111,6 +138,7 @@ export class TreeMeshBuilder {
               radialSegments: 6,
               trunkCurveSamples: 8,
               branchCurveSamples: 4,
+              castShadow: false,
               name: 'tree-structure-lod2',
             }),
             this.foliageCoreBuilder.build(treeData, {
@@ -122,15 +150,22 @@ export class TreeMeshBuilder {
           ]
         : [],
     );
-    const lod3 = createLevel('tree-lod-3', [this.impostorBuilder.build(treeData)]);
-    const shadowProxy = this.shadowProxyBuilder.build(treeData);
+    const lod3 = createLevel(
+      'tree-lod-3',
+      [this.impostorBuilder.build(treeData, { rotationY: impostorRotationY })],
+    );
+    const shadowProxy = createShadowProxy(
+      treeData,
+      this.branchMeshBuilder,
+      this.shadowProxyBuilder,
+    );
     const levels = [lod0, lod1, lod2, lod3];
     levels.forEach((level, index) => {
       level.userData.lod = {
         index,
         ...collectLevelMetrics(level),
       };
-      setObjectLodFade(level, index === 1 ? 1 : 0);
+      setObjectLodFade(level, index === Math.max(1, minimumLod) ? 1 : 0);
     });
 
     const buildHero = () => {
@@ -140,11 +175,9 @@ export class TreeMeshBuilder {
         this.branchMeshBuilder.build(treeData, {
           maxBranchOrder: 3,
           radialSegments: 10,
+          castShadow: false,
           name: 'tree-structure',
         }),
-        // The alpha-cut shell can never tile a closed surface on its own, so the
-        // clump cores carry the interior mass that stops the crown reading as a
-        // shell of loose cards with sky behind them.
         this.foliageCoreBuilder.build(treeData, {
           ...foliageResources,
           detail: 1,
@@ -171,6 +204,7 @@ export class TreeMeshBuilder {
         heroLeaves.userData.heroLeaves?.clusterCount ?? 0;
       root.userData.tree.leafCount = heroLeaves.userData.heroLeaves?.leafCount ?? 0;
       root.userData.tree.lodCosts[0] = lod0.userData.lod;
+      onHeroBuilt?.(lod0);
     };
 
     root.userData.tree = {
@@ -186,8 +220,9 @@ export class TreeMeshBuilder {
     root.userData.lod = {
       levels,
       shadowProxy,
-      currentLevel: 1,
-      heroReady: minimumLod > 0,
+      currentLevel: Math.max(1, minimumLod),
+      minimumLevel: minimumLod,
+      heroReady: false,
       buildHero,
     };
     root.add(...levels, shadowProxy);
