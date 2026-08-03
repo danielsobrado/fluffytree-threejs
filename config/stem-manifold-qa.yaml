@@ -1,0 +1,19 @@
+run:
+  seedStart: 1
+  seedCount: 32
+  variants:
+    - id: lod0
+      radialSegments: 10
+      trunkCurveSamples: 24
+    - id: lod1
+      radialSegments: 8
+      trunkCurveSamples: 14
+    - id: lod2
+      radialSegments: 6
+      trunkCurveSamples: 8
+analysis:
+  areaEpsilonRatio: 1.0e-12
+  expectedEulerCharacteristic: 2
+  minimumSignedVolume: 1.0e-8
+report:
+  maximumFailureExamples: 24
