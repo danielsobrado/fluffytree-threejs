@@ -62,6 +62,10 @@ function distance(left, right) {
   );
 }
 
+function coverageTargetPosition(item) {
+  return item.surfacePoint ?? item.position;
+}
+
 function validateItem(item) {
   const values = [
     item?.position?.x,
@@ -92,13 +96,16 @@ function coverageRatio(candidate, selected) {
     return Number.POSITIVE_INFINITY;
   }
 
-  return distance(candidate.position, selected.position) / selected.coverageRadius;
+  return (
+    distance(coverageTargetPosition(candidate), selected.position) /
+    selected.coverageRadius
+  );
 }
 
 function findNearbyCoverageRatio(grid, candidate) {
   let nearest = Number.POSITIVE_INFINITY;
 
-  grid.findNear(candidate.position, (selected) => {
+  grid.findNear(coverageTargetPosition(candidate), (selected) => {
     nearest = Math.min(nearest, coverageRatio(candidate, selected));
     return false;
   });
@@ -136,6 +143,11 @@ function selectCompleteCoverage(items, stopCoverageRatio) {
 
     selected.push(candidate);
     grid.insert(candidate.position, candidate);
+    const selectedRatio = coverageRatio(candidate, candidate);
+    if (selectedRatio > maximumCoverageRatio) {
+      maximumCoverageRatio = selectedRatio;
+      worst = candidate;
+    }
   }
 
   return { selected, maximumCoverageRatio, worst };

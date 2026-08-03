@@ -13,6 +13,10 @@ function distance(left, right) {
   );
 }
 
+function coverageTargetPosition(item) {
+  return item.surfacePoint ?? item.position;
+}
+
 function isCompatible(candidate, selected) {
   return (
     normalDot(candidate.normal, selected.normal) >=
@@ -22,7 +26,10 @@ function isCompatible(candidate, selected) {
 
 function coverageRatio(candidate, selected) {
   if (!isCompatible(candidate, selected)) return Number.POSITIVE_INFINITY;
-  return distance(candidate.position, selected.position) / selected.coverageRadius;
+  return (
+    distance(coverageTargetPosition(candidate), selected.position) /
+    selected.coverageRadius
+  );
 }
 
 export class FoliageCoverageIndex {
@@ -61,12 +68,16 @@ export class FoliageCoverageIndex {
       rings <= FOLIAGE_SHELL_CONSTANTS.maximumCoverageSearchRings;
       rings += 1
     ) {
-      this.grid.forEachNear(candidate.position, rings, (selected) => {
+      this.grid.forEachNear(
+        coverageTargetPosition(candidate),
+        rings,
+        (selected) => {
         if (visited.has(selected)) return false;
         visited.add(selected);
         nearest = Math.min(nearest, coverageRatio(candidate, selected));
         return false;
-      });
+        },
+      );
 
       const unscannedDistance = rings * this.grid.cellSize;
       if (
