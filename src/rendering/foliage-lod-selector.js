@@ -1,6 +1,8 @@
 import { selectDeterministicFoliageMaxCover } from '../generation/foliage-max-cover-selector.js';
 import { FOLIAGE_LOD_CONSTANTS } from './foliage-lod-constants.js';
 
+const SELECTION_CACHE = new WeakMap();
+
 function validateDensity(density) {
   if (!Number.isFinite(density) || density < 0 || density > 1) {
     throw new RangeError(
@@ -19,6 +21,17 @@ function calculateScaleCompensation(actualDensity) {
     FOLIAGE_LOD_CONSTANTS.maximumScaleCompensation,
     1 / Math.sqrt(actualDensity),
   );
+}
+
+function getCachedSelection(instances, density) {
+  return SELECTION_CACHE.get(instances)?.get(density) ?? null;
+}
+
+function cacheSelection(instances, density, selection) {
+  const entries = SELECTION_CACHE.get(instances) ?? new Map();
+  entries.set(density, selection);
+  SELECTION_CACHE.set(instances, entries);
+  return selection;
 }
 
 export function selectFoliageLodInstances(instances, density) {
@@ -42,6 +55,9 @@ export function selectFoliageLodInstances(instances, density) {
     });
   }
 
+  const cached = getCachedSelection(instances, density);
+  if (cached) return cached;
+
   const targetCount = Math.min(
     instances.length,
     Math.max(countLobes(instances), Math.round(instances.length * density)),
@@ -58,11 +74,12 @@ export function selectFoliageLodInstances(instances, density) {
     (left, right) => sourceOrder.get(left) - sourceOrder.get(right),
   );
   const actualDensity = selected.length / instances.length;
-
-  return Object.freeze({
+  const result = Object.freeze({
     instances: Object.freeze(selected),
     actualDensity,
     scaleCompensation: calculateScaleCompensation(actualDensity),
     maximumCoverageRatio: selection.maximumCoverageRatio,
   });
+
+  return cacheSelection(instances, density, result);
 }
