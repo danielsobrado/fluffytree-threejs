@@ -7,7 +7,13 @@ function countBranches(tree, maximumOrder) {
   return tree.branches.filter((branch) => branch.order <= maximumOrder);
 }
 
-function structureTriangles(tree, maximumOrder, radialSegments, trunkSamples, branchSamples) {
+function structureTriangles(
+  tree,
+  maximumOrder,
+  radialSegments,
+  trunkSamples,
+  branchSamples,
+) {
   const branches = countBranches(tree, maximumOrder);
   const caps = branches.filter((branch) => branch.exposed).length * radialSegments;
   return (
@@ -33,17 +39,25 @@ function coreInstanceCount(tree, lodIndex) {
 
 export function analyzeTreeLodBudgets(tree) {
   const foliage = tree.palette;
-  const heroClusters = selectedShellCount(tree, foliage.heroLeaves.density, 0x9e3779b1);
+  const heroClusters = selectedShellCount(
+    tree,
+    foliage.heroLeaves.density,
+    0x9e3779b1,
+  );
   const interiorShell = selectedShellCount(
     tree,
     FOLIAGE_RENDERING_CONSTANTS.heroInteriorDensity,
     0x6c8e9cf5,
   );
-  const mediumShell = selectFoliageLodInstances(tree.shell, 0.75).instances.length;
+  const mediumShell = selectFoliageLodInstances(
+    tree.shell,
+    FOLIAGE_RENDERING_CONSTANTS.mediumShellDensity,
+  ).instances.length;
   const lod0CoreInstances = coreInstanceCount(tree, 0);
   const lod1CoreInstances = coreInstanceCount(tree, 1);
   const lod2CoreInstances = coreInstanceCount(tree, 2);
   const lobeCount = tree.lobes.length;
+  const structureShadowTriangles = structureTriangles(tree, 1, 6, 8, 4);
   const lod0 =
     structureTriangles(tree, 3, 10, 24, 10) +
     lod0CoreInstances * 80 +
@@ -60,7 +74,7 @@ export function analyzeTreeLodBudgets(tree) {
   return Object.freeze({
     lodTriangles: Object.freeze([lod0, lod1, lod2, 2]),
     lodDrawCalls: Object.freeze([4, 3, 2, 1]),
-    shadowTriangles: lobeCount * 80,
+    shadowTriangles: lobeCount * 80 + structureShadowTriangles,
     heroLeafClusters: heroClusters,
     shellClusters: tree.shell.length,
     interiorShellClusters: interiorShell,
