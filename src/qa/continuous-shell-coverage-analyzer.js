@@ -57,7 +57,7 @@ function maximumExposure(samples, lobes, ownerLobeId) {
 
 function validateOptions(options) {
   const checks = [
-    ['maximumGapCardRatio', options.maximumGapCardRatio],
+    ['maximumCoverageRatio', options.maximumCoverageRatio],
     ['maximumSubdivisionDepth', options.maximumSubdivisionDepth],
     ['minimumDirectionDiameter', options.minimumDirectionDiameter],
     ['exposureMargin', options.exposureMargin],
@@ -98,7 +98,7 @@ function createFailureRecord(
   depth,
   directionDiameter,
   exposureUpperBound,
-  gapCardRatioUpperBound,
+  coverageRatioUpperBound,
   samples,
 ) {
   return Object.freeze({
@@ -106,14 +106,14 @@ function createFailureRecord(
     depth,
     directionDiameter,
     exposureUpperBound,
-    gapCardRatioUpperBound,
+    coverageRatioUpperBound,
     position: samples.positions.at(-1),
   });
 }
 
 export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
   const options = {
-    maximumGapCardRatio: 0.9,
+    maximumCoverageRatio: 1,
     maximumSubdivisionDepth: 8,
     minimumDirectionDiameter: 0.006,
     exposureMargin: 0.05,
@@ -138,7 +138,7 @@ export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
   let uncoveredTriangleCount = 0;
   let subdivisionCount = 0;
   let maximumDepthReached = 0;
-  let maximumGapCardRatioUpperBound = 0;
+  let maximumCoverageRatioUpperBound = 0;
   let worst = null;
 
   for (const lobe of lobes) {
@@ -167,7 +167,7 @@ export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
         continue;
       }
 
-      const gapUpperBound = findTriangleCoverageUpperBound(
+      const coverageUpperBound = findTriangleCoverageUpperBound(
         clusterIndex,
         samples,
         {
@@ -178,15 +178,15 @@ export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
             options.normalUncertaintyScale,
           ),
           minimumCoverageNormalDot: options.minimumCoverageNormalDot,
-          targetRatio: options.maximumGapCardRatio,
+          targetRatio: options.maximumCoverageRatio,
         },
       );
 
-      if (gapUpperBound <= options.maximumGapCardRatio) {
+      if (coverageUpperBound <= options.maximumCoverageRatio) {
         coveredTriangleCount += 1;
-        maximumGapCardRatioUpperBound = Math.max(
-          maximumGapCardRatioUpperBound,
-          gapUpperBound,
+        maximumCoverageRatioUpperBound = Math.max(
+          maximumCoverageRatioUpperBound,
+          coverageUpperBound,
         );
         continue;
       }
@@ -203,18 +203,18 @@ export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
       }
 
       uncoveredTriangleCount += 1;
-      maximumGapCardRatioUpperBound = Number.POSITIVE_INFINITY;
+      maximumCoverageRatioUpperBound = Number.POSITIVE_INFINITY;
       const failure = createFailureRecord(
         lobe,
         depth,
         directionDiameter,
         exposureUpperBound,
-        gapUpperBound,
+        coverageUpperBound,
         samples,
       );
       if (
         !worst ||
-        failure.gapCardRatioUpperBound > worst.gapCardRatioUpperBound
+        failure.coverageRatioUpperBound > worst.coverageRatioUpperBound
       ) {
         worst = failure;
       }
@@ -226,8 +226,8 @@ export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
 
   return Object.freeze({
     passed: uncoveredTriangleCount === 0,
-    maximumGapCardRatio: options.maximumGapCardRatio,
-    maximumGapCardRatioUpperBound,
+    maximumCoverageRatio: options.maximumCoverageRatio,
+    maximumCoverageRatioUpperBound,
     trianglesVisited,
     hiddenTriangleCount,
     coveredTriangleCount,
