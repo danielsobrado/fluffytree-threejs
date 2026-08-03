@@ -9,6 +9,7 @@ import {
   evaluateSolidityReport,
   summarizeViewMetrics,
 } from '../qa/canopy-solidity-gate.js';
+import { CANOPY_SOLIDITY_LOD_STATES } from '../qa/canopy-solidity-lod-states.js';
 import {
   analyzeSilhouetteHoles,
   createAlphaMask,
@@ -19,6 +20,7 @@ import { setObjectLodFade } from '../rendering/lod-dither-fade.js';
 
 const STATUS_ATTRIBUTE = 'solidityStatus';
 const THRESHOLD_URL = './config/canopy-solidity-qa.yaml';
+const BASELINE_LOD_STATE = 'lod0';
 
 function isSolidityRequested() {
   return (
@@ -67,18 +69,11 @@ function createCrownFrame(level) {
 
 function createBaseFrame(tree, structure) {
   const rootBase = structure.userData.structure.rootBase;
-  // The base group judges the trunk sweep, so the frame stops below the first
-  // branch. On a bush the branches start inside the flare band, and a frame that
-  // reached them would score the daylight between limbs as a trunk defect.
   const flareHeight = Math.min(
     structure.userData.structure.rootFlareHeight,
     structure.userData.structure.lowestBranchHeight ?? Number.POSITIVE_INFINITY,
   );
   const flareSpan = flareHeight - rootBase.y;
-  // The root flare occupies the same height band on every preset, so the frame
-  // follows that band rather than a fraction of the tree. A frame sized for a
-  // full grown trunk would reach into a bush's branches and score the gaps
-  // between them as trunk defects.
   const radius = Math.max(
     rootBase.radius * CANOPY_SOLIDITY_CONSTANTS.baseRadiusMultiplier,
     flareSpan * CANOPY_SOLIDITY_CONSTANTS.baseHeightMultiplier * 0.5,
@@ -92,6 +87,14 @@ function createBaseFrame(tree, structure) {
   return { center, radius };
 }
 
+function isWorseView(candidate, current) {
+  if (!current) return true;
+  if (candidate.holeRatio !== current.holeRatio) {
+    return candidate.holeRatio > current.holeRatio;
+  }
+  return candidate.coverageRetention < current.coverageRetention;
+}
+
 export class CanopySolidityProbe {
   constructor({
     root = document.documentElement,
@@ -101,6 +104,7 @@ export class CanopySolidityProbe {
     this.configLoader = configLoader;
     this.enabled = isSolidityRequested();
     this.views = createViewDefinitions();
+    this.lodStates = CANOPY_SOLIDITY_LOD_STATES;
   }
 
   install() {
@@ -126,7 +130,10 @@ export class CanopySolidityProbe {
 
       this.root.dataset[STATUS_ATTRIBUTE] = passed ? 'ready' : 'error';
       this.root.dataset.solidityTreeCount = String(report.trees.length);
-      this.root.dataset.solidityViewCount = String(this.views.length);
+      this.root.dataset.solidityViewCount = String(
+        report.trees.reduce((total, tree) => total + tree.views.length, 0),
+      );
+      this.root.dataset.solidityLodStateCount = String(this.lodStates.length);
       await postQaReport('canopy-solidity', report);
       reportQaStatus(
         passed ? 'ready' : 'error',
@@ -164,6 +171,7 @@ export class CanopySolidityProbe {
       resolution,
       minimumHolePixels: CANOPY_SOLIDITY_CONSTANTS.minimumHolePixels,
       minimumHoleRadius: CANOPY_SOLIDITY_CONSTANTS.minimumHoleRadius,
+      lodStates: this.lodStates.map((state) => state.id),
       trees: results,
     };
   }
@@ -179,9 +187,6 @@ export class CanopySolidityProbe {
     scene.fog = null;
     renderer.setClearColor(0x000000, 0);
 
-    // Everything except the lights is hidden, including the other trees. A
-    // neighbouring canopy in frame would otherwise close a background region and
-    // be scored as a hole in the tree under test.
     for (const child of scene.children) {
       if (child.isLight) continue;
       if (child.visible) {
@@ -202,8 +207,9 @@ export class CanopySolidityProbe {
   measureTree({ renderer, scene, tree, target, pixels, resolution }) {
     const lodState = tree.userData.lod;
     lodState.buildHero?.();
-    const level = lodState.levels[0];
-    const structure = findStructure(level);
+    const levels = lodState.levels;
+    const heroLevel = levels[0];
+    const structure = findStructure(heroLevel);
 
     if (!structure) {
       throw new Error('The hero level does not contain a trunk structure.');
@@ -217,71 +223,109 @@ export class CanopySolidityProbe {
       400,
     );
     const frames = {
-      crown: createCrownFrame(level),
+      crown: createCrownFrame(heroLevel),
       base: createBaseFrame(tree, structure),
     };
+    const crownViews = this.views.filter((view) => view.group === 'crown');
+    const baseViews = this.views.filter((view) => view.group === 'base');
     const views = [];
+    const baselineCoverage = new Map();
     const holeMask = new Uint8Array(resolution * resolution);
     let worst = null;
     let windMovedRatio = 0;
 
-    try {
-      for (const view of this.views) {
-        const frame = frames[view.group];
-        // Base views judge the trunk sweep, so foliage is removed rather than
-        // allowed to contribute its own gaps to the trunk measurement.
-        this.setFoliageVisible(level, view.group !== 'base');
-        this.placeCamera(camera, frame, view);
-        renderer.setRenderTarget(target);
-        renderer.clear();
-        renderer.render(scene, camera);
-        renderer.readRenderTargetPixels(target, 0, 0, resolution, resolution, pixels);
-        const mask = createAlphaMask(
-          pixels,
-          resolution,
-          resolution,
-          CANOPY_SOLIDITY_CONSTANTS.alphaThreshold,
-        );
-        holeMask.fill(0);
-        const metrics = analyzeSilhouetteHoles(mask, resolution, resolution, {
-          minimumHolePixels: CANOPY_SOLIDITY_CONSTANTS.minimumHolePixels,
-          minimumHoleRadius: CANOPY_SOLIDITY_CONSTANTS.minimumHoleRadius,
-          holeMask,
-        });
-        views.push({ ...view, ...metrics });
-
-        if (!worst || metrics.holeRatio > worst.holeRatio) {
-          worst = {
-            holeRatio: metrics.holeRatio,
-            name: `${view.group}-${view.name}`,
-            image: createSolidityViewImage(
-              pixels,
-              holeMask,
-              resolution,
-              resolution,
-            ),
-          };
-        }
+    const captureView = (view, state) => {
+      this.placeCamera(camera, frames[view.group], view);
+      renderer.setRenderTarget(target);
+      renderer.clear();
+      renderer.render(scene, camera);
+      renderer.readRenderTargetPixels(target, 0, 0, resolution, resolution, pixels);
+      const mask = createAlphaMask(
+        pixels,
+        resolution,
+        resolution,
+        CANOPY_SOLIDITY_CONSTANTS.alphaThreshold,
+      );
+      holeMask.fill(0);
+      const metrics = analyzeSilhouetteHoles(mask, resolution, resolution, {
+        minimumHolePixels: CANOPY_SOLIDITY_CONSTANTS.minimumHolePixels,
+        minimumHoleRadius: CANOPY_SOLIDITY_CONSTANTS.minimumHoleRadius,
+        holeMask,
+      });
+      if (state.id === BASELINE_LOD_STATE && view.group === 'crown') {
+        baselineCoverage.set(view.name, metrics.coverageRatio);
       }
-      this.setFoliageVisible(level, true);
+      const baseline = baselineCoverage.get(view.name) ?? metrics.coverageRatio;
+      const coverageRetention =
+        baseline <= Number.EPSILON ? 0 : metrics.coverageRatio / baseline;
+      const record = {
+        ...view,
+        lodState: state.id,
+        lodKind: state.kind,
+        coverageRetention,
+        ...metrics,
+      };
+      views.push(record);
+
+      if (isWorseView(record, worst)) {
+        worst = {
+          holeRatio: record.holeRatio,
+          coverageRetention: record.coverageRetention,
+          name: `${view.group}-${state.id}-${view.name}`,
+          image: createSolidityViewImage(
+            pixels,
+            holeMask,
+            resolution,
+            resolution,
+          ),
+        };
+      }
+    };
+
+    try {
+      for (const state of this.lodStates) {
+        this.applyLodState(levels, state);
+        this.setFoliageVisible(heroLevel, true);
+        for (const view of crownViews) captureView(view, state);
+      }
+
+      const baselineState = this.lodStates.find(
+        (state) => state.id === BASELINE_LOD_STATE,
+      );
+      this.applyLodState(levels, baselineState);
+      this.setFoliageVisible(heroLevel, false);
+      for (const view of baseViews) captureView(view, baselineState);
+
+      this.setFoliageVisible(heroLevel, true);
       windMovedRatio = this.measureWind({
         renderer,
         scene,
         camera,
         frame: frames.crown,
-        view: this.views[0],
+        view: crownViews[0],
         target,
         pixels,
         resolution,
         tree,
       });
     } finally {
-      this.setFoliageVisible(level, true);
+      this.setFoliageVisible(heroLevel, true);
       restoreTree();
     }
 
+    const crownStateSummaries = Object.fromEntries(
+      this.lodStates.map((state) => [
+        state.id,
+        summarizeViewMetrics(
+          views.filter(
+            (view) => view.group === 'crown' && view.lodState === state.id,
+          ),
+        ),
+      ]),
+    );
+
     return {
-      windMovedRatio: windMovedRatio,
+      windMovedRatio,
       presetId: tree.userData.tree.presetId,
       seed: tree.userData.tree.seed,
       trunkClosed: structure.userData.structure.trunkClosed === true,
@@ -290,16 +334,23 @@ export class CanopySolidityProbe {
       trunkBoundaryEdges: structure.userData.structure.trunkBoundaryEdges,
       rootBaseMaximumHeight: structure.userData.structure.rootBaseMaximumHeight,
       summary: summarizeViewMetrics(views),
+      crownStateSummaries,
       worstView: worst ? { name: worst.name, image: worst.image } : null,
       views,
     };
   }
 
-  /**
-   * Fraction of canopy pixels that change between two wind phases. Shader wind is
-   * invisible in a still capture, so without this a broken uniform or a severed
-   * animation loop would leave every other gate green.
-   */
+  applyLodState(levels, state) {
+    if (!state) throw new Error('A canopy solidity LOD state is required.');
+    for (const assignment of state.assignments) {
+      setObjectLodFade(
+        levels[assignment.index],
+        assignment.fade,
+        assignment.invert,
+      );
+    }
+  }
+
   measureWind({ renderer, scene, camera, frame, view, target, pixels, resolution, tree }) {
     const states = [];
     tree.traverse((object) => {
@@ -361,9 +412,6 @@ export class CanopySolidityProbe {
 
     tree.visible = true;
     lodState.shadowProxy.visible = false;
-    lodState.levels.forEach((level, index) => {
-      setObjectLodFade(level, index === 0 ? 1 : 0);
-    });
     tree.traverse((object) => {
       const materials = Array.isArray(object.material)
         ? object.material
