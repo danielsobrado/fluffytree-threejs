@@ -15,5 +15,7 @@ analysis:
   areaEpsilonRatio: 1.0e-12
   expectedEulerCharacteristic: 2
   minimumSignedVolume: 1.0e-8
+  selfIntersectionEpsilonRatio: 1.0e-10
+  maximumSelfIntersectionExamples: 8
 report:
   maximumFailureExamples: 24

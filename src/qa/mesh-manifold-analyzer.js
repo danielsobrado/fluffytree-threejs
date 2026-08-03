@@ -1,3 +1,5 @@
+import { analyzeTriangleSelfIntersections } from './triangle-self-intersection-analyzer.js';
+
 function edgeKey(left, right) {
   return left < right ? `${left}:${right}` : `${right}:${left}`;
 }
@@ -135,6 +137,8 @@ export function analyzeIndexedManifold(
     areaEpsilonRatio = 1e-12,
     expectedEulerCharacteristic = 2,
     minimumSignedVolume = 0,
+    selfIntersectionEpsilonRatio = 1e-10,
+    maximumSelfIntersectionExamples = 8,
   } = {},
 ) {
   if (!positions || !indices) {
@@ -142,6 +146,22 @@ export function analyzeIndexedManifold(
   }
   if (!Number.isFinite(areaEpsilonRatio) || areaEpsilonRatio < 0) {
     throw new RangeError('areaEpsilonRatio must be a non-negative number.');
+  }
+  if (
+    !Number.isFinite(selfIntersectionEpsilonRatio) ||
+    selfIntersectionEpsilonRatio < 0
+  ) {
+    throw new RangeError(
+      'selfIntersectionEpsilonRatio must be a non-negative number.',
+    );
+  }
+  if (
+    !Number.isSafeInteger(maximumSelfIntersectionExamples) ||
+    maximumSelfIntersectionExamples < 0
+  ) {
+    throw new RangeError(
+      'maximumSelfIntersectionExamples must be a non-negative integer.',
+    );
   }
 
   const vertexCount = Math.floor(positions.length / 3);
@@ -233,6 +253,10 @@ export function analyzeIndexedManifold(
   const signedVolume = canCalculateVolume
     ? calculateSignedVolume(positions, indices)
     : Number.NaN;
+  const selfIntersections = analyzeTriangleSelfIntersections(positions, indices, {
+    epsilonRatio: selfIntersectionEpsilonRatio,
+    maximumExamples: maximumSelfIntersectionExamples,
+  });
   const closedTwoManifold =
     triangleCount > 0 &&
     malformedPositionValueCount === 0 &&
@@ -244,6 +268,7 @@ export function analyzeIndexedManifold(
     boundaryEdgeCount === 0 &&
     nonManifoldEdgeCount === 0 &&
     orientationConflictCount === 0 &&
+    selfIntersections.selfIntersectionCount === 0 &&
     componentCount === 1 &&
     eulerCharacteristic === expectedEulerCharacteristic &&
     Number.isFinite(signedVolume) &&
@@ -268,6 +293,12 @@ export function analyzeIndexedManifold(
     boundaryEdgeCount,
     nonManifoldEdgeCount,
     orientationConflictCount,
+    selfIntersectionCount: selfIntersections.selfIntersectionCount,
+    selfIntersectionCandidatePairCount: selfIntersections.candidatePairCount,
+    selfIntersectionTestedPairCount: selfIntersections.testedPairCount,
+    selfIntersectionSkippedTriangleCount: selfIntersections.skippedTriangleCount,
+    selfIntersectionEpsilon: selfIntersections.epsilon,
+    selfIntersectionExamples: selfIntersections.examples,
     signedVolume,
     outwardFacing: Number.isFinite(signedVolume) && signedVolume > 0,
     closedTwoManifold,
