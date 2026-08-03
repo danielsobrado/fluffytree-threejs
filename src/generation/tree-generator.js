@@ -3,6 +3,7 @@ import { CrownEnvelope } from './crown-envelope.js';
 import { createCrownSummary } from './crown-summary.js';
 import { FoliageShellGenerator } from './foliage-shell-generator.js';
 import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
+import { LobeConnectionAnalyzer } from './lobe-connection-analyzer.js';
 import { LobeConnectivityEnforcer } from './lobe-connectivity-enforcer.js';
 import { LobeGenerator } from './lobe-generator.js';
 import { SeededRandom } from './seeded-random.js';
@@ -70,11 +71,13 @@ export class TreeGenerator {
   constructor({
     lobeGenerator = new LobeGenerator(),
     lobeConnectivityEnforcer = new LobeConnectivityEnforcer(),
+    lobeConnectionAnalyzer = new LobeConnectionAnalyzer(),
     branchGenerator = new BranchGenerator(),
     foliageShellGenerator = new FoliageShellGenerator(),
   } = {}) {
     this.lobeGenerator = lobeGenerator;
     this.lobeConnectivityEnforcer = lobeConnectivityEnforcer;
+    this.lobeConnectionAnalyzer = lobeConnectionAnalyzer;
     this.branchGenerator = branchGenerator;
     this.foliageShellGenerator = foliageShellGenerator;
   }
@@ -87,6 +90,7 @@ export class TreeGenerator {
     const structure = this.branchGenerator.generate(preset, connectedLobes, random);
     const lobes = structure.lobes;
     const crown = createCrownSummary(lobes);
+    const lobeConnections = this.lobeConnectionAnalyzer.analyze(lobes);
     const shell = includeSurfaceSamples
       ? this.foliageShellGenerator.generate(
           preset,
@@ -99,8 +103,11 @@ export class TreeGenerator {
       presetId: preset.id,
       seed,
       height: preset.height,
+      crownProfile: preset.crown.profile,
       crownCenter: crown.center,
+      continuity: preset.continuity ?? null,
       lobes: Object.freeze(lobes),
+      lobeConnections,
       lobeExposure: Object.freeze(shell.lobeExposure),
       shell: Object.freeze(shell.instances),
       trunk: Object.freeze(structure.trunk),
