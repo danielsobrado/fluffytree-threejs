@@ -17,6 +17,8 @@ import {
   subdivideDirectionTriangle,
 } from './ellipsoid-surface-triangulation.js';
 
+const MAXIMUM_GRID_QUERY_RINGS = 8;
+
 function distance(left, right) {
   return Math.hypot(
     left.x - right.x,
@@ -60,8 +62,12 @@ function createClusterIndex(clusters) {
 }
 
 function collectNearbyClusters(index, position, radius) {
-  const records = new Set();
+  if (index.records.length === 0) return new Set();
+
   const rings = Math.max(1, Math.ceil(radius / index.grid.cellSize) + 1);
+  if (rings > MAXIMUM_GRID_QUERY_RINGS) return new Set(index.records);
+
+  const records = new Set();
   index.grid.forEachNear(position, rings, (record) => {
     records.add(record);
     return false;
@@ -135,6 +141,8 @@ function bestCoverageUpperBound(
   minimumCoverageNormalDot,
   targetRatio,
 ) {
+  if (index.records.length === 0) return Number.POSITIVE_INFINITY;
+
   const center = samples.positions.at(-1);
   const queryRadius = index.maximumWidth * targetRatio + worldUncertainty;
   const nearby = collectNearbyClusters(index, center, queryRadius);
@@ -173,6 +181,14 @@ function validateOptions(options) {
   if (!Number.isSafeInteger(options.maximumSubdivisionDepth)) {
     throw new RangeError(
       'Continuous shell coverage maximumSubdivisionDepth must be an integer.',
+    );
+  }
+  if (
+    !Number.isSafeInteger(options.maximumFailureExamples) ||
+    options.maximumFailureExamples < 0
+  ) {
+    throw new RangeError(
+      'Continuous shell coverage maximumFailureExamples must be a non-negative integer.',
     );
   }
   if (
