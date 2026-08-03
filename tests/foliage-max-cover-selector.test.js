@@ -24,19 +24,19 @@ function createItem(
   };
 }
 
-test('selects the globally furthest uncovered candidate until every candidate is covered', () => {
+test('complete selection accepts a maximal set that covers every candidate', () => {
   const items = [0, 1, 2, 3].map((x) => createItem(x, x));
   const result = selectDeterministicFoliageMaxCover(items);
 
   assert.deepEqual(
     result.selected.map((item) => item.id),
-    [0, 3],
+    [0, 2],
   );
-  assert.ok(result.maximumCoverageRatio <= 1);
+  assert.equal(result.maximumCoverageRatio, 1);
   assert.equal(result.worst.id, 1);
 });
 
-test('selection is independent from input order', () => {
+test('complete selection is independent from input order', () => {
   const items = [
     createItem(0, 0),
     createItem(1, 1),
@@ -65,6 +65,7 @@ test('direction-incompatible candidates cannot cover one another', () => {
     [0, 1],
   );
   assert.equal(result.maximumCoverageRatio, 0);
+  assert.equal(result.worst, null);
 });
 
 test('fixed-count reduction keeps one stable anchor per lobe', () => {
@@ -84,4 +85,24 @@ test('fixed-count reduction keeps one stable anchor per lobe', () => {
     result.selected.map((item) => item.id),
     [0, 2],
   );
+  assert.ok(Number.isFinite(result.maximumCoverageRatio));
+});
+
+test('fixed-count global partition represents separated canopy regions', () => {
+  const items = [
+    createItem(0, 0),
+    createItem(1, 1),
+    createItem(2, 8),
+    createItem(3, 9),
+  ];
+  const result = selectDeterministicFoliageMaxCover(items, {
+    targetCount: 2,
+    stopCoverageRatio: null,
+    minimumPerLobe: false,
+  });
+  const selectedIds = result.selected.map((item) => item.id);
+
+  assert.equal(selectedIds.length, 2);
+  assert.ok(selectedIds.some((id) => id <= 1));
+  assert.ok(selectedIds.some((id) => id >= 2));
 });
