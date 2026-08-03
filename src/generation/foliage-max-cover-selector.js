@@ -133,6 +133,8 @@ function selectComponent(
   const selected = [];
   const selectedSet = new Set();
   const index = createCoverageIndex(items, anchors);
+  let maximumCoverageRatio = 0;
+  let worst = null;
 
   for (const anchor of anchors) {
     if (selectedSet.has(anchor)) continue;
@@ -164,6 +166,8 @@ function selectComponent(
       refreshed.upperBound <=
         stopCoverageRatio + FOLIAGE_SHELL_CONSTANTS.coverageRatioEpsilon
     ) {
+      maximumCoverageRatio = refreshed.upperBound;
+      worst = refreshed.item;
       break;
     }
 
@@ -172,21 +176,39 @@ function selectComponent(
     index.add(refreshed.item);
   }
 
-  return selected;
+  return {
+    selected,
+    index,
+    maximumCoverageRatio,
+    worst,
+    stoppedByCoverage:
+      stopCoverageRatio !== null && selected.length < targetCount,
+  };
 }
 
 function selectIndependentCoverageComponents(items, stopCoverageRatio) {
   const components = createFoliageCoverageComponents(items).sort((left, right) =>
     -compareItemPriority(bestItem(left), bestItem(right)),
   );
+  const selected = [];
+  let maximumCoverageRatio = 0;
+  let worst = null;
 
-  return components.flatMap((component) =>
-    selectComponent(component, {
+  for (const component of components) {
+    const result = selectComponent(component, {
       targetCount: component.length,
       stopCoverageRatio,
       minimumPerLobe: false,
-    }),
-  );
+    });
+    selected.push(...result.selected);
+
+    if (result.maximumCoverageRatio > maximumCoverageRatio) {
+      maximumCoverageRatio = result.maximumCoverageRatio;
+      worst = result.worst;
+    }
+  }
+
+  return { selected, maximumCoverageRatio, worst };
 }
 
 export function selectDeterministicFoliageMaxCover(
@@ -228,18 +250,28 @@ export function selectDeterministicFoliageMaxCover(
     stopCoverageRatio !== null &&
     boundedTarget === items.length &&
     !minimumPerLobe;
-  const selected = completeCoverageMode
-    ? selectIndependentCoverageComponents(items, stopCoverageRatio)
-    : selectComponent(items, {
-        targetCount: boundedTarget,
-        stopCoverageRatio,
-        minimumPerLobe,
-      });
-  const index = createCoverageIndex(items, selected);
-  const coverage = calculateMaximumRatio(items, index);
+
+  if (completeCoverageMode) {
+    const result = selectIndependentCoverageComponents(
+      items,
+      stopCoverageRatio,
+    );
+    return Object.freeze({
+      selected: Object.freeze(result.selected),
+      maximumCoverageRatio: result.maximumCoverageRatio,
+      worst: result.worst,
+    });
+  }
+
+  const result = selectComponent(items, {
+    targetCount: boundedTarget,
+    stopCoverageRatio,
+    minimumPerLobe,
+  });
+  const coverage = calculateMaximumRatio(items, result.index);
 
   return Object.freeze({
-    selected: Object.freeze(selected),
+    selected: Object.freeze(result.selected),
     maximumCoverageRatio: coverage.maximum,
     worst: coverage.worst,
   });
