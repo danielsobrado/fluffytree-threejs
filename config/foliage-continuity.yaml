@@ -1,0 +1,56 @@
+profiles:
+  round:
+    bridgeRadiusRatio: 0.30
+    bridgeLengthPaddingRatio: 0.18
+    coreOverlapSafety: 0.88
+    sameMacroOnly: false
+    verticalBias: 0.04
+    lod:
+      - coreScale: 1.00
+        bridges: true
+      - coreScale: 1.04
+        bridges: true
+      - coreScale: 1.12
+        bridges: true
+
+  columnar:
+    bridgeRadiusRatio: 0.36
+    bridgeLengthPaddingRatio: 0.22
+    coreOverlapSafety: 0.86
+    sameMacroOnly: false
+    verticalBias: 0.38
+    lod:
+      - coreScale: 1.02
+        bridges: true
+      - coreScale: 1.09
+        bridges: true
+      - coreScale: 1.18
+        bridges: true
+
+  vase:
+    bridgeRadiusRatio: 0.33
+    bridgeLengthPaddingRatio: 0.20
+    coreOverlapSafety: 0.87
+    sameMacroOnly: false
+    verticalBias: 0.14
+    lod:
+      - coreScale: 1.00
+        bridges: true
+      - coreScale: 1.06
+        bridges: true
+      - coreScale: 1.14
+        bridges: true
+
+  pad:
+    bridgeRadiusRatio: 0.31
+    bridgeLengthPaddingRatio: 0.18
+    coreOverlapSafety: 0.88
+    sameMacroOnly: true
+    verticalBias: 0.08
+    lod:
+      - coreScale: 1.00
+        bridges: true
+      - coreScale: 1.05
+        bridges: true
+      - coreScale: 1.12
+        bridges: true

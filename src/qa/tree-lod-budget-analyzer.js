@@ -1,11 +1,19 @@
+import { createFoliageCoreLayout } from '../rendering/foliage-core-layout.js';
 import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js';
 import { hashUnit } from '../rendering/deterministic-hash.js';
+import { selectFoliageLodInstances } from '../rendering/foliage-lod-selector.js';
 
 function countBranches(tree, maximumOrder) {
   return tree.branches.filter((branch) => branch.order <= maximumOrder);
 }
 
-function structureTriangles(tree, maximumOrder, radialSegments, trunkSamples, branchSamples) {
+function structureTriangles(
+  tree,
+  maximumOrder,
+  radialSegments,
+  trunkSamples,
+  branchSamples,
+) {
   const branches = countBranches(tree, maximumOrder);
   const caps = branches.filter((branch) => branch.exposed).length * radialSegments;
   return (
@@ -22,31 +30,46 @@ function selectedShellCount(tree, density, salt) {
   ).length;
 }
 
+function coreInstanceCount(tree, lodIndex) {
+  return createFoliageCoreLayout(tree, {
+    lodIndex,
+    scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.coreScaleMultiplier,
+  }).instances.length;
+}
+
 export function analyzeTreeLodBudgets(tree) {
   const foliage = tree.palette;
-  const heroClusters = selectedShellCount(tree, foliage.heroLeaves.density, 0x9e3779b1);
+  const heroClusters = selectedShellCount(
+    tree,
+    foliage.heroLeaves.density,
+    0x9e3779b1,
+  );
   const interiorShell = selectedShellCount(
     tree,
     FOLIAGE_RENDERING_CONSTANTS.heroInteriorDensity,
     0x6c8e9cf5,
   );
-  const mediumShell = selectedShellCount(
-    tree,
+  const mediumShell = selectFoliageLodInstances(
+    tree.shell,
     FOLIAGE_RENDERING_CONSTANTS.mediumShellDensity,
-    0x517cc1b7,
-  );
+  ).instances.length;
+  const lod0CoreInstances = coreInstanceCount(tree, 0);
+  const lod1CoreInstances = coreInstanceCount(tree, 1);
+  const lod2CoreInstances = coreInstanceCount(tree, 2);
   const lobeCount = tree.lobes.length;
   const structureShadowTriangles = structureTriangles(tree, 1, 6, 8, 4);
   const lod0 =
     structureTriangles(tree, 3, 10, 24, 10) +
-    lobeCount * 80 +
+    lod0CoreInstances * 80 +
     (tree.shell.length + interiorShell) * foliage.shell.planesPerCluster * 2 +
     heroClusters * foliage.heroLeaves.leavesPerCluster * 2;
   const lod1 =
     structureTriangles(tree, 2, 8, 14, 7) +
-    lobeCount * 80 +
+    lod1CoreInstances * 80 +
     mediumShell * 2;
-  const lod2 = structureTriangles(tree, 1, 6, 8, 4) + lobeCount * 20;
+  const lod2 =
+    structureTriangles(tree, 1, 6, 8, 4) +
+    lod2CoreInstances * 20;
 
   return Object.freeze({
     lodTriangles: Object.freeze([lod0, lod1, lod2, 2]),
@@ -55,6 +78,11 @@ export function analyzeTreeLodBudgets(tree) {
     heroLeafClusters: heroClusters,
     shellClusters: tree.shell.length,
     interiorShellClusters: interiorShell,
+    coreBridgeInstances: Object.freeze([
+      lod0CoreInstances - lobeCount,
+      lod1CoreInstances - lobeCount,
+      lod2CoreInstances - lobeCount,
+    ]),
   });
 }
 
