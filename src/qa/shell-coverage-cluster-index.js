@@ -1,6 +1,5 @@
 import { FOLIAGE_SHELL_CONSTANTS } from '../generation/foliage-shell-constants.js';
 import { SpatialHashGrid } from '../generation/spatial-hash-grid.js';
-import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js';
 
 const MAXIMUM_GRID_QUERY_RINGS = 8;
 
@@ -14,16 +13,6 @@ function distance(left, right) {
 
 function normalDot(left, right) {
   return left.x * right.x + left.y * right.y + left.z * right.z;
-}
-
-function cardWidth(cluster) {
-  const explicit = Number(cluster.cardWidth);
-  if (explicit > 0) return explicit;
-  return (
-    Number(cluster.scale) *
-    Number(cluster.widthRatio) *
-    FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier
-  );
 }
 
 function collectNearbyRecords(index, position, radius) {
@@ -59,23 +48,29 @@ function clusterCoverageUpperBound(
       distance(position, record.cluster.position),
     ),
   );
-  return (maximumSampleDistance + worldUncertainty) / record.width;
+  return (maximumSampleDistance + worldUncertainty) / record.coverageRadius;
 }
 
 export function createShellCoverageClusterIndex(clusters) {
   const records = clusters.map((cluster) => ({
     cluster,
-    width: cardWidth(cluster),
+    coverageRadius: Number(cluster.coverageRadius),
   }));
-  const maximumWidth = Math.max(0, ...records.map((record) => record.width));
+  const maximumCoverageRadius = Math.max(
+    0,
+    ...records.map((record) => record.coverageRadius),
+  );
   const grid = new SpatialHashGrid(
-    Math.max(maximumWidth, FOLIAGE_SHELL_CONSTANTS.minimumCellSize),
+    Math.max(
+      maximumCoverageRadius,
+      FOLIAGE_SHELL_CONSTANTS.minimumCellSize,
+    ),
   );
 
   for (const record of records) {
-    if (!(record.width > 0)) {
+    if (!(record.coverageRadius > 0)) {
       throw new RangeError(
-        'Continuous shell coverage requires positive card widths.',
+        'Continuous shell coverage requires positive coverage radii.',
       );
     }
     grid.insert(record.cluster.position, record);
@@ -83,7 +78,7 @@ export function createShellCoverageClusterIndex(clusters) {
 
   return Object.freeze({
     records: Object.freeze(records),
-    maximumWidth,
+    maximumCoverageRadius,
     grid,
   });
 }
@@ -101,7 +96,8 @@ export function findTriangleCoverageUpperBound(
   if (index.records.length === 0) return Number.POSITIVE_INFINITY;
 
   const center = samples.positions.at(-1);
-  const queryRadius = index.maximumWidth * targetRatio + worldUncertainty;
+  const queryRadius =
+    index.maximumCoverageRadius * targetRatio + worldUncertainty;
   const nearby = collectNearbyRecords(index, center, queryRadius);
   let best = Number.POSITIVE_INFINITY;
 
