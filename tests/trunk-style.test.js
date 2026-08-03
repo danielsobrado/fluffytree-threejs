@@ -7,6 +7,7 @@ import {
   TRUNK_STYLE_OPTIONS,
 } from '../src/generation/trunk-style.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
+import { extendPathBelowGround } from '../src/rendering/root-flare-profile.js';
 import { createTestPreset } from './fixtures/tree-preset-fixture.js';
 
 const BASE_TRUNK = Object.freeze({
@@ -121,46 +122,57 @@ test('movement scales the displacement and taper is overridable per preset', () 
  * the ground. The ramp is what keeps that from happening, and it is invisible
  * in the style functions themselves.
  */
-test('bonsai trunks leave the nebari close to vertical', () => {
+test('bonsai render paths leave the nebari exactly vertically at tuning extremes', () => {
+  const leanCorners = [
+    [-2, -2],
+    [-2, 2],
+    [2, -2],
+    [2, 2],
+  ];
+
   for (const segments of [4, 8, 12, 16]) {
     for (const style of BONSAI_STYLE_IDS) {
-      const preset = createTestPreset({
-        trunk: {
-          style,
-          segments,
-          movement: 1.5,
-          curveCount: 2.4,
-          sweep: 0.8,
-          bend: 0.9,
-          branching: {
-            depth: 3,
-            primaryCount: 4,
-            childCount: [1, 2],
-            lengthDecay: 0.64,
-            radiusDecay: 0.62,
-            upwardBias: 0.66,
-            gnarl: 0.9,
-            twist: 0.6,
-            exposedTipRatio: 0.16,
+      for (const lean of leanCorners) {
+        const preset = createTestPreset({
+          crown: { lean },
+          trunk: {
+            style,
+            segments,
+            movement: 2.5,
+            curveCount: 5,
+            sweep: Math.PI,
+            bend: 1.4,
+            baseRadius: 0.8,
+            topRadius: 0.35,
+            flare: 1.5,
+            nebari: 2.5,
+            branching: {
+              depth: 3,
+              primaryCount: 4,
+              childCount: [1, 2],
+              lengthDecay: 0.64,
+              radiusDecay: 0.62,
+              upwardBias: 0.66,
+              gnarl: 1,
+              twist: 1,
+              exposedTipRatio: 0.16,
+            },
           },
-        },
-      });
+        });
 
-      for (let seed = 1; seed <= 6; seed += 1) {
-        const points = new TreeGenerator().generate(preset, seed, {
-          includeSurfaceSamples: false,
-        }).trunk.points;
-        const rise = points[1].y - points[0].y;
-        const travel = Math.hypot(
-          points[1].x - points[0].x,
-          points[1].z - points[0].z,
-        );
-        const degrees = (Math.atan2(travel, rise) * 180) / Math.PI;
+        for (let seed = 1; seed <= 2; seed += 1) {
+          const points = new TreeGenerator().generate(preset, seed, {
+            includeSurfaceSamples: false,
+          }).trunk.points;
+          const renderPath = extendPathBelowGround(points);
+          const [buried, base, first] = renderPath;
 
-        assert.ok(
-          degrees < 20,
-          `style '${style}' with ${segments} segments seed ${seed} leaves the ground at ${degrees.toFixed(1)} degrees`,
-        );
+          assert.equal(first.x, base.x);
+          assert.equal(first.z, base.z);
+          assert.equal(buried.x, base.x);
+          assert.equal(buried.z, base.z);
+          assert.ok(first.y > base.y && base.y > buried.y);
+        }
       }
     }
   }

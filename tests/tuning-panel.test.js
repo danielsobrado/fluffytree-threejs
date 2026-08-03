@@ -61,11 +61,14 @@ test('an apply already yielding to paint cannot rebuild a stale preset', async (
   assert.deepEqual(rebuilds, []);
 });
 
-test('the studio does not expose metadata-only tree height as geometry', () => {
-  const paths = TUNING_GROUPS.flatMap((group) =>
-    group.controls.map((control) => control.path),
+test('the studio labels reference height as metadata rather than geometry', () => {
+  const controls = TUNING_GROUPS.flatMap((group) => group.controls);
+  const referenceHeight = controls.find((control) => control.path === 'height');
+  const crownHeight = controls.find(
+    (control) => control.path === 'crown.height',
   );
 
-  assert.equal(paths.includes('height'), false);
-  assert.equal(paths.includes('crown.height'), true);
+  assert.equal(referenceHeight?.label, 'Reference height');
+  assert.equal(crownHeight?.label, 'Crown height');
+  assert.equal(controls.some((control) => control.label === 'Tree height'), false);
 });

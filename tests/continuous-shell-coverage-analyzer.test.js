@@ -77,6 +77,27 @@ test('rejects exposed surface when no leaf cluster can cover it', () => {
   assert.ok(report.failures.length > 0);
 });
 
+test('an exact uncovered sample fails before exponential subdivision', () => {
+  const tree = createTree([
+    {
+      id: 0,
+      position: { x: 8, y: 0, z: 0 },
+      normal: { x: 1, y: 0, z: 0 },
+      coverageRadius: 0.1,
+    },
+  ]);
+  const report = analyzeContinuousShellCoverage(tree, createPreset(), {
+    ...TEST_OPTIONS,
+    maximumSubdivisionDepth: 8,
+    minimumCoverageNormalDot: -1,
+  });
+
+  assert.equal(report.passed, false);
+  assert.equal(report.uncoveredTriangleCount, 1);
+  assert.equal(report.maximumDepthReached, 0);
+  assert.ok(report.trianglesVisited <= 20);
+});
+
 test('a card facing the opposite side cannot certify the complete sphere', () => {
   const tree = createTree([
     {

@@ -39,7 +39,8 @@ function clusterCoverageUpperBound(
   const minimumDot = Math.min(
     ...samples.normals.map((normal) => normalDot(normal, record.cluster.normal)),
   );
-  if (minimumDot - normalUncertainty < minimumCoverageNormalDot) {
+  const normalDotLowerBound = Math.max(-1, minimumDot - normalUncertainty);
+  if (normalDotLowerBound < minimumCoverageNormalDot) {
     return Number.POSITIVE_INFINITY;
   }
 
@@ -49,6 +50,14 @@ function clusterCoverageUpperBound(
     ),
   );
   return (maximumSampleDistance + worldUncertainty) / record.coverageRadius;
+}
+
+function sampleCoverageRatio(record, position, normal, minimumCoverageNormalDot) {
+  if (normalDot(normal, record.cluster.normal) < minimumCoverageNormalDot) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return distance(position, record.cluster.position) / record.coverageRadius;
 }
 
 export function createShellCoverageClusterIndex(clusters) {
@@ -109,6 +118,38 @@ export function findTriangleCoverageUpperBound(
         samples,
         worldUncertainty,
         normalUncertainty,
+        minimumCoverageNormalDot,
+      ),
+    );
+  }
+
+  return best;
+}
+
+/**
+ * Finds a covering cluster for one exact surface sample. Records farther than
+ * the largest possible passing distance cannot satisfy targetRatio, so the
+ * bounded query is enough to prove that an uncovered sample is a real witness.
+ */
+export function findSampleCoverageRatio(
+  index,
+  position,
+  normal,
+  { minimumCoverageNormalDot, targetRatio },
+) {
+  if (index.records.length === 0) return Number.POSITIVE_INFINITY;
+
+  const queryRadius = index.maximumCoverageRadius * targetRatio;
+  const nearby = collectNearbyRecords(index, position, queryRadius);
+  let best = Number.POSITIVE_INFINITY;
+
+  for (const record of nearby) {
+    best = Math.min(
+      best,
+      sampleCoverageRatio(
+        record,
+        position,
+        normal,
         minimumCoverageNormalDot,
       ),
     );

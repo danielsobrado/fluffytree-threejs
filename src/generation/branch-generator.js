@@ -40,12 +40,17 @@ function createTrunkPoints(preset, random, style) {
     // can tilt the base enough to lift the swept tube's first ring out of the
     // ground. The ramp holds all three back until the trunk has cleared the
     // nebari; it is a flat 1 for the historic style.
-    const ramp = style.rampAt(t);
+    const ramp =
+      style.verticalRoot && index === 1 && index < trunk.segments
+        ? 0
+        : style.rampAt(t);
+    const xOffset = crown.lean[0] * t + offset.x + Math.cos(twist) * gnarl;
+    const zOffset = crown.lean[1] * t + offset.z + Math.sin(twist) * gnarl;
 
     points.push({
-      x: (crown.lean[0] * t + offset.x + Math.cos(twist) * gnarl) * ramp,
+      x: ramp === 0 ? 0 : xOffset * ramp,
       y: lerp(0, apexHeight, rise),
-      z: (crown.lean[1] * t + offset.z + Math.sin(twist) * gnarl) * ramp,
+      z: ramp === 0 ? 0 : zOffset * ramp,
       radius: lerp(
         trunk.baseRadius,
         trunk.topRadius,

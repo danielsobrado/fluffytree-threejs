@@ -269,6 +269,11 @@ export function createTrunkStyle(trunk) {
      * ground without moving the point the crown is anchored to.
      */
     rampAt: style.legacy ? () => 1 : createRootRamp(trunk.segments),
+    // The first generated segment of a bonsai trunk is pinned to the base axis
+    // by the branch generator. The below-ground extension then shares that
+    // axis, which makes the rendered root ring horizontal at every tuning
+    // extreme. Natural remains byte-for-byte on its historic sloped launch.
+    verticalRoot: !style.legacy,
     // Where the crown sits relative to the preset's own lean. Styles that walk
     // their apex away from the roots take the canopy with them.
     crownAnchor: Object.freeze(

@@ -141,9 +141,10 @@ export const TUNING_GROUPS = Object.freeze([
     id: 'crown',
     label: 'Crown',
     open: false,
-    note: 'Flattened vertical scale on a pad profile is what turns lobes into foliage pads.',
+    note: 'Crown base, height and radius shape the tree. Reference height calibrates framing, LOD and shading.',
     controls: Object.freeze([
       select('crown.profile', 'Profile', CROWN_PROFILE_OPTIONS),
+      range('height', 'Reference height', 1, 12, 0.05),
       range('crown.baseHeight', 'Crown base', 0.1, 8, 0.01),
       range('crown.height', 'Crown height', 0.3, 8, 0.01),
       range('crown.radius', 'Crown radius', 0.3, 5, 0.01),

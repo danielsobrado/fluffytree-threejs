@@ -16,6 +16,7 @@ import {
 } from './ellipsoid-surface-triangulation.js';
 import {
   createShellCoverageClusterIndex,
+  findSampleCoverageRatio,
   findTriangleCoverageUpperBound,
 } from './shell-coverage-cluster-index.js';
 
@@ -47,11 +48,9 @@ function calculateNormalUncertainty(lobe, directionDiameter, scale) {
   return Math.min(2, 2 * condition * directionDiameter * scale);
 }
 
-function maximumExposure(samples, lobes, ownerLobeId) {
-  return Math.max(
-    ...samples.positions.map((position) =>
-      calculateLobeExposure(position, lobes, ownerLobeId),
-    ),
+function calculateSampleExposures(samples, lobes, ownerLobeId) {
+  return samples.positions.map((position) =>
+    calculateLobeExposure(position, lobes, ownerLobeId),
   );
 }
 
@@ -155,10 +154,15 @@ export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
 
       const directionDiameter = directionTriangleDiameter(triangle);
       const worldUncertainty = maximumScale(lobe) * directionDiameter;
-      const samples = createTriangleSamples(lobe, triangle);
+  const samples = createTriangleSamples(lobe, triangle);
+      const sampleExposures = calculateSampleExposures(
+        samples,
+        lobes,
+        lobe.id,
+      );
       const exposureUpperBound = Math.min(
         1,
-        maximumExposure(samples, lobes, lobe.id) +
+        Math.max(...sampleExposures) +
           exposureLipschitz * worldUncertainty,
       );
 
@@ -189,6 +193,50 @@ export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
           coverageUpperBound,
         );
         continue;
+      }
+
+      for (let index = 0; index < samples.positions.length; index += 1) {
+        if (sampleExposures[index] < exposureThreshold) continue;
+
+        const coverageRatio = findSampleCoverageRatio(
+          clusterIndex,
+          samples.positions[index],
+          samples.normals[index],
+          {
+            minimumCoverageNormalDot: options.minimumCoverageNormalDot,
+            targetRatio: options.maximumCoverageRatio,
+          },
+        );
+        if (coverageRatio <= options.maximumCoverageRatio) continue;
+
+        uncoveredTriangleCount += 1;
+        maximumCoverageRatioUpperBound = Number.POSITIVE_INFINITY;
+        const failure = createFailureRecord(
+          lobe,
+          depth,
+          directionDiameter,
+          sampleExposures[index],
+          coverageRatio,
+          { positions: [samples.positions[index]] },
+        );
+        worst = failure;
+        if (failures.length < options.maximumFailureExamples) {
+          failures.push(failure);
+        }
+
+        return Object.freeze({
+          passed: false,
+          maximumCoverageRatio: options.maximumCoverageRatio,
+          maximumCoverageRatioUpperBound,
+          trianglesVisited,
+          hiddenTriangleCount,
+          coveredTriangleCount,
+          uncoveredTriangleCount,
+          subdivisionCount,
+          maximumDepthReached,
+          worst,
+          failures: Object.freeze(failures),
+        });
       }
 
       const terminal =
