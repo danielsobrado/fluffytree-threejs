@@ -2,9 +2,8 @@ import {
   calculatePositionBoundsDiagonal,
   createTriangleRecord,
   trianglesHaveOverlappingBounds,
-  trianglesIntersect,
-  trianglesShareIndexedVertex,
 } from './triangle-intersection-test.js';
+import { trianglesIntersectBeyondSharedTopology } from './triangle-topology-intersection.js';
 
 function createTriangleRecords(positions, indices) {
   const triangleCount = Math.floor(indices.length / 3);
@@ -69,9 +68,16 @@ export function analyzeTriangleSelfIntersections(
     for (const candidate of active) {
       if (!trianglesHaveOverlappingBounds(candidate, triangle, epsilon)) continue;
       candidatePairCount += 1;
-      if (trianglesShareIndexedVertex(candidate, triangle)) continue;
       testedPairCount += 1;
-      if (!trianglesIntersect(candidate, triangle, epsilon)) continue;
+      if (
+        !trianglesIntersectBeyondSharedTopology(
+          candidate,
+          triangle,
+          epsilon,
+        )
+      ) {
+        continue;
+      }
 
       selfIntersectionCount += 1;
       if (examples.length < maximumExamples) {
