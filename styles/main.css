@@ -63,3 +63,260 @@ canvas {
   color: #ffd9d9;
   text-align: center;
 }
+
+.tuning-panel {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(21rem, calc(100vw - 2rem));
+  padding: 0.85rem 0.9rem;
+  overflow-y: auto;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 0.75rem;
+  background: rgb(13 24 22 / 88%);
+  box-shadow: 0 0.8rem 2rem rgb(0 0 0 / 28%);
+  backdrop-filter: blur(12px);
+  font-size: 0.78rem;
+  scrollbar-width: thin;
+}
+
+.tuning-panel.is-collapsed {
+  bottom: auto;
+  overflow: hidden;
+}
+
+.tuning-panel.is-collapsed > *:not(.tuning-header) {
+  display: none;
+}
+
+.tuning-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tuning-header h2 {
+  margin: 0;
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+}
+
+.tuning-panel h3 {
+  margin: 0 0 0.15rem;
+  color: rgb(238 247 239 / 62%);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tuning-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tuning-row > .tuning-select,
+.tuning-row > .tuning-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.tuning-row-actions {
+  flex-wrap: wrap;
+}
+
+.tuning-inline-label {
+  flex: 0 0 3.2rem;
+  color: rgb(238 247 239 / 62%);
+}
+
+.tuning-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-right: auto;
+}
+
+.tuning-button,
+.tuning-collapse {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 0.4rem;
+  background: rgb(255 255 255 / 7%);
+  color: inherit;
+  font: inherit;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.tuning-button:hover,
+.tuning-collapse:hover {
+  background: rgb(255 255 255 / 14%);
+}
+
+.tuning-collapse {
+  padding: 0.1rem 0.5rem;
+  line-height: 1.2;
+}
+
+.tuning-select,
+.tuning-text {
+  padding: 0.28rem 0.4rem;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 0.4rem;
+  background: rgb(8 16 15 / 90%);
+  color: inherit;
+  font: inherit;
+  font-size: 0.76rem;
+}
+
+.tuning-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.tuning-group {
+  padding: 0.35rem 0.5rem 0.5rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 3%);
+}
+
+.tuning-group > summary {
+  cursor: pointer;
+  font-weight: 600;
+  list-style-position: inside;
+}
+
+.tuning-note {
+  margin: 0.3rem 0 0.45rem;
+  color: rgb(238 247 239 / 52%);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.tuning-field {
+  margin-top: 0.4rem;
+}
+
+.tuning-field-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tuning-label {
+  color: rgb(238 247 239 / 78%);
+}
+
+.tuning-readout {
+  color: rgb(238 247 239 / 52%);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+}
+
+.tuning-slider {
+  width: 100%;
+  height: 1rem;
+  margin: 0;
+  accent-color: #8fc48a;
+}
+
+.tuning-pair {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.tuning-pair > .tuning-slider {
+  flex: 1;
+  min-width: 0;
+}
+
+.tuning-colors {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.tuning-color {
+  width: 100%;
+  height: 1.4rem;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 0.3rem;
+  background: none;
+  cursor: pointer;
+}
+
+.tuning-coverage,
+.tuning-variants {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 3%);
+}
+
+.tuning-metric {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tuning-metric-label {
+  color: rgb(238 247 239 / 70%);
+}
+
+.tuning-metric-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.tuning-metric-value[data-state='pass'] {
+  color: #9bd88f;
+}
+
+.tuning-metric-value[data-state='warn'] {
+  color: #f0c274;
+}
+
+.tuning-status {
+  margin: 0;
+  color: rgb(238 247 239 / 62%);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.tuning-status[data-tone='pass'] {
+  color: #9bd88f;
+}
+
+.tuning-status[data-tone='warn'] {
+  color: #f0c274;
+}
+
+.tuning-status[data-tone='error'] {
+  color: #f2a2a2;
+}
+
+@media (max-width: 46rem) {
+  .tuning-panel {
+    top: auto;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    left: 0.5rem;
+    width: auto;
+    max-height: 58vh;
+  }
+}

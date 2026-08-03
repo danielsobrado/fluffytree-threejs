@@ -54,6 +54,18 @@ thresholds:
     gapCardRatio: 0.85
     minimumLeafAreaIndex: 6.5
     bareExposedLobes: 0
+  bonsaiInformal:
+    gapCardRatio: 0.85
+    minimumLeafAreaIndex: 6.5
+    bareExposedLobes: 0
+  bonsaiWindswept:
+    gapCardRatio: 0.85
+    minimumLeafAreaIndex: 6.5
+    bareExposedLobes: 0
+  bonsaiLiterati:
+    gapCardRatio: 0.85
+    minimumLeafAreaIndex: 6.5
+    bareExposedLobes: 0
   roundBush:
     gapCardRatio: 0.85
     minimumLeafAreaIndex: 6.5

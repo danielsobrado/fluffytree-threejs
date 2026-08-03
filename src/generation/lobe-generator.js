@@ -23,12 +23,17 @@ function allocateLobes(lobeCount, macroCount) {
 
 function createMacroAnchor(envelope, crown, random, index, count) {
   const sequence = (index + 0.5) / count;
+  // A pad crown is short, so its anchors have to reach further towards both
+  // ends of the envelope than a tall crown does before the layers read as
+  // separate pads rather than one mass.
   const heightRange =
     crown.profile === 'columnar'
       ? [0.08, 0.92]
       : crown.profile === 'vase'
         ? [0.2, 0.9]
-        : [0.2, 0.82];
+        : crown.profile === 'pad'
+          ? [0.12, 0.9]
+          : [0.2, 0.82];
   const height = clamp(
     lerp(heightRange[0], heightRange[1], sequence) +
       random.signed() * 0.045 * (1 - crown.surfaceTension * 0.35),

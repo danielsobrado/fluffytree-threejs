@@ -43,12 +43,16 @@ export class BranchMeshBuilder {
       endRadius: treeData.trunk.endRadius,
       sampleCount: trunkCurveSamples,
       sampleBias: TREE_STRUCTURE_RENDERING_CONSTANTS.trunkSampleBias,
+      taperExponent:
+        treeData.trunk.taperPower ??
+        TREE_STRUCTURE_RENDERING_CONSTANTS.taperExponent,
       radiusScale: ({ angle, height }) =>
         calculateRootRadiusScale(
           treeData.trunk.flare,
           angle,
           height,
           treeData.seed,
+          treeData.trunk.nebari ?? 1,
         ),
       capStart: true,
       capEnd: true,

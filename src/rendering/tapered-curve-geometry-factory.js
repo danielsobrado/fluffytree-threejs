@@ -19,8 +19,8 @@ function createCurve(points) {
   return new THREE.CatmullRomCurve3(vectors, false, 'centripetal');
 }
 
-function calculateRadius(startRadius, endRadius, flare, t) {
-  const taper = Math.pow(t, TREE_STRUCTURE_RENDERING_CONSTANTS.taperExponent);
+function calculateRadius(startRadius, endRadius, flare, t, taperExponent) {
+  const taper = Math.pow(t, taperExponent);
   const baseRadius = THREE.MathUtils.lerp(startRadius, endRadius, taper);
   const flareFactor =
     1 +
@@ -70,6 +70,7 @@ export class TaperedCurveGeometryFactory {
     capEnd = false,
     sampleBias = 1,
     radiusScale = null,
+    taperExponent = TREE_STRUCTURE_RENDERING_CONSTANTS.taperExponent,
     radialSegments = TREE_STRUCTURE_RENDERING_CONSTANTS.radialSegments,
   }) {
     if (!Array.isArray(path) || path.length < 3) {
@@ -91,7 +92,13 @@ export class TaperedCurveGeometryFactory {
 
     parameters.forEach((t, ring) => {
       const center = centers[ring];
-      const radius = calculateRadius(startRadius, endRadius, flare, t);
+      const radius = calculateRadius(
+        startRadius,
+        endRadius,
+        flare,
+        t,
+        taperExponent,
+      );
       const normal = frames.normals[ring];
       const binormal = frames.binormals[ring];
       binormalVector.set(binormal.x, binormal.y, binormal.z);

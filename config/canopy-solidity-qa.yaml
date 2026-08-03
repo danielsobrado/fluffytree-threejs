@@ -49,6 +49,36 @@ thresholds:
       holeRatio: 0.001
       largestHoleRatio: 0.001
       coverageRatio: 0.04
+  bonsaiInformal:
+    minimumWindMovedRatio: 0.15
+    crown:
+      holeRatio: 0.003
+      largestHoleRatio: 0.002
+      coverageRatio: 0.04
+    base:
+      holeRatio: 0.001
+      largestHoleRatio: 0.001
+      coverageRatio: 0.04
+  bonsaiWindswept:
+    minimumWindMovedRatio: 0.15
+    crown:
+      holeRatio: 0.003
+      largestHoleRatio: 0.002
+      coverageRatio: 0.04
+    base:
+      holeRatio: 0.001
+      largestHoleRatio: 0.001
+      coverageRatio: 0.04
+  bonsaiLiterati:
+    minimumWindMovedRatio: 0.15
+    crown:
+      holeRatio: 0.003
+      largestHoleRatio: 0.002
+      coverageRatio: 0.04
+    base:
+      holeRatio: 0.001
+      largestHoleRatio: 0.001
+      coverageRatio: 0.02
   roundBush:
     minimumWindMovedRatio: 0.15
     crown:

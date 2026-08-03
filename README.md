@@ -8,8 +8,12 @@ The repository is a deterministic, configuration-driven procedural tree system s
 
 ## Procedural structure
 
-- Rounded orchard, columnar, and irregular vase-shaped crown families, plus ground bushes.
-- Bushes are presets, not a separate system: a short stem and a low wide crown through the same generator, renderer, LOD tiers and foliage gates.
+- Rounded orchard, columnar, irregular vase-shaped and bonsai pad crown families, plus ground bushes.
+- Bushes and bonsai are presets, not separate systems: a short stem and a low wide crown, or a moving trunk and layered pads, through the same generator, renderer, LOD tiers and foliage gates.
+- Seven trunk styles. `natural` is the historic shape; `formalUpright`, `informalUpright`, `slant`, `windswept`, `literati` and `semiCascade` are the bonsai families, each with its own taper, height distribution and movement.
+- A trunk style is configuration, not code: `style`, `movement`, `curveCount`, `sweep`, `taperPower` and `nebari` tune any preset.
+- Leaning styles anchor the crown on their own apex, so the canopy travels with the trunk instead of floating beside it.
+- Every bonsai style holds its base vertical through a root ramp, so the swept tube's first ring stays level and buried whatever the trunk does higher up.
 - Deterministic macro-clumps composed around a parented branch graph.
 - Gnarled trunks, primary limbs, recursive forks, and exposed terminal twigs.
 - Every foliage lobe records the branch that supports it.
@@ -20,6 +24,7 @@ The repository is a deterministic, configuration-driven procedural tree system s
 ## Painterly foliage and LOD
 
 - Low-poly clump cores create the dark interior canopy mass at every level of detail, including the hero level. An alpha-cut shell cannot tile a closed surface, so without the cores the sky shows through the crown.
+- Five leaf silhouettes — broadleaf spray, palmate maple, juniper needles, ficus ovals and weeping willow — selected per preset with `foliage.leafShape`. A shape has to carry enough alpha per card to keep the canopy opaque, which is gated by a unit test and proved by the solidity gate.
 - Alpha-cut procedural leaf sprays cover exposed surfaces and silhouettes. Clusters are chosen by deterministic maximal Poisson-disk selection over the whole crown, not per lobe, so every exposed patch is within a covering radius of a cluster that faces the same way. Selecting on score alone left whole lobes bare.
 - Every lobe carries at least one cluster, so no lobe can render as bare core.
 - Sparse modeled hero leaves add close edge detail without filling the crown with geometry.
@@ -41,6 +46,33 @@ python -m http.server 8080
 ```
 
 Then open `http://localhost:8080`.
+
+## Tree studio
+
+The demo carries a side panel for tuning presets live. It starts collapsed, so
+the page looks exactly as it does without it, and it is hidden entirely whenever
+the page is opened with a `qa` parameter, so it never appears in a measured
+capture.
+
+- Trunk, branch, crown, leaf and canopy-shading controls, generated from
+  `src/ui/tuning-schema.js`. Every control's range sits inside the range the
+  preset validator enforces, so a slider cannot build a preset that is rejected.
+- Opening the studio switches the scene to one tree of the edited preset;
+  closing it puts the whole scene back. Generating the full layout takes seconds
+  while one tree takes a few hundred milliseconds, which is what makes a slider
+  usable. Clear **Solo** to edit against the whole scene instead.
+- A **coverage** readout runs the same analysis as `npm run qa:coverage` on the
+  tree currently on screen: worst gap in card widths, leaf area per unit of
+  exposed crown, and lobes with no leaves at all. It is the fastest way to see
+  that a change has opened a hole on the far side of the crown.
+- **Close the gaps** solves for the leaf packing that meets both coverage
+  targets and regenerates until it does.
+- Settings are saved by name in `localStorage` and export as a YAML file shaped
+  like `config/tree-presets.yaml`, so a tuned tree can be pasted straight back
+  into the preset configuration.
+
+Changing the trunk style adopts that style's taper, because taper is part of
+what a style is rather than an independent number.
 
 ## Deploy to GitHub Pages
 
@@ -130,10 +162,10 @@ src/config/             Configuration loading
 src/core/               Cross-cutting utilities
 src/diagnostics/        Browser and rendering diagnostics
 src/domain/             Validated domain configuration
-src/generation/         Renderer-independent procedural generation
+src/generation/         Renderer-independent procedural generation, including trunk styles
 src/qa/                 Numeric topology, silhouette, shell, and screen-space solidity analysis
 src/rendering/          Three.js geometry, material, and mesh construction
-src/ui/                 DOM presentation
+src/ui/                 DOM presentation and the tree studio panel
 styles/                 Page styling
 tests/                  Deterministic generation, rendering-data, and QA tests
 tools/                  Command-line QA and deployment entry points

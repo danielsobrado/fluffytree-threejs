@@ -13,7 +13,7 @@ export class FoliageTextureSetFactory {
   create(foliage) {
     return Object.freeze({
       palette: this.paletteTextureFactory.create(foliage.palette),
-      alpha: this.alphaTextureFactory.create(),
+      alpha: this.alphaTextureFactory.create(foliage.leafShape),
     });
   }
 }

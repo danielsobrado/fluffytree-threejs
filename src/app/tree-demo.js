@@ -9,12 +9,22 @@ import { CanopySolidityProbe } from '../diagnostics/canopy-solidity-probe.js';
 import { RenderSmokeProbe } from '../diagnostics/render-smoke-probe.js';
 import { FrameBudgetQueue } from '../generation/frame-budget-queue.js';
 import { TreeGenerator } from '../generation/tree-generator.js';
+import { analyzeShellCoverage } from '../qa/shell-coverage-analyzer.js';
 import { disposeObject } from '../rendering/object-disposer.js';
 import { SceneFactory } from '../rendering/scene-factory.js';
 import { TreeMeshBuilder } from '../rendering/tree-mesh-builder.js';
 import { TreeBillboardBatchManager } from '../rendering/tree-billboard-batch-manager.js';
 import { TreeLodController } from '../rendering/tree-lod-controller.js';
 import { createDemoOverlay } from '../ui/demo-overlay.js';
+
+// The live readout has to mean the same thing as `npm run qa:coverage`, so it
+// probes at the density the gate configures rather than a cheaper one.
+const COVERAGE_PROBE_OPTIONS = Object.freeze({
+  probeDensityMultiplier: 2,
+  probeExposureMargin: 0.05,
+});
+
+const STUDIO_SEED = 411287;
 
 export class TreeDemo {
   constructor({
@@ -33,7 +43,11 @@ export class TreeDemo {
     this.canopySolidityProbe = canopySolidityProbe;
     this.generationQueue = new FrameBudgetQueue();
     this.treeRoots = [];
-    this.generation = 0;
+    // Advanced only when a new tree is asked for, so tuning a preset re-renders
+    // the same tree instead of rolling a different one on every edit.
+    this.seedOffset = 0;
+    this.studioLayout = null;
+    this.treeDataByPreset = new Map();
     this.clock = new THREE.Clock();
     this.handleResize = this.handleResize.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -42,13 +56,15 @@ export class TreeDemo {
     this.stressReported = false;
   }
 
-  start(container, sceneConfig, presetMap, releaseVersion, overlayTitle) {
+  start(container, sceneConfig, library, releaseVersion, overlayTitle) {
     this.container = container;
     this.stressMode = isStressSceneRequested();
     this.sceneConfig = this.stressMode
       ? createStressSceneConfig(sceneConfig)
       : sceneConfig;
-    this.presetMap = presetMap;
+    this.library = library;
+    this.presetMap = library.presets;
+    const presetMap = this.presetMap;
     this.context = this.sceneFactory.create(container, this.sceneConfig);
     this.applyRequestedView();
     this.billboardBatchManager = new TreeBillboardBatchManager(this.context.scene);
@@ -88,6 +104,10 @@ export class TreeDemo {
     });
   }
 
+  get activeLayout() {
+    return this.studioLayout ?? this.sceneConfig.layout;
+  }
+
   rebuildTrees() {
     this.generationQueue.clear();
     this.billboardBatchManager.clear();
@@ -97,16 +117,18 @@ export class TreeDemo {
     }
 
     this.treeRoots.length = 0;
+    this.treeDataByPreset.clear();
     this.lodController.clear();
     this.windController.clear();
 
-    const generation = this.generation;
+    const seedOffset = this.seedOffset;
     const buildEntry = (entry) => {
       const preset = this.presetMap.get(entry.preset);
-      const seed = Number(entry.seed) + generation * 1009;
+      const seed = Number(entry.seed) + seedOffset * 1009;
       const treeData = this.treeGenerator.generate(preset, seed, {
         includeSurfaceSamples: !this.stressMode,
       });
+      this.treeDataByPreset.set(entry.preset, treeData);
       const tree = this.treeMeshBuilder.build(treeData, {
         sunDirection: this.context.sun.position.clone().normalize(),
         deferHero: !this.renderSmokeProbe.enabled,
@@ -126,9 +148,9 @@ export class TreeDemo {
       this.context.renderer.shadowMap.needsUpdate = true;
     };
 
-    for (const [index, entry] of this.sceneConfig.layout.entries()) {
+    for (const [index, entry] of this.activeLayout.entries()) {
       if (this.stressMode) {
-        this.generationQueue.enqueue(`tree:${generation}:${index}`, () =>
+        this.generationQueue.enqueue(`tree:${seedOffset}:${index}`, () =>
           buildEntry(entry),
         );
       } else {
@@ -136,8 +158,77 @@ export class TreeDemo {
       }
     }
 
-    this.generation += 1;
     this.context.renderer.shadowMap.needsUpdate = true;
+  }
+
+  /** A fresh set of trees from the same presets. */
+  reseed() {
+    this.seedOffset += 1;
+    this.rebuildTrees();
+  }
+
+  /**
+   * Shows one tree of a single preset, or the whole scene when cleared.
+   *
+   * Generating the full layout takes seconds, which is far too slow to sit
+   * behind a slider. Editing one tree at a time keeps a rebuild to a few hundred
+   * milliseconds, and it is the view you want while shaping a trunk anyway.
+   */
+  setStudioPreset(presetId) {
+    if (this.stressMode) return;
+
+    this.studioPresetId = presetId ?? null;
+    this.studioLayout = presetId
+      ? [
+          {
+            preset: presetId,
+            seed: STUDIO_SEED,
+            position: [0, 0, 0],
+            rotationY: 0,
+          },
+        ]
+      : null;
+    this.rebuildTrees();
+    if (presetId) this.frameStudioTree(presetId);
+  }
+
+  rebuildPreset(presetId) {
+    if (this.studioPresetId && this.studioPresetId !== presetId) {
+      this.setStudioPreset(presetId);
+      return;
+    }
+
+    this.rebuildTrees();
+  }
+
+  /** The coverage the gate would report for the tree currently on screen. */
+  analyzeCoverage(presetId) {
+    const preset = this.presetMap.get(presetId);
+    const treeData = this.treeDataByPreset.get(presetId);
+
+    if (!preset || !treeData || treeData.shell.length === 0) return null;
+
+    return analyzeShellCoverage(treeData, preset, COVERAGE_PROBE_OPTIONS);
+  }
+
+  /** Points the camera at a tree of the given preset, or at the studio tree. */
+  frameStudioTree(presetId = this.studioPresetId) {
+    const root =
+      this.treeRoots.find((tree) => tree.userData.tree.presetId === presetId) ??
+      this.treeRoots.at(-1);
+
+    if (!root) return;
+
+    const height = root.userData.tree.height;
+    const { camera, controls } = this.context;
+    controls.target.set(root.position.x, height * 0.52, root.position.z);
+    camera.position.set(
+      root.position.x + height * 1.05,
+      height * 0.82,
+      root.position.z + height * 1.3,
+    );
+    camera.updateProjectionMatrix();
+    controls.update();
   }
 
   async runCanopySolidityProbe() {
@@ -164,8 +255,14 @@ export class TreeDemo {
   }
 
   handleKeyDown(event) {
+    // The studio panel has text and number fields; an 'r' typed into one of
+    // them is a character, not a request for a new tree.
+    if (event.target instanceof HTMLElement && event.target.closest('.tuning-panel')) {
+      return;
+    }
+
     if (event.key.toLowerCase() === 'r' && !event.repeat) {
-      this.rebuildTrees();
+      this.reseed();
     }
   }
 

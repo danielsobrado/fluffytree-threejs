@@ -1,3 +1,7 @@
+import { CROWN_PROFILE_IDS } from '../generation/crown-envelope.js';
+import { createTrunkStyle, isTrunkStyleId } from '../generation/trunk-style.js';
+import { isLeafShapeId } from '../rendering/leaf-shape-library.js';
+
 const REQUIRED_CROWN_FIELDS = [
   'profile',
   'baseHeight',
@@ -167,6 +171,12 @@ function validatePair(value, path) {
 }
 
 function validateCrownTuning(id, crown) {
+  if (!CROWN_PROFILE_IDS.includes(crown.profile)) {
+    throw new Error(
+      `Configuration '${id}.crown.profile' must be one of ${CROWN_PROFILE_IDS.join(', ')}.`,
+    );
+  }
+
   requireRange(crown.surfaceTension, 0, 1, `${id}.crown.surfaceTension`);
   requireRange(
     crown.lobeScaleMultiplier,
@@ -188,8 +198,35 @@ function validateCrownTuning(id, crown) {
   );
 }
 
+function validateTrunkStyleTuning(id, trunk) {
+  if (trunk.style !== undefined && !isTrunkStyleId(trunk.style)) {
+    throw new Error(`Configuration '${id}.trunk.style' is not a known style.`);
+  }
+
+  if (trunk.movement !== undefined) {
+    requireRange(trunk.movement, 0, 3, `${id}.trunk.movement`);
+  }
+
+  if (trunk.curveCount !== undefined) {
+    requireRange(trunk.curveCount, 0.25, 6, `${id}.trunk.curveCount`);
+  }
+
+  if (trunk.sweep !== undefined) {
+    requireRange(trunk.sweep, -Math.PI * 2, Math.PI * 2, `${id}.trunk.sweep`);
+  }
+
+  if (trunk.taperPower !== undefined) {
+    requireRange(trunk.taperPower, 0.2, 2, `${id}.trunk.taperPower`);
+  }
+
+  if (trunk.nebari !== undefined) {
+    requireRange(trunk.nebari, 0, 3, `${id}.trunk.nebari`);
+  }
+}
+
 function validateTrunkTuning(id, trunk) {
   requireRange(trunk.flare, 0, 1.5, `${id}.trunk.flare`);
+  validateTrunkStyleTuning(id, trunk);
   requireFields(trunk.branching, REQUIRED_BRANCHING_FIELDS, `${id}.trunk.branching`);
   requirePositiveInteger(trunk.branching.depth, `${id}.trunk.branching.depth`);
   requirePositiveInteger(
@@ -215,6 +252,12 @@ function validateTrunkTuning(id, trunk) {
 }
 
 function validateFoliageTuning(id, foliage) {
+  if (foliage.leafShape !== undefined && !isLeafShapeId(foliage.leafShape)) {
+    throw new Error(
+      `Configuration '${id}.foliage.leafShape' is not a known leaf shape.`,
+    );
+  }
+
   requireRange(foliage.variation, 0, 1, `${id}.foliage.variation`);
   requireRange(foliage.paletteBase, 0, 1, `${id}.foliage.paletteBase`);
   requireFinite(foliage.heightPaletteShift, `${id}.foliage.heightPaletteShift`);
@@ -420,12 +463,16 @@ export function createTreePreset(id, value) {
   validateCrownTuning(id, value.crown);
   validateTrunkTuning(id, value.trunk);
 
+  // Resolved once here so the crown envelope, the branch generator and the QA
+  // analyzers all place the canopy on the same trunk apex.
+  const trunkStyle = createTrunkStyle(value.trunk);
   const preset = {
     id,
     label: value.label ?? id,
     height: Number(value.height),
     crown: {
       ...value.crown,
+      anchor: trunkStyle.crownAnchor,
       lobeScale: freezeArray(value.crown.lobeScale, `${id}.crown.lobeScale`),
       verticalScale: freezeArray(
         value.crown.verticalScale,
@@ -442,6 +489,9 @@ export function createTreePreset(id, value) {
     },
     trunk: {
       ...value.trunk,
+      style: trunkStyle.id,
+      taperPower: trunkStyle.taperPower,
+      nebari: Number(value.trunk.nebari ?? 1),
       branching: Object.freeze({
         ...value.trunk.branching,
         childCount: validatePair(

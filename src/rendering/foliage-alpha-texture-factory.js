@@ -1,48 +1,14 @@
 import * as THREE from 'three';
+import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js';
 import {
-  FOLIAGE_ALPHA_SHAPES,
-  FOLIAGE_RENDERING_CONSTANTS,
-} from './foliage-rendering-constants.js';
-
-function clamp01(value) {
-  return Math.min(1, Math.max(0, value));
-}
-
-function smoothstep(edge0, edge1, value) {
-  const normalized = clamp01((value - edge0) / (edge1 - edge0));
-  return normalized * normalized * (3 - 2 * normalized);
-}
-
-function sampleShape(x, y, shape) {
-  const cos = Math.cos(shape.angle);
-  const sin = Math.sin(shape.angle);
-  const offsetX = x - shape.x;
-  const offsetY = y - shape.y;
-  const localX = offsetX * cos + offsetY * sin;
-  const localY = -offsetX * sin + offsetY * cos;
-  const longitudinal = localY / shape.radiusY;
-  const leafEnvelope = Math.max(0.08, 1 - Math.abs(longitudinal) ** 1.65);
-  const lateral = localX / (shape.radiusX * Math.sqrt(leafEnvelope));
-  const distance = lateral ** 2 + longitudinal ** 2;
-
-  return 1 - smoothstep(0.72, 1.03, distance);
-}
-
-function sampleAlpha(x, y) {
-  let alpha = 0;
-
-  for (const shape of FOLIAGE_ALPHA_SHAPES) {
-    alpha = Math.max(alpha, sampleShape(x, y, shape));
-  }
-
-  const spine =
-    (1 - smoothstep(0.04, 0.15, Math.abs(x))) *
-    (1 - smoothstep(0.45, 0.51, Math.abs(y)));
-  return clamp01(Math.max(alpha, spine * 0.92));
-}
+  DEFAULT_LEAF_SHAPE_ID,
+  getLeafShape,
+  sampleLeafAlpha,
+} from './leaf-shape-library.js';
 
 export class FoliageAlphaTextureFactory {
-  create() {
+  create(shapeId = DEFAULT_LEAF_SHAPE_ID) {
+    const leafShape = getLeafShape(shapeId);
     const resolution = FOLIAGE_RENDERING_CONSTANTS.alphaTextureResolution;
     const data = new Uint8Array(resolution * resolution * 4);
 
@@ -50,7 +16,9 @@ export class FoliageAlphaTextureFactory {
       for (let x = 0; x < resolution; x += 1) {
         const normalizedX = (x + 0.5) / resolution - 0.5;
         const normalizedY = (y + 0.5) / resolution - 0.5;
-        const alpha = Math.round(sampleAlpha(normalizedX, normalizedY) * 255);
+        const alpha = Math.round(
+          sampleLeafAlpha(normalizedX, normalizedY, leafShape) * 255,
+        );
         const offset = (y * resolution + x) * 4;
         data[offset] = alpha;
         data[offset + 1] = alpha;
@@ -66,7 +34,7 @@ export class FoliageAlphaTextureFactory {
       THREE.RGBAFormat,
       THREE.UnsignedByteType,
     );
-    texture.name = 'foliage-fin-alpha';
+    texture.name = `foliage-fin-alpha-${shapeId}`;
     texture.colorSpace = THREE.NoColorSpace;
     texture.wrapS = THREE.ClampToEdgeWrapping;
     texture.wrapT = THREE.ClampToEdgeWrapping;

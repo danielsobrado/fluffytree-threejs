@@ -37,7 +37,7 @@ export function calculateRootFlareScale(flare, height) {
   );
 }
 
-export function calculateRootButtressScale(angle, height, seed) {
+export function calculateRootButtressScale(angle, height, seed, nebari = 1) {
   const ratio = calculateRootFlareRatio(height);
   const phase = (((Number(seed) >>> 0) % 997) / 997) * TAU;
   const wave = Math.max(
@@ -58,14 +58,15 @@ export function calculateRootButtressScale(angle, height, seed) {
     wave *
       wave *
       TREE_STRUCTURE_RENDERING_CONSTANTS.rootButtressStrength *
+      nebari *
       groundWeight
   );
 }
 
-export function calculateRootRadiusScale(flare, angle, height, seed) {
+export function calculateRootRadiusScale(flare, angle, height, seed, nebari = 1) {
   return (
     calculateRootFlareScale(flare, height) *
-    calculateRootButtressScale(angle, height, seed)
+    calculateRootButtressScale(angle, height, seed, nebari)
   );
 }
 

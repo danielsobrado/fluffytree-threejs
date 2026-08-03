@@ -7,8 +7,9 @@ import { TreeDemo } from './app/tree-demo.js';
 import { YamlConfigLoader } from './config/yaml-config-loader.js';
 import { logger } from './core/logger.js';
 import { markRenderSmokeBootstrapFailure } from './diagnostics/render-smoke-probe.js';
-import { createTreePresetMap } from './domain/tree-preset.js';
+import { PresetLibrary } from './domain/preset-library.js';
 import { showFatalError } from './ui/demo-overlay.js';
+import { createTuningPanel } from './ui/tuning-panel.js';
 
 const CONFIG_URLS = Object.freeze({
   release: './config/release.yaml',
@@ -33,15 +34,21 @@ async function bootstrap() {
     const releaseVersion = formatReleaseVersion(releaseConfig);
     const overlayTitle = formatOverlayTitle(releaseConfig);
     applyDocumentTitle(releaseConfig);
-    const presetMap = createTreePresetMap(treeConfig);
+    const library = PresetLibrary.fromConfig(treeConfig);
     const demo = new TreeDemo();
     demo.start(
       container,
       sceneConfig,
-      presetMap,
+      library,
       releaseVersion,
       overlayTitle,
     );
+
+    // The QA modes drive the same page. A studio panel over the canvas would
+    // change what every screenshot gate measures, so it stays out of them.
+    if (!new URLSearchParams(window.location.search).has('qa')) {
+      createTuningPanel(container, demo, library);
+    }
   } catch (error) {
     logger.error('Application bootstrap failed.', error);
     markRenderSmokeBootstrapFailure(error);

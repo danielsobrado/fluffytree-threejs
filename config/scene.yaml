@@ -48,6 +48,18 @@ layout:
     seed: 155921
     position: [5.4, 0, 0.5]
     rotationY: 0.42
+  - preset: bonsaiInformal
+    seed: 311101
+    position: [-2.9, 0, 2.9]
+    rotationY: 0.35
+  - preset: bonsaiWindswept
+    seed: 324443
+    position: [2.1, 0, 3.1]
+    rotationY: -0.85
+  - preset: bonsaiLiterati
+    seed: 338099
+    position: [7.3, 0, 2.4]
+    rotationY: 1.35
   - preset: roundBush
     seed: 210773
     position: [-7.6, 0, 6.2]
