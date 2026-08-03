@@ -5,7 +5,8 @@
 #
 # Generation first performs deterministic global max-cover selection. Every
 # exposed candidate must have a direction-compatible selected cluster within its
-# configured coverage radius.
+# conservative coverage radius. That radius is derived from the selected card's
+# actual randomized rendered width, not from the preset's average card size.
 #
 # QA then performs two independent checks:
 #
@@ -16,10 +17,9 @@
 #    whole patch after adding conservative world-space and normal uncertainty.
 #    Patches that cannot be proven hidden or covered are subdivided.
 #
-# The continuous proof compares distance with each selected cluster's actual
-# rendered card width. The 0.95 limit retains a small safety margin below one
-# complete card width while allowing the subdivision uncertainty at the accepted
-# terminal size.
+# Continuous coverage is expressed as distance divided by each card's effective
+# coverage radius. A value at or below 1 means the complete patch lies inside the
+# same conservative radius used by generation.
 
 run:
   seedCount: 24
@@ -30,7 +30,7 @@ probe:
   probeDensityMultiplier: 2
   probeExposureMargin: 0.05
   continuous:
-    maximumGapCardRatio: 0.95
+    maximumCoverageRatio: 1.0
     maximumSubdivisionDepth: 8
     minimumDirectionDiameter: 0.004
     exposureMargin: 0.05
