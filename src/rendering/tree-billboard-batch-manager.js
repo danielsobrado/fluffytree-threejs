@@ -181,6 +181,8 @@ export class TreeBillboardBatchManager {
 
   register(tree) {
     const presetId = tree.userData.tree.presetId;
+    tree.userData.lod.rebuildImpostor?.(tree.rotation.y);
+    tree.updateMatrixWorld(true);
     const impostor = findImpostor(tree);
     const sourceTexture = impostor?.material?.map;
     if (!impostor || !sourceTexture) return null;
