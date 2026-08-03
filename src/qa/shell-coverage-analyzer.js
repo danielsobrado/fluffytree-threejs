@@ -1,26 +1,22 @@
 import { FOLIAGE_SHELL_CONSTANTS } from '../generation/foliage-shell-constants.js';
 import {
+  calculateLobeExposure,
+  prepareExposureLobes,
+} from '../generation/lobe-exposure.js';
+import {
   lobeSurfaceNormal,
-  normalizedRotatedPointDistance,
   pointOnLobeSurface,
 } from '../generation/lobe-geometry.js';
 import { SpatialHashGrid } from '../generation/spatial-hash-grid.js';
 import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js';
+import { analyzeContinuousShellCoverage } from './continuous-shell-coverage-analyzer.js';
 
 const GRID_SEARCH_RINGS = 3;
-
-function clamp01(value) {
-  return Math.min(1, Math.max(0, value));
-}
 
 function averageScale(lobe) {
   return (lobe.scale.x + lobe.scale.y + lobe.scale.z) / 3;
 }
 
-/**
- * Area scale of the sphere-to-ellipsoid map at a direction, so exposed surface
- * can be integrated on the shape the crown actually has rather than on a sphere.
- */
 function areaJacobian(scale, direction) {
   return (
     scale.x *
@@ -55,25 +51,6 @@ function createProbeDirection(index, count, phase) {
   };
 }
 
-function calculateExposure(point, lobes, ownerLobeId) {
-  let clearance = Number.POSITIVE_INFINITY;
-
-  for (const lobe of lobes) {
-    if (lobe.id === ownerLobeId) continue;
-    clearance = Math.min(
-      clearance,
-      normalizedRotatedPointDistance(point, lobe) - 1,
-    );
-  }
-
-  if (clearance === Number.POSITIVE_INFINITY) clearance = 1;
-
-  return clamp01(
-    (clearance + FOLIAGE_SHELL_CONSTANTS.clearanceOffset) /
-      FOLIAGE_SHELL_CONSTANTS.clearanceRange,
-  );
-}
-
 function buildClusterGrid(clusters, cellSize) {
   const grid = new SpatialHashGrid(cellSize);
   for (const cluster of clusters) grid.insert(cluster.position, cluster);
@@ -95,15 +72,6 @@ function squaredDistance(probe, cluster) {
   return x * x + y * y + z * z;
 }
 
-/**
- * Nearest cluster that faces the same way as the probe.
- *
- * The grid sweep widens by a cell ring at a time and stops as soon as the best
- * distance found lies inside the region already scanned, so the answer is exact.
- * A probe with nothing compatible nearby would make that sweep grow cubically,
- * so after a few rings it falls back to a direct pass over the cluster list,
- * which is linear and far cheaper than sweeping empty cells.
- */
 function nearestCompatibleDistance(probe, grid, clusters) {
   let nearestSquared = Number.POSITIVE_INFINITY;
 
@@ -128,29 +96,11 @@ function nearestCompatibleDistance(probe, grid, clusters) {
     : Math.sqrt(nearestSquared);
 }
 
-/**
- * Measures how far the exposed crown surface ever gets from a leaf cluster that
- * could actually cover it.
- *
- * Probes are an independent Fibonacci set, denser than the candidates the
- * generator selected from and offset by a different phase, so the measurement is
- * not simply replaying the selection's own sample points. A cluster only counts
- * when it faces the same way as the probe, which stops a card on the far side of
- * a thin crown from being credited with covering the near side.
- *
- * The result is a sampled bound: no probe is farther than the reported gap, and
- * because distance to the nearest cluster is 1-Lipschitz, a surface point between
- * probes can exceed it by at most the probe spacing. It is not a continuous proof
- * over every point of the crown.
- */
 export function analyzeShellCoverage(tree, preset, options = {}) {
   const densityMultiplier = options.probeDensityMultiplier ?? 2;
-  // Selection covers everything above the preset's exposure threshold. The gate
-  // measures a slightly stricter band so a probe sitting exactly on the boundary,
-  // deep in a crevice where no candidate qualified, is not scored as bald crown.
   const exposureMargin = options.probeExposureMargin ?? 0;
   const settings = preset.foliage.shell;
-  const lobes = tree.lobes;
+  const lobes = prepareExposureLobes(tree.lobes);
   const probeCount = Math.round(settings.candidatesPerLobe * densityMultiplier);
   const clusterRadii = tree.shell.map((instance) => instance.coverageRadius ?? 0);
   const cellSize = Math.max(1e-3, Math.max(0, ...clusterRadii) * 2);
@@ -158,7 +108,10 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
   const clustersByLobe = new Map();
 
   for (const instance of tree.shell) {
-    clustersByLobe.set(instance.lobeId, (clustersByLobe.get(instance.lobeId) ?? 0) + 1);
+    clustersByLobe.set(
+      instance.lobeId,
+      (clustersByLobe.get(instance.lobeId) ?? 0) + 1,
+    );
   }
 
   let maximumGap = 0;
@@ -171,15 +124,15 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
 
   for (const lobe of lobes) {
     const allowedRadius = coveringRadius(lobe, settings);
-    // A phase unrelated to the generator's own per-lobe phase.
-    const phase = ((lobe.id + 1) * FOLIAGE_SHELL_CONSTANTS.goldenAngle * 7.3) %
+    const phase =
+      ((lobe.id + 1) * FOLIAGE_SHELL_CONSTANTS.goldenAngle * 7.3) %
       FOLIAGE_SHELL_CONSTANTS.tau;
     let exposedProbes = 0;
 
     for (let index = 0; index < probeCount; index += 1) {
       const direction = createProbeDirection(index, probeCount, phase);
       const surfacePoint = pointOnLobeSurface(lobe, direction);
-      const exposure = calculateExposure(surfacePoint, lobes, lobe.id);
+      const exposure = calculateLobeExposure(surfacePoint, lobes, lobe.id);
 
       if (exposure >= settings.exposureThreshold) {
         exposedArea +=
@@ -224,8 +177,6 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
   const maximumAllowed = Math.max(
     ...lobes.map((lobe) => coveringRadius(lobe, settings)),
   );
-  // The physically meaningful comparison: a gap wider than a leaf card means the
-  // cards cannot overlap there however well they are distributed.
   const cardWidths = tree.shell
     .map(
       (instance) =>
@@ -238,12 +189,14 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
     cardWidths.length === 0
       ? 0
       : cardWidths[Math.floor(cardWidths.length / 2)];
-  // Total card area over exposed crown area. This is what makes one preset read
-  // as denser foliage than another, independent of lobe size or card size, so it
-  // is gated rather than left to whatever the covering radius happens to produce.
   const totalCardArea = cardWidths.reduce(
     (total, width) => total + width * width * settings.planesPerCluster,
     0,
+  );
+  const continuous = analyzeContinuousShellCoverage(
+    tree,
+    preset,
+    options.continuous,
   );
 
   return Object.freeze({
@@ -260,5 +213,6 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
     leafAreaIndex: exposedArea === 0 ? 0 : totalCardArea / exposedArea,
     bareExposedLobes,
     worst,
+    continuous,
   });
 }
