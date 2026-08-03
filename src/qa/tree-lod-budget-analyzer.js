@@ -30,8 +30,13 @@ export function analyzeTreeLodBudgets(tree) {
     FOLIAGE_RENDERING_CONSTANTS.heroInteriorDensity,
     0x6c8e9cf5,
   );
-  const mediumShell = selectedShellCount(tree, 0.7, 0x517cc1b7);
+  const mediumShell = selectedShellCount(
+    tree,
+    FOLIAGE_RENDERING_CONSTANTS.mediumShellDensity,
+    0x517cc1b7,
+  );
   const lobeCount = tree.lobes.length;
+  const structureShadowTriangles = structureTriangles(tree, 1, 6, 8, 4);
   const lod0 =
     structureTriangles(tree, 3, 10, 24, 10) +
     lobeCount * 80 +
@@ -46,7 +51,7 @@ export function analyzeTreeLodBudgets(tree) {
   return Object.freeze({
     lodTriangles: Object.freeze([lod0, lod1, lod2, 2]),
     lodDrawCalls: Object.freeze([4, 3, 2, 1]),
-    shadowTriangles: lobeCount * 80,
+    shadowTriangles: lobeCount * 80 + structureShadowTriangles,
     heroLeafClusters: heroClusters,
     shellClusters: tree.shell.length,
     interiorShellClusters: interiorShell,
