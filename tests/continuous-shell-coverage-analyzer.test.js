@@ -29,7 +29,7 @@ function createTree(shell) {
 }
 
 const TEST_OPTIONS = Object.freeze({
-  maximumGapCardRatio: 0.9,
+  maximumCoverageRatio: 0.9,
   maximumSubdivisionDepth: 4,
   minimumDirectionDiameter: 0.01,
   exposureMargin: 0,
@@ -43,7 +43,7 @@ test('certifies a surface patch only when the complete patch is covered', () => 
       id: 0,
       position: { x: 0, y: 0, z: 0 },
       normal: { x: 0, y: 1, z: 0 },
-      cardWidth: 4,
+      coverageRadius: 4,
     },
   ]);
   const report = analyzeContinuousShellCoverage(tree, createPreset(), {
@@ -54,7 +54,7 @@ test('certifies a surface patch only when the complete patch is covered', () => 
   assert.equal(report.passed, true);
   assert.equal(report.uncoveredTriangleCount, 0);
   assert.ok(report.coveredTriangleCount > 0);
-  assert.ok(report.maximumGapCardRatioUpperBound <= 0.9);
+  assert.ok(report.maximumCoverageRatioUpperBound <= 0.9);
 });
 
 test('rejects exposed surface when no leaf cluster can cover it', () => {
@@ -70,7 +70,10 @@ test('rejects exposed surface when no leaf cluster can cover it', () => {
 
   assert.equal(report.passed, false);
   assert.ok(report.uncoveredTriangleCount > 0);
-  assert.equal(report.maximumGapCardRatioUpperBound, Number.POSITIVE_INFINITY);
+  assert.equal(
+    report.maximumCoverageRatioUpperBound,
+    Number.POSITIVE_INFINITY,
+  );
   assert.ok(report.failures.length > 0);
 });
 
@@ -80,7 +83,7 @@ test('a card facing the opposite side cannot certify the complete sphere', () =>
       id: 0,
       position: { x: 0, y: 1, z: 0 },
       normal: { x: 0, y: 1, z: 0 },
-      cardWidth: 10,
+      coverageRadius: 10,
     },
   ]);
   const report = analyzeContinuousShellCoverage(tree, createPreset(), {
@@ -99,7 +102,7 @@ test('continuous coverage analysis is deterministic', () => {
       id: 0,
       position: { x: 0, y: 0, z: 0 },
       normal: { x: 0, y: 1, z: 0 },
-      cardWidth: 4,
+      coverageRadius: 4,
     },
   ]);
   const first = analyzeContinuousShellCoverage(tree, createPreset(), {
