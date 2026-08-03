@@ -15,12 +15,13 @@ test('billboard atlas assigns every tree a unique normalized slot', () => {
     column: 0,
     row: 0,
     offsetX: 0,
-    offsetY: 0,
+    offsetY: 5 / 6,
     scaleX: 1 / 6,
     scaleY: 1 / 6,
   });
   assert.equal(last.column, 1);
   assert.equal(last.row, 5);
+  assert.equal(last.offsetY, 0);
   assert.ok(last.offsetX + last.scaleX <= 1);
   assert.ok(last.offsetY + last.scaleY <= 1);
 });
