@@ -42,6 +42,7 @@ function collectFailures(metrics) {
     ['boundaryEdgeCount', metrics.boundaryEdgeCount],
     ['nonManifoldEdgeCount', metrics.nonManifoldEdgeCount],
     ['orientationConflictCount', metrics.orientationConflictCount],
+    ['selfIntersectionCount', metrics.selfIntersectionCount],
   ];
   const failures = checks
     .filter(([, value]) => value !== 0)
@@ -108,6 +109,8 @@ export class StemManifoldQaRunner {
           maximumBoundaryEdges: 0,
           maximumNonManifoldEdges: 0,
           maximumOrientationConflicts: 0,
+          maximumSelfIntersections: 0,
+          maximumSelfIntersectionPairsTested: 0,
           minimumSignedVolume: Number.POSITIVE_INFINITY,
         },
       ]),
@@ -146,6 +149,14 @@ export class StemManifoldQaRunner {
             variantReport.maximumOrientationConflicts,
             metrics.orientationConflictCount,
           );
+          variantReport.maximumSelfIntersections = Math.max(
+            variantReport.maximumSelfIntersections,
+            metrics.selfIntersectionCount,
+          );
+          variantReport.maximumSelfIntersectionPairsTested = Math.max(
+            variantReport.maximumSelfIntersectionPairsTested,
+            metrics.selfIntersectionTestedPairCount,
+          );
           variantReport.minimumSignedVolume = Math.min(
             variantReport.minimumSignedVolume,
             metrics.signedVolume,
@@ -177,7 +188,7 @@ export class StemManifoldQaRunner {
     }
 
     return Object.freeze({
-      schemaVersion: 1,
+      schemaVersion: 2,
       passed: failedGeometryCount === 0,
       configuration: structuredClone(configuration),
       summary: {
