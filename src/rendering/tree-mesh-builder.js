@@ -89,6 +89,7 @@ export class TreeMeshBuilder {
             this.foliageCoreBuilder.build(treeData, {
               ...foliageResources,
               detail: 1,
+              lodIndex: 1,
               scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.coreScaleMultiplier,
               name: 'foliage-core-lod1',
             }),
@@ -116,6 +117,7 @@ export class TreeMeshBuilder {
             this.foliageCoreBuilder.build(treeData, {
               ...foliageResources,
               detail: 0,
+              lodIndex: 2,
               scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.coreScaleMultiplier,
               name: 'foliage-core-lod2',
             }),
@@ -142,12 +144,12 @@ export class TreeMeshBuilder {
           radialSegments: 10,
           name: 'tree-structure',
         }),
-        // The alpha-cut shell can never tile a closed surface on its own, so the
-        // clump cores carry the interior mass that stops the crown reading as a
-        // shell of loose cards with sky behind them.
+        // The low-poly core keeps the crown opaque. Shape-aware connector
+        // instances bridge only the core components that would otherwise split.
         this.foliageCoreBuilder.build(treeData, {
           ...foliageResources,
           detail: 1,
+          lodIndex: 0,
           scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.coreScaleMultiplier,
           name: 'foliage-core-lod0',
         }),
