@@ -60,6 +60,14 @@ const atlasBatchCount = [...treeCountsByPreset.values()].reduce(
   (total, count) => total + Math.ceil(count / BILLBOARD_BATCH_CAPACITY),
   0,
 );
+const farBatchCount = [...farPresets].reduce(
+  (total, presetId) =>
+    total +
+    Math.ceil(
+      (treeCountsByPreset.get(presetId) ?? 0) / BILLBOARD_BATCH_CAPACITY,
+    ),
+  0,
+);
 estimatedGpuBytes += atlasBatchCount * atlasBytes;
 
 const colorDrawCalls =
@@ -67,12 +75,12 @@ const colorDrawCalls =
   lodCounts[0] * 4 +
   lodCounts[1] * 3 +
   lodCounts[2] * 2 +
-  farPresets.size;
+  farBatchCount;
 const report = {
   viewport: [1280, 720],
   treeCount: scene.layout.length,
   lodCounts,
-  farPresetBatches: farPresets.size,
+  farPresetBatches: farBatchCount,
   atlasBatchCount,
   estimatedColorDrawCalls: colorDrawCalls,
   estimatedGpuMegabytes: Number((estimatedGpuBytes / 1024 / 1024).toFixed(2)),
