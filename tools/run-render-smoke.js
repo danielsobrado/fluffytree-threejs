@@ -16,6 +16,7 @@ const additionalQuery = new URLSearchParams(
 );
 additionalQuery.forEach((value, key) => query.set(key, value));
 const url = `http://127.0.0.1:${port}/?${query}`;
+const nonScreenshotQaModes = new Set(['solidity', 'manifold']);
 const mimeTypes = new Map([
   ['.css', 'text/css'],
   ['.html', 'text/html'],
@@ -153,7 +154,7 @@ function runBrowser(browser, name, size) {
     };
     const hasScreenshot = () =>
       fs.existsSync(screenshot) && fs.statSync(screenshot).size > 0;
-    const requiresScreenshot = qaMode !== 'solidity';
+    const requiresScreenshot = !nonScreenshotQaModes.has(qaMode);
     const poll = setInterval(() => {
       if (activeCapture?.status === 'error') {
         finish(new Error(`${name} render failed: ${activeCapture.error}`));
@@ -205,6 +206,9 @@ try {
   } else if (qaMode === 'solidity') {
     await runBrowser(browser, 'solidity', '1280,800');
     console.log('Canopy solidity gate passed.');
+  } else if (qaMode === 'manifold') {
+    await runBrowser(browser, 'stem-manifold', '800,600');
+    console.log('Stem manifold gate passed.');
   } else {
     await runBrowser(browser, 'desktop', '1440,900');
     await runBrowser(browser, 'mobile', '720,1440');

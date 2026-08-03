@@ -7,6 +7,10 @@ import { TreeDemo } from './app/tree-demo.js';
 import { YamlConfigLoader } from './config/yaml-config-loader.js';
 import { logger } from './core/logger.js';
 import { markRenderSmokeBootstrapFailure } from './diagnostics/render-smoke-probe.js';
+import {
+  markStemManifoldBootstrapFailure,
+  StemManifoldProbe,
+} from './diagnostics/stem-manifold-probe.js';
 import { PresetLibrary } from './domain/preset-library.js';
 import { showFatalError } from './ui/demo-overlay.js';
 import { createTuningPanel } from './ui/tuning-panel.js';
@@ -15,7 +19,21 @@ const CONFIG_URLS = Object.freeze({
   release: './config/release.yaml',
   scene: './config/scene.yaml',
   trees: './config/tree-presets.yaml',
+  stemManifoldQa: './config/stem-manifold-qa.yaml',
 });
+
+function isStemManifoldQaRequested() {
+  return new URLSearchParams(window.location.search).get('qa') === 'manifold';
+}
+
+async function runStemManifoldQa(loader) {
+  const [treeConfig, qaConfig] = await Promise.all([
+    loader.load(CONFIG_URLS.trees),
+    loader.load(CONFIG_URLS.stemManifoldQa),
+  ]);
+  const library = PresetLibrary.fromConfig(treeConfig);
+  await new StemManifoldProbe().run(library.presets, qaConfig);
+}
 
 async function bootstrap() {
   const container = document.querySelector('#app');
@@ -26,6 +44,12 @@ async function bootstrap() {
 
   try {
     const loader = new YamlConfigLoader();
+
+    if (isStemManifoldQaRequested()) {
+      await runStemManifoldQa(loader);
+      return;
+    }
+
     const [releaseConfig, sceneConfig, treeConfig] = await Promise.all([
       loader.load(CONFIG_URLS.release),
       loader.load(CONFIG_URLS.scene),
@@ -52,6 +76,7 @@ async function bootstrap() {
   } catch (error) {
     logger.error('Application bootstrap failed.', error);
     markRenderSmokeBootstrapFailure(error);
+    markStemManifoldBootstrapFailure(error);
     showFatalError(container, error);
   }
 }
