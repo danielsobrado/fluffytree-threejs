@@ -1,29 +1,27 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import {
-  analyzeGeometryBoundary,
-  calculateSignedVolume,
-} from '../qa/geometry-boundary-analyzer.js';
+import { analyzeBufferGeometryManifold } from '../qa/mesh-manifold-analyzer.js';
 import {
   calculateRootFlareScale,
-  calculateRootRadiusScale,
-  extendPathBelowGround,
   getRootFlareTopHeight,
 } from './root-flare-profile.js';
 import { TaperedCurveGeometryFactory } from './tapered-curve-geometry-factory.js';
 import { TREE_STRUCTURE_RENDERING_CONSTANTS } from './tree-structure-rendering-constants.js';
+import { TrunkGeometryFactory } from './trunk-geometry-factory.js';
 import {
   addStylizedBarkColors,
   StylizedBarkMaterialFactory,
 } from './stylized-bark-material-factory.js';
 
 export class BranchMeshBuilder {
-  constructor({
-    geometryFactory = new TaperedCurveGeometryFactory(),
-    materialFactory = new StylizedBarkMaterialFactory(),
-  } = {}) {
-    this.geometryFactory = geometryFactory;
-    this.materialFactory = materialFactory;
+  constructor(options = {}) {
+    this.geometryFactory =
+      options.geometryFactory ?? new TaperedCurveGeometryFactory();
+    this.trunkGeometryFactory =
+      options.trunkGeometryFactory ??
+      new TrunkGeometryFactory({ geometryFactory: this.geometryFactory });
+    this.materialFactory =
+      options.materialFactory ?? new StylizedBarkMaterialFactory();
   }
 
   build(
@@ -38,33 +36,12 @@ export class BranchMeshBuilder {
       name = 'tree-structure',
     } = {},
   ) {
-    const trunkPath = extendPathBelowGround(treeData.trunk.points);
-    const trunkGeometry = this.geometryFactory.create({
-      path: trunkPath,
-      startRadius: treeData.trunk.startRadius,
-      endRadius: treeData.trunk.endRadius,
-      sampleCount: trunkCurveSamples,
-      sampleBias: TREE_STRUCTURE_RENDERING_CONSTANTS.trunkSampleBias,
-      taperExponent:
-        treeData.trunk.taperPower ??
-        TREE_STRUCTURE_RENDERING_CONSTANTS.taperExponent,
-      radiusScale: ({ angle, height }) =>
-        calculateRootRadiusScale(
-          treeData.trunk.flare,
-          angle,
-          height,
-          treeData.seed,
-          treeData.trunk.nebari ?? 1,
-        ),
-      capStart: true,
-      capEnd: true,
+    const trunkGeometry = this.trunkGeometryFactory.create(treeData, {
       radialSegments,
+      trunkCurveSamples,
     });
-    const trunkBoundary = analyzeGeometryBoundary(trunkGeometry.getIndex().array);
-    const trunkVolume = calculateSignedVolume(
-      trunkGeometry.getAttribute('position').array,
-      trunkGeometry.getIndex().array,
-    );
+    const trunkPath = trunkGeometry.userData.trunkPath;
+    const trunkManifold = analyzeBufferGeometryManifold(trunkGeometry);
     const rootBaseMaximumHeight =
       trunkGeometry.userData.sweptTube.startRingMaximumHeight;
     addStylizedBarkColors(
@@ -108,11 +85,15 @@ export class BranchMeshBuilder {
     mesh.castShadow = castShadow;
     mesh.receiveShadow = receiveShadow;
     mesh.userData.structure = {
-      trunkClosed: trunkBoundary.closed,
-      trunkBoundaryEdges: trunkBoundary.boundaryEdges,
-      trunkNonManifoldEdges: trunkBoundary.nonManifoldEdges,
-      trunkOutwardFacing: trunkVolume > 0,
-      trunkSignedVolume: trunkVolume,
+      trunkClosed: trunkManifold.closedTwoManifold,
+      trunkBoundaryEdges: trunkManifold.boundaryEdgeCount,
+      trunkNonManifoldEdges: trunkManifold.nonManifoldEdgeCount,
+      trunkOrientationConflicts: trunkManifold.orientationConflictCount,
+      trunkDegenerateTriangles: trunkManifold.degenerateTriangleCount,
+      trunkConnectedComponents: trunkManifold.componentCount,
+      trunkEulerCharacteristic: trunkManifold.eulerCharacteristic,
+      trunkOutwardFacing: trunkManifold.outwardFacing,
+      trunkSignedVolume: trunkManifold.signedVolume,
       rootEmbedDepth: TREE_STRUCTURE_RENDERING_CONSTANTS.rootEmbedDepth,
       rootBaseMaximumHeight,
       rootBase: {
