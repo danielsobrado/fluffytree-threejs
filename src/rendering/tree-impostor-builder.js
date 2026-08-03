@@ -1,40 +1,11 @@
 import * as THREE from 'three';
+import { BILLBOARD_TEXTURE_SIZE } from './tree-billboard-atlas.js';
+import {
+  calculateImpostorLayout,
+  projectImpostorLobe,
+} from './tree-impostor-math.js';
 
-const TEXTURE_SIZE = 128;
 const PADDING_RATIO = 0.08;
-
-function calculateBounds(treeData) {
-  const minimum = { x: 0, y: 0 };
-  const maximum = { x: 0, y: treeData.height };
-  for (const lobe of treeData.lobes) {
-    minimum.x = Math.min(minimum.x, lobe.position.x - lobe.scale.x);
-    minimum.y = Math.min(minimum.y, lobe.position.y - lobe.scale.y);
-    maximum.x = Math.max(maximum.x, lobe.position.x + lobe.scale.x);
-    maximum.y = Math.max(maximum.y, lobe.position.y + lobe.scale.y);
-  }
-  return { minimum, maximum };
-}
-
-function createProjector(bounds) {
-  const width = bounds.maximum.x - bounds.minimum.x;
-  const height = bounds.maximum.y - bounds.minimum.y;
-  const padding = TEXTURE_SIZE * PADDING_RATIO;
-  const scale = Math.min(
-    (TEXTURE_SIZE - padding * 2) / width,
-    (TEXTURE_SIZE - padding * 2) / height,
-  );
-  return {
-    width,
-    height,
-    point(value) {
-      return {
-        x: (value.x - bounds.minimum.x) * scale + padding,
-        y: TEXTURE_SIZE - ((value.y - bounds.minimum.y) * scale + padding),
-      };
-    },
-    scale,
-  };
-}
 
 function drawStructure(context, treeData, project) {
   context.lineCap = 'round';
@@ -57,40 +28,50 @@ function drawStructure(context, treeData, project) {
   }
 }
 
-function drawCrown(context, treeData, project) {
+function drawCrown(context, treeData, project, rotationY) {
   const palette = treeData.palette.palette;
-  const ordered = [...treeData.lobes].sort(
-    (left, right) => left.position.z - right.position.z,
-  );
+  const ordered = treeData.lobes
+    .map((lobe) => ({ lobe, projected: projectImpostorLobe(lobe, rotationY) }))
+    .sort((left, right) => left.projected.depth - right.projected.depth);
 
-  for (const lobe of ordered) {
+  for (const { lobe, projected } of ordered) {
     const center = project.point(lobe.position);
-    const radiusX = lobe.scale.x * project.scale;
-    const radiusY = lobe.scale.y * project.scale;
     const paletteIndex = Math.min(
       palette.length - 1,
       Math.max(0, Math.round(lobe.colorMix * (palette.length - 1))),
     );
     context.save();
     context.translate(center.x, center.y);
-    context.rotate(-lobe.rotation.z);
     context.beginPath();
-    context.ellipse(0, 0, radiusX, radiusY, 0, 0, Math.PI * 2);
+    context.ellipse(
+      0,
+      0,
+      projected.radiusMajor * project.scale,
+      projected.radiusMinor * project.scale,
+      -projected.angle,
+      0,
+      Math.PI * 2,
+    );
     context.fillStyle = palette[paletteIndex];
     context.fill();
     context.restore();
   }
 }
 
-function createTexture(treeData) {
+function createTexture(treeData, rotationY) {
   const canvas = document.createElement('canvas');
-  canvas.width = TEXTURE_SIZE;
-  canvas.height = TEXTURE_SIZE;
+  canvas.width = BILLBOARD_TEXTURE_SIZE;
+  canvas.height = BILLBOARD_TEXTURE_SIZE;
   const context = canvas.getContext('2d');
-  const bounds = calculateBounds(treeData);
-  const project = createProjector(bounds);
+  if (!context) throw new Error('Unable to create the tree impostor canvas.');
+
+  const project = calculateImpostorLayout(treeData, rotationY, {
+    textureSize: BILLBOARD_TEXTURE_SIZE,
+    paddingRatio: PADDING_RATIO,
+  });
   drawStructure(context, treeData, project);
-  drawCrown(context, treeData, project);
+  drawCrown(context, treeData, project, rotationY);
+
   const texture = new THREE.CanvasTexture(canvas);
   texture.name = `tree-impostor-${treeData.presetId}-${treeData.seed}`;
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -98,12 +79,12 @@ function createTexture(treeData) {
   texture.magFilter = THREE.LinearFilter;
   texture.generateMipmaps = true;
   texture.needsUpdate = true;
-  return { texture, bounds, project };
+  return { texture, project };
 }
 
 export class TreeImpostorBuilder {
-  build(treeData) {
-    const { texture, bounds, project } = createTexture(treeData);
+  build(treeData, { rotationY = 0 } = {}) {
+    const { texture, project } = createTexture(treeData, rotationY);
     const material = new THREE.SpriteMaterial({
       map: texture,
       transparent: true,
@@ -114,16 +95,20 @@ export class TreeImpostorBuilder {
     });
     material.name = 'tree-impostor-material';
     material.userData.disposables = [texture];
+
     const sprite = new THREE.Sprite(material);
     sprite.name = 'tree-impostor';
-    sprite.center.set(0.5, 0);
-    sprite.position.set(
-      (bounds.minimum.x + bounds.maximum.x) * 0.5,
-      bounds.minimum.y,
-      0,
-    );
-    sprite.scale.set(project.width, project.height, 1);
-    sprite.userData.impostor = { triangleCount: 2, textureSize: TEXTURE_SIZE };
+    sprite.center.set(0.5, 0.5);
+    sprite.position.set(project.anchor.x, project.anchor.y, project.anchor.z);
+    sprite.scale.set(project.worldSize, project.worldSize, 1);
+    sprite.userData.impostor = {
+      triangleCount: 2,
+      textureSize: BILLBOARD_TEXTURE_SIZE,
+      rotationY,
+      contentWidth: project.width,
+      contentHeight: project.height,
+      worldSize: project.worldSize,
+    };
     return sprite;
   }
 }
