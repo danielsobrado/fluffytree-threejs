@@ -61,7 +61,7 @@ test('detects coplanar triangle overlap', () => {
   assert.equal(report.selfIntersectionCount, 1);
 });
 
-test('ignores topological neighbours that share a vertex', () => {
+test('accepts triangles whose only contact is one shared vertex', () => {
   const report = analyze(
     [
       0, 0, 0,
@@ -74,6 +74,49 @@ test('ignores topological neighbours that share a vertex', () => {
   );
 
   assert.equal(report.candidatePairCount, 1);
-  assert.equal(report.testedPairCount, 0);
+  assert.equal(report.testedPairCount, 1);
   assert.equal(report.selfIntersectionCount, 0);
+});
+
+test('detects a non-coplanar crossing beyond a shared vertex', () => {
+  const report = analyze(
+    [
+      0, 0, 0,
+      2, 0, 0,
+      0, 2, 0,
+      1, -1, -1,
+      1, 1, 1,
+    ],
+    [0, 1, 2, 0, 3, 4],
+  );
+
+  assert.equal(report.selfIntersectionCount, 1);
+});
+
+test('accepts coplanar neighbours on opposite sides of their shared edge', () => {
+  const report = analyze(
+    [
+      0, 0, 0,
+      2, 0, 0,
+      0, 2, 0,
+      0, -2, 0,
+    ],
+    [0, 1, 2, 1, 0, 3],
+  );
+
+  assert.equal(report.selfIntersectionCount, 0);
+});
+
+test('detects coplanar overlap beyond a shared edge', () => {
+  const report = analyze(
+    [
+      0, 0, 0,
+      2, 0, 0,
+      0, 2, 0,
+      0.5, 0.5, 0,
+    ],
+    [0, 1, 2, 1, 0, 3],
+  );
+
+  assert.equal(report.selfIntersectionCount, 1);
 });
