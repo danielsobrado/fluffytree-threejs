@@ -8,72 +8,16 @@ import {
   lobeSurfaceNormal,
   pointOnLobeSurface,
 } from '../generation/lobe-geometry.js';
-import { SpatialHashGrid } from '../generation/spatial-hash-grid.js';
-import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js';
 import {
   createIcosahedronDirectionTriangles,
   directionTriangleCentroid,
   directionTriangleDiameter,
   subdivideDirectionTriangle,
 } from './ellipsoid-surface-triangulation.js';
-
-const MAXIMUM_GRID_QUERY_RINGS = 8;
-
-function distance(left, right) {
-  return Math.hypot(
-    left.x - right.x,
-    left.y - right.y,
-    left.z - right.z,
-  );
-}
-
-function normalDot(left, right) {
-  return left.x * right.x + left.y * right.y + left.z * right.z;
-}
-
-function cardWidth(cluster) {
-  const explicit = Number(cluster.cardWidth);
-  if (explicit > 0) return explicit;
-  return (
-    Number(cluster.scale) *
-    Number(cluster.widthRatio) *
-    FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier
-  );
-}
-
-function createClusterIndex(clusters) {
-  const records = clusters.map((cluster) => ({
-    cluster,
-    width: cardWidth(cluster),
-  }));
-  const maximumWidth = Math.max(0, ...records.map((record) => record.width));
-  const grid = new SpatialHashGrid(
-    Math.max(maximumWidth, FOLIAGE_SHELL_CONSTANTS.minimumCellSize),
-  );
-
-  for (const record of records) {
-    if (!(record.width > 0)) {
-      throw new RangeError('Continuous shell coverage requires positive card widths.');
-    }
-    grid.insert(record.cluster.position, record);
-  }
-
-  return { records, maximumWidth, grid };
-}
-
-function collectNearbyClusters(index, position, radius) {
-  if (index.records.length === 0) return new Set();
-
-  const rings = Math.max(1, Math.ceil(radius / index.grid.cellSize) + 1);
-  if (rings > MAXIMUM_GRID_QUERY_RINGS) return new Set(index.records);
-
-  const records = new Set();
-  index.grid.forEachNear(position, rings, (record) => {
-    records.add(record);
-    return false;
-  });
-  return records;
-}
+import {
+  createShellCoverageClusterIndex,
+  findTriangleCoverageUpperBound,
+} from './shell-coverage-cluster-index.js';
 
 function createTriangleSamples(lobe, triangle) {
   const directions = [
@@ -84,7 +28,6 @@ function createTriangleSamples(lobe, triangle) {
   ];
 
   return {
-    directions,
     positions: directions.map((direction) => pointOnLobeSurface(lobe, direction)),
     normals: directions.map((direction) => lobeSurfaceNormal(lobe, direction)),
   };
@@ -99,7 +42,8 @@ function minimumScale(lobe) {
 }
 
 function calculateNormalUncertainty(lobe, directionDiameter, scale) {
-  const condition = maximumScale(lobe) / Math.max(minimumScale(lobe), Number.EPSILON);
+  const condition =
+    maximumScale(lobe) / Math.max(minimumScale(lobe), Number.EPSILON);
   return Math.min(2, 2 * condition * directionDiameter * scale);
 }
 
@@ -111,70 +55,17 @@ function maximumExposure(samples, lobes, ownerLobeId) {
   );
 }
 
-function clusterCoverageUpperBound(
-  record,
-  samples,
-  worldUncertainty,
-  normalUncertainty,
-  minimumCoverageNormalDot,
-) {
-  const minimumDot = Math.min(
-    ...samples.normals.map((normal) => normalDot(normal, record.cluster.normal)),
-  );
-  if (minimumDot - normalUncertainty < minimumCoverageNormalDot) {
-    return Number.POSITIVE_INFINITY;
-  }
-
-  const maximumSampleDistance = Math.max(
-    ...samples.positions.map((position) =>
-      distance(position, record.cluster.position),
-    ),
-  );
-  return (maximumSampleDistance + worldUncertainty) / record.width;
-}
-
-function bestCoverageUpperBound(
-  index,
-  samples,
-  worldUncertainty,
-  normalUncertainty,
-  minimumCoverageNormalDot,
-  targetRatio,
-) {
-  if (index.records.length === 0) return Number.POSITIVE_INFINITY;
-
-  const center = samples.positions.at(-1);
-  const queryRadius = index.maximumWidth * targetRatio + worldUncertainty;
-  const nearby = collectNearbyClusters(index, center, queryRadius);
-  let best = Number.POSITIVE_INFINITY;
-
-  for (const record of nearby) {
-    best = Math.min(
-      best,
-      clusterCoverageUpperBound(
-        record,
-        samples,
-        worldUncertainty,
-        normalUncertainty,
-        minimumCoverageNormalDot,
-      ),
-    );
-  }
-
-  return best;
-}
-
 function validateOptions(options) {
   const checks = [
-    ['maximumGapCardRatio', options.maximumGapCardRatio, 0],
-    ['maximumSubdivisionDepth', options.maximumSubdivisionDepth, 0],
-    ['minimumDirectionDiameter', options.minimumDirectionDiameter, 0],
-    ['exposureMargin', options.exposureMargin, 0],
-    ['normalUncertaintyScale', options.normalUncertaintyScale, 0],
+    ['maximumGapCardRatio', options.maximumGapCardRatio],
+    ['maximumSubdivisionDepth', options.maximumSubdivisionDepth],
+    ['minimumDirectionDiameter', options.minimumDirectionDiameter],
+    ['exposureMargin', options.exposureMargin],
+    ['normalUncertaintyScale', options.normalUncertaintyScale],
   ];
 
-  for (const [name, value, minimum] of checks) {
-    if (!Number.isFinite(value) || value < minimum) {
+  for (const [name, value] of checks) {
+    if (!Number.isFinite(value) || value < 0) {
       throw new RangeError(`Continuous shell coverage ${name} is invalid.`);
     }
   }
@@ -202,6 +93,24 @@ function validateOptions(options) {
   }
 }
 
+function createFailureRecord(
+  lobe,
+  depth,
+  directionDiameter,
+  exposureUpperBound,
+  gapCardRatioUpperBound,
+  samples,
+) {
+  return Object.freeze({
+    lobeId: lobe.id,
+    depth,
+    directionDiameter,
+    exposureUpperBound,
+    gapCardRatioUpperBound,
+    position: samples.positions.at(-1),
+  });
+}
+
 export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
   const options = {
     maximumGapCardRatio: 0.9,
@@ -217,8 +126,11 @@ export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
   validateOptions(options);
 
   const lobes = prepareExposureLobes(tree.lobes);
-  const index = createClusterIndex(tree.shell);
-  const threshold = preset.foliage.shell.exposureThreshold + options.exposureMargin;
+  const clusterIndex = createShellCoverageClusterIndex(tree.shell);
+  const exposureThreshold = Math.min(
+    1,
+    preset.foliage.shell.exposureThreshold + options.exposureMargin,
+  );
   const failures = [];
   let trianglesVisited = 0;
   let hiddenTriangleCount = 0;
@@ -250,23 +162,24 @@ export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
           exposureLipschitz * worldUncertainty,
       );
 
-      if (exposureUpperBound < threshold) {
+      if (exposureUpperBound < exposureThreshold) {
         hiddenTriangleCount += 1;
         continue;
       }
 
-      const normalUncertainty = calculateNormalUncertainty(
-        lobe,
-        directionDiameter,
-        options.normalUncertaintyScale,
-      );
-      const gapUpperBound = bestCoverageUpperBound(
-        index,
+      const gapUpperBound = findTriangleCoverageUpperBound(
+        clusterIndex,
         samples,
-        worldUncertainty,
-        normalUncertainty,
-        options.minimumCoverageNormalDot,
-        options.maximumGapCardRatio,
+        {
+          worldUncertainty,
+          normalUncertainty: calculateNormalUncertainty(
+            lobe,
+            directionDiameter,
+            options.normalUncertaintyScale,
+          ),
+          minimumCoverageNormalDot: options.minimumCoverageNormalDot,
+          targetRatio: options.maximumGapCardRatio,
+        },
       );
 
       if (gapUpperBound <= options.maximumGapCardRatio) {
@@ -291,21 +204,23 @@ export function analyzeContinuousShellCoverage(tree, preset, overrides = {}) {
 
       uncoveredTriangleCount += 1;
       maximumGapCardRatioUpperBound = Number.POSITIVE_INFINITY;
-      const record = {
-        lobeId: lobe.id,
+      const failure = createFailureRecord(
+        lobe,
         depth,
         directionDiameter,
         exposureUpperBound,
-        gapCardRatioUpperBound: gapUpperBound,
-        position: samples.positions.at(-1),
-      };
+        gapUpperBound,
+        samples,
+      );
       if (
         !worst ||
-        record.gapCardRatioUpperBound > worst.gapCardRatioUpperBound
+        failure.gapCardRatioUpperBound > worst.gapCardRatioUpperBound
       ) {
-        worst = record;
+        worst = failure;
       }
-      if (failures.length < options.maximumFailureExamples) failures.push(record);
+      if (failures.length < options.maximumFailureExamples) {
+        failures.push(failure);
+      }
     }
   }
 
