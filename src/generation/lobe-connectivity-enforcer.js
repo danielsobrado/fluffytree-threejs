@@ -1,7 +1,7 @@
 import { GENERATION_CONSTANTS } from './generation-constants.js';
 import {
-  ellipsoidSupportRadius,
   lobeOverlapRatio,
+  lobeRadiusTowards,
   normalizeVector,
 } from './lobe-geometry.js';
 
@@ -99,11 +99,11 @@ function connectComponent(lobes, connection) {
   );
   const desiredDistance =
     GENERATION_CONSTANTS.lobeConnectivityTargetOverlap *
-    (ellipsoidSupportRadius(mainLobe.scale, {
+    (lobeRadiusTowards(mainLobe, {
       x: -towardMain.x,
       y: -towardMain.y,
       z: -towardMain.z,
-    }) + ellipsoidSupportRadius(detachedLobe.scale, towardMain));
+    }) + lobeRadiusTowards(detachedLobe, towardMain));
   const shiftDistance = Math.max(0, distance - desiredDistance);
 
   for (const index of connection.detached) {

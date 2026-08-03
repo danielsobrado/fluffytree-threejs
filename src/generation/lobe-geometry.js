@@ -125,6 +125,21 @@ export function ellipsoidSupportRadius(scale, direction) {
   return denominator <= EPSILON ? 0 : 1 / denominator;
 }
 
+/**
+ * Distance from a lobe's centre to its surface along a world direction.
+ *
+ * The lobe is a rotated ellipsoid, so the direction is taken back into the
+ * lobe's own frame first. Measuring against the unrotated semi-axes instead
+ * answers for a different shape than the one that gets rendered, which let
+ * connectivity pass on lobes that do not actually meet.
+ */
+export function lobeRadiusTowards(lobe, direction) {
+  return ellipsoidSupportRadius(
+    lobe.scale,
+    inverseRotateVectorEuler(normalizeVector(direction), lobe.rotation),
+  );
+}
+
 export function lobeOverlapRatio(left, right) {
   const separation = {
     x: right.position.x - left.position.x,
@@ -139,8 +154,8 @@ export function lobeOverlapRatio(left, right) {
 
   const direction = normalizeVector(separation);
   const combinedRadius =
-    ellipsoidSupportRadius(left.scale, direction) +
-    ellipsoidSupportRadius(right.scale, {
+    lobeRadiusTowards(left, direction) +
+    lobeRadiusTowards(right, {
       x: -direction.x,
       y: -direction.y,
       z: -direction.z,
@@ -149,12 +164,4 @@ export function lobeOverlapRatio(left, right) {
   return combinedRadius <= EPSILON
     ? Number.POSITIVE_INFINITY
     : distance / combinedRadius;
-}
-
-export function normalizedPointDistance(point, lobe) {
-  return Math.sqrt(
-    ((point.x - lobe.position.x) / lobe.scale.x) ** 2 +
-      ((point.y - lobe.position.y) / lobe.scale.y) ** 2 +
-      ((point.z - lobe.position.z) / lobe.scale.z) ** 2,
-  );
 }

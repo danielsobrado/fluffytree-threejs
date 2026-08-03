@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { normalizedPointDistance } from '../src/generation/lobe-geometry.js';
+import { normalizedRotatedPointDistance } from '../src/generation/lobe-geometry.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
 import { createTestPreset } from './fixtures/tree-preset-fixture.js';
 
@@ -16,7 +16,10 @@ test('every generated branch terminates inside its target foliage lobe', () => {
         (lobe) => lobe.id === branch.targetLobeId,
       );
       assert.ok(target);
-      const insertion = normalizedPointDistance(branch.points.at(-1), target);
+      const insertion = normalizedRotatedPointDistance(
+        branch.points.at(-1),
+        target,
+      );
       assert.ok(insertion >= 0.54 && insertion < 1.19);
       if (!branch.exposed) assert.ok(Math.abs(insertion - 0.55) < 1e-9);
     }

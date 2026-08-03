@@ -1,5 +1,6 @@
 import { GENERATION_CONSTANTS } from './generation-constants.js';
-import { ellipsoidSupportRadius, normalizeVector } from './lobe-geometry.js';
+import { lobeRadiusTowards, normalizeVector } from './lobe-geometry.js';
+import { createTrunkStyle } from './trunk-style.js';
 
 function lerp(minimum, maximum, ratio) {
   return minimum + (maximum - minimum) * ratio;
@@ -17,35 +18,39 @@ function distanceFromAxis(lobe) {
   return Math.hypot(lobe.position.x, lobe.position.z);
 }
 
-function createTrunkPoints(preset, random) {
+function createTrunkPoints(preset, random, style) {
   const { trunk, crown } = preset;
   const phase = random.range(0, Math.PI * 2);
+  const apexHeight = crown.baseHeight + crown.height * 0.66;
   const points = [];
 
   for (let index = 0; index <= trunk.segments; index += 1) {
     const t = index / trunk.segments;
-    const y = lerp(0, crown.baseHeight + crown.height * 0.66, t);
-    const bend = Math.sin(t * Math.PI * 0.9) * trunk.bend;
+    // The style decides how the rise is distributed; the exponent is positive
+    // for every style, so the sweep stays strictly ascending.
+    const rise = style.heightPower === 1 ? t : Math.pow(t, style.heightPower);
+    const offset = style.displace(t);
     const gnarl =
       Math.sin(t * Math.PI * 2.4 + phase) *
       trunk.branching.gnarl *
       trunk.baseRadius *
       Math.sin(t * Math.PI);
     const twist = phase + t * Math.PI * 2 * trunk.branching.twist;
+    // Style, lean and gnarl all push the trunk off its axis, and any of them
+    // can tilt the base enough to lift the swept tube's first ring out of the
+    // ground. The ramp holds all three back until the trunk has cleared the
+    // nebari; it is a flat 1 for the historic style.
+    const ramp = style.rampAt(t);
 
     points.push({
-      x:
-        crown.lean[0] * t +
-        bend * 0.68 +
-        Math.cos(twist) * gnarl +
-        Math.sin(t * Math.PI * 2.1) * trunk.bend * 0.08,
-      y,
-      z:
-        crown.lean[1] * t +
-        bend * 0.24 +
-        Math.sin(twist) * gnarl -
-        Math.cos(t * Math.PI * 1.7) * trunk.bend * 0.07,
-      radius: lerp(trunk.baseRadius, trunk.topRadius, Math.pow(t, 0.76)),
+      x: (crown.lean[0] * t + offset.x + Math.cos(twist) * gnarl) * ramp,
+      y: lerp(0, apexHeight, rise),
+      z: (crown.lean[1] * t + offset.z + Math.sin(twist) * gnarl) * ramp,
+      radius: lerp(
+        trunk.baseRadius,
+        trunk.topRadius,
+        Math.pow(t, style.taperPower),
+      ),
     });
   }
 
@@ -87,7 +92,7 @@ function createEmbeddedEndpoint(start, lobe, insertionDepth) {
     y: start.y - lobe.position.y,
     z: start.z - lobe.position.z,
   });
-  const distance = ellipsoidSupportRadius(lobe.scale, towardStart) * insertionDepth;
+  const distance = lobeRadiusTowards(lobe, towardStart) * insertionDepth;
   return {
     x: lobe.position.x + towardStart.x * distance,
     y: lobe.position.y + towardStart.y * distance,
@@ -194,7 +199,8 @@ function attachLobes(lobes, branches) {
 
 export class BranchGenerator {
   generate(preset, sourceLobes, random) {
-    const trunkPoints = createTrunkPoints(preset, random);
+    const style = createTrunkStyle(preset.trunk);
+    const trunkPoints = createTrunkPoints(preset, random, style);
     const settings = preset.trunk.branching;
     const primaryTargets = selectPrimaryTargets(sourceLobes, settings.primaryCount);
     const branches = [];
@@ -270,6 +276,9 @@ export class BranchGenerator {
         startRadius: preset.trunk.baseRadius,
         endRadius: preset.trunk.topRadius,
         flare: preset.trunk.flare,
+        taperPower: style.taperPower,
+        nebari: Number(preset.trunk.nebari ?? 1),
+        style: style.id,
       },
       branches: Object.freeze(branches),
       lobes: Object.freeze(attachLobes(sourceLobes, branches)),

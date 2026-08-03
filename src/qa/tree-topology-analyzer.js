@@ -1,6 +1,6 @@
 import {
   lobeOverlapRatio,
-  normalizedPointDistance,
+  normalizedRotatedPointDistance,
 } from '../generation/lobe-geometry.js';
 
 function createAdjacency(lobes) {
@@ -77,7 +77,7 @@ function analyzeBranches(tree) {
     }
 
     targets.add(target.id);
-    distances.push(normalizedPointDistance(endpoint, target));
+    distances.push(normalizedRotatedPointDistance(endpoint, target));
   }
 
   return {
@@ -109,7 +109,7 @@ function analyzeTrunk(tree) {
 
   const top = tree.trunk.points.at(-1);
   const topDistance = Math.min(
-    ...tree.lobes.map((lobe) => normalizedPointDistance(top, lobe)),
+    ...tree.lobes.map((lobe) => normalizedRotatedPointDistance(top, lobe)),
   );
 
   return {

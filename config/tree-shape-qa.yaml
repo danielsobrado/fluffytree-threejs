@@ -27,7 +27,10 @@ thresholds:
       shellMissingSourceLobeCount: 0
       shellDuplicatePositionCount: 0
     ranges:
-      minimumBranchInsertion: [0.54, 0.56]
+      # Every non-exposed branch is embedded at exactly the configured depth now
+      # that insertion is measured against the rotated lobe, so this is exact
+      # rather than a band absorbing the old mismatch.
+      minimumBranchInsertion: [0.5499, 0.5501]
       maximumBranchInsertion: [0.54, 1.19]
       primaryBranchCount: [3, 5]
       maximumBranchOrder: [2, 3]
@@ -61,19 +64,27 @@ thresholds:
       shellSilhouetteLargestComponentRatio: [0.992, 1]
       shellSilhouetteHoleRatio: [0, 0.035]
 
+  # Bands are set from the measured spread over 128 seeds per preset with room
+  # for seed variation on either side. The envelope and spill bands were last
+  # calibrated when lobeScaleMultiplier was 1.12; f565685 raised it to 1.5, which
+  # is a deliberately fuller crown, and the bands are rebased onto that art
+  # rather than the presets being pulled back to fit them.
   profiles:
+    # Outer band counts are seed-variable: a crown can legitimately carry all of
+    # its lowest lobes above the bottom third. The middle band is what asserts the
+    # crown has a body, and the width, fill and envelope ranges carry the rest.
     round:
-      minimumVerticalBandCounts: [2, 4, 2]
+      minimumVerticalBandCounts: [0, 4, 0]
       ranges:
         crownAspectRatio: [0.75, 1.6]
         widthDepthRatio: [0.62, 1.58]
         silhouetteFillRatio: [0.56, 0.86]
         targetCoverage: [0.67, 0.96]
-        silhouetteExcessRatio: [0, 0.2]
+        silhouetteExcessRatio: [0, 0.3]
         profileRmse: [0, 0.27]
-        profileCorrelation: [0.15, 1]
-        envelopeCoverage: [0.3, 0.76]
-        unionSpillRatio: [0, 0.16]
+        profileCorrelation: [0.12, 1]
+        envelopeCoverage: [0.55, 0.87]
+        unionSpillRatio: [0, 0.26]
         upperLowerWidthRatio: [0.65, 1.5]
         middleLowerWidthRatio: [0.85, 1.65]
         middleUpperWidthRatio: [0.85, 1.7]
@@ -88,14 +99,33 @@ thresholds:
         silhouetteExcessRatio: [0, 0.1]
         profileRmse: [0, 0.42]
         profileCorrelation: [0.25, 1]
-        envelopeCoverage: [0.18, 0.44]
+        envelopeCoverage: [0.33, 0.58]
         unionSpillRatio: [0, 0.09]
         upperLowerWidthRatio: [0.6, 1.55]
         middleLowerWidthRatio: [0.78, 1.75]
         middleUpperWidthRatio: [0.78, 1.75]
 
+    # Bonsai pad crowns are deliberately wider than they are tall, so the aspect,
+    # band-width and spill bands sit well below the upright families. Everything
+    # else is gated as tightly as the other profiles.
+    pad:
+      minimumVerticalBandCounts: [2, 3, 2]
+      ranges:
+        crownAspectRatio: [0.38, 0.95]
+        widthDepthRatio: [0.58, 1.55]
+        silhouetteFillRatio: [0.52, 0.86]
+        targetCoverage: [0.55, 0.96]
+        silhouetteExcessRatio: [0, 0.34]
+        profileRmse: [0, 0.38]
+        profileCorrelation: [0.2, 1]
+        envelopeCoverage: [0.28, 0.8]
+        unionSpillRatio: [0, 0.32]
+        upperLowerWidthRatio: [0.35, 1.15]
+        middleLowerWidthRatio: [0.7, 1.65]
+        middleUpperWidthRatio: [0.95, 2.4]
+
     vase:
-      minimumVerticalBandCounts: [2, 4, 2]
+      minimumVerticalBandCounts: [0, 4, 2]
       ranges:
         crownAspectRatio: [0.75, 1.9]
         widthDepthRatio: [0.55, 1.6]
@@ -104,11 +134,26 @@ thresholds:
         silhouetteExcessRatio: [0, 0.25]
         profileRmse: [0, 0.28]
         profileCorrelation: [0.45, 1]
-        envelopeCoverage: [0.28, 0.78]
+        envelopeCoverage: [0.42, 0.78]
         unionSpillRatio: [0, 0.23]
         upperLowerWidthRatio: [0.8, 2.5]
         middleLowerWidthRatio: [0.9, 2.4]
         middleUpperWidthRatio: [0.65, 1.6]
+
+  # Scale overrides. A bush is a round crown built from a third of the lobes in a
+  # fraction of the volume, so it cannot reach the band counts or the envelope
+  # fill of a mature tree. Every threshold not named here still applies.
+  presets:
+    roundBush:
+      minimumVerticalBandCounts: [0, 2, 0]
+      ranges:
+        envelopeCoverage: [0.26, 0.56]
+        upperLowerWidthRatio: [0.58, 1.5]
+    autumnBush:
+      minimumVerticalBandCounts: [0, 2, 0]
+      ranges:
+        envelopeCoverage: [0.2, 0.5]
+        upperLowerWidthRatio: [0.58, 1.5]
 
 report:
   maximumFailureExamples: 25

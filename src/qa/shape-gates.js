@@ -61,9 +61,14 @@ function checkFoliageCounts(metrics, preset, failures) {
   );
 }
 
-export function evaluateShapeGates(metrics, preset, thresholds) {
-  const failures = [];
-  const common = thresholds.common;
+/**
+ * A profile describes crown shape, not crown scale. A bush is as round as an
+ * orchard tree but has a third of the lobes in a fraction of the volume, so it
+ * cannot meet the same band counts or fill the same share of its envelope. A
+ * preset may therefore override individual entries of its profile's block; every
+ * threshold it does not name still applies.
+ */
+function resolveProfileThresholds(preset, thresholds) {
   const profile = thresholds.profiles[preset.crown.profile];
 
   if (!profile) {
@@ -71,6 +76,21 @@ export function evaluateShapeGates(metrics, preset, thresholds) {
       `Missing QA thresholds for profile '${preset.crown.profile}'.`,
     );
   }
+
+  const override = thresholds.presets?.[preset.id];
+  if (!override) return profile;
+
+  return {
+    ...profile,
+    ...override,
+    ranges: { ...profile.ranges, ...override.ranges },
+  };
+}
+
+export function evaluateShapeGates(metrics, preset, thresholds) {
+  const failures = [];
+  const common = thresholds.common;
+  const profile = resolveProfileThresholds(preset, thresholds);
 
   checkExact(metrics, 'lobeCount', preset.crown.lobeCount, failures);
   checkExact(
