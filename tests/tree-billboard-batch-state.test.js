@@ -13,6 +13,10 @@ test('billboard batch state migrates instances with bounded complementary fades'
   assert.equal(batch.fades[first], 0);
   assert.ok(Math.abs(batch.fades[second] - 0.65) < 0.000001);
   assert.equal(batch.inverted[second], 1);
+  assert.equal(batch.activeCount, 1);
+
+  batch.setFade(second, 0);
+  assert.equal(batch.activeCount, 0);
   assert.throws(() => batch.add('overflow'), /exceeded/);
   assert.throws(() => batch.setFade(3, 1), /Unknown/);
 });
