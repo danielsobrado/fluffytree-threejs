@@ -245,6 +245,11 @@ export class TuningPanel {
   }
 
   selectPreset(presetId) {
+    // A slider commit is delayed to avoid rebuilding continuously. Persist it
+    // before replacing the detached editor value, or a quick preset switch
+    // would silently discard the last edit.
+    this.flushScheduledApply();
+
     this.presetId = presetId;
     this.config = this.library.rawValue(presetId);
     this.controlContext.config = this.config;
@@ -280,6 +285,33 @@ export class TuningPanel {
     }, COMMIT_DELAY_MS);
   }
 
+  flushScheduledApply() {
+    if (this.commitTimer === null) return true;
+
+    clearTimeout(this.commitTimer);
+    this.commitTimer = null;
+    return this.storeConfiguration(this.presetId, this.config);
+  }
+
+  storeConfiguration(presetId, config) {
+    const previous = this.library.rawValue(presetId);
+
+    try {
+      this.library.set(presetId, config);
+      return true;
+    } catch (error) {
+      // Only roll the visible editor back when it still represents the value
+      // that failed. A stale delayed apply must never overwrite a newer preset.
+      if (this.presetId === presetId && this.config === config) {
+        this.config = previous;
+        this.controlContext.config = this.config;
+        this.refreshControls();
+      }
+      this.setStatus(error.message, 'error');
+      return false;
+    }
+  }
+
   /**
    * Validates, swaps the preset in and rebuilds. A rejected configuration is
    * reported and rolled back so the panel and the scene never disagree.
@@ -288,17 +320,10 @@ export class TuningPanel {
    * the result can wait for it rather than reading the previous tree back.
    */
   apply() {
-    const previous = this.library.rawValue(this.presetId);
+    const presetId = this.presetId;
+    const config = this.config;
 
-    try {
-      this.library.set(this.presetId, this.config);
-    } catch (error) {
-      this.config = previous;
-      this.controlContext.config = this.config;
-      this.refreshControls();
-      this.setStatus(error.message, 'error');
-      return Promise.resolve(false);
-    }
+    if (!this.storeConfiguration(presetId, config)) return Promise.resolve(false);
 
     this.setStatus('Generating…');
 
@@ -308,8 +333,16 @@ export class TuningPanel {
     // edit would sit unapplied until the tab came forward.
     return new Promise((resolve) => {
       setTimeout(() => {
+        // The user may switch presets while this paint-yield is pending. The
+        // edit is already stored, but rebuilding it now would pull the studio
+        // away from the newly selected tree.
+        if (this.presetId !== presetId || this.config !== config) {
+          resolve(true);
+          return;
+        }
+
         try {
-          this.demo.rebuildPreset(this.presetId);
+          this.demo.rebuildPreset(presetId);
           this.refreshCoverage();
           resolve(true);
         } catch (error) {
@@ -466,6 +499,8 @@ export class TuningPanel {
       this.setStatus('Select a saved setting first.', 'warn');
       return;
     }
+
+    this.flushScheduledApply();
 
     // A variant saved from a preset that has since been removed still loads,
     // onto whichever preset is being edited now.

@@ -77,6 +77,25 @@ test('exported settings are shaped like the preset configuration file', () => {
   assert.equal(config.presets.oldPine.trunk.bend, 0.5);
 });
 
+test('export keeps variants whose names collapse to the same preset id', () => {
+  const store = new PresetVariantStore(createStorage());
+  store.save('Old pine', 'bonsaiWindswept', { marker: 'space' });
+  store.save('Old-pine', 'bonsaiInformal', { marker: 'hyphen' });
+  store.save('Old pine 2', 'bonsaiLiterati', { marker: 'number' });
+
+  const config = store.toPresetConfig();
+
+  assert.deepEqual(Object.keys(config.presets), [
+    'oldPine',
+    'oldPine2',
+    'oldPine22',
+  ]);
+  assert.deepEqual(
+    Object.values(config.presets).map((preset) => preset.marker),
+    ['space', 'hyphen', 'number'],
+  );
+});
+
 test('variant names become usable YAML keys', () => {
   assert.equal(toPresetId('Old pine'), 'oldPine');
   assert.equal(toPresetId('  windswept   juniper '), 'windsweptJuniper');

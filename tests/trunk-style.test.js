@@ -9,7 +9,13 @@ import {
 import { TreeGenerator } from '../src/generation/tree-generator.js';
 import { createTestPreset } from './fixtures/tree-preset-fixture.js';
 
-const BASE_TRUNK = Object.freeze({ bend: 0.6, movement: 1, curveCount: 2, sweep: 0.4 });
+const BASE_TRUNK = Object.freeze({
+  bend: 0.6,
+  movement: 1,
+  curveCount: 2,
+  sweep: 0.4,
+  segments: 12,
+});
 const BONSAI_STYLE_IDS = TRUNK_STYLE_IDS.filter((id) => id !== 'natural');
 
 test('every bonsai trunk style leaves the ground at the origin', () => {
@@ -107,6 +113,77 @@ test('movement scales the displacement and taper is overridable per preset', () 
     createTrunkStyle({ ...BASE_TRUNK, style: 'slant', taperPower: 0.4 }).taperPower,
     0.4,
   );
+});
+
+/**
+ * The swept trunk's first ring is perpendicular to the tangent and as wide as
+ * the root flare, so a trunk that launches at an angle tips its own base out of
+ * the ground. The ramp is what keeps that from happening, and it is invisible
+ * in the style functions themselves.
+ */
+test('bonsai trunks leave the nebari close to vertical', () => {
+  for (const segments of [4, 8, 12, 16]) {
+    for (const style of BONSAI_STYLE_IDS) {
+      const preset = createTestPreset({
+        trunk: {
+          style,
+          segments,
+          movement: 1.5,
+          curveCount: 2.4,
+          sweep: 0.8,
+          bend: 0.9,
+          branching: {
+            depth: 3,
+            primaryCount: 4,
+            childCount: [1, 2],
+            lengthDecay: 0.64,
+            radiusDecay: 0.62,
+            upwardBias: 0.66,
+            gnarl: 0.9,
+            twist: 0.6,
+            exposedTipRatio: 0.16,
+          },
+        },
+      });
+
+      for (let seed = 1; seed <= 6; seed += 1) {
+        const points = new TreeGenerator().generate(preset, seed, {
+          includeSurfaceSamples: false,
+        }).trunk.points;
+        const rise = points[1].y - points[0].y;
+        const travel = Math.hypot(
+          points[1].x - points[0].x,
+          points[1].z - points[0].z,
+        );
+        const degrees = (Math.atan2(travel, rise) * 180) / Math.PI;
+
+        assert.ok(
+          degrees < 20,
+          `style '${style}' with ${segments} segments seed ${seed} leaves the ground at ${degrees.toFixed(1)} degrees`,
+        );
+      }
+    }
+  }
+});
+
+test('the ramp is fully open by the apex, so it cannot move the crown anchor', () => {
+  for (const segments of [4, 8, 12, 16]) {
+    for (const id of BONSAI_STYLE_IDS) {
+      const style = createTrunkStyle({ ...BASE_TRUNK, style: id, segments });
+
+      assert.equal(style.rampAt(1), 1);
+      assert.equal(style.rampAt(0), 0);
+      assert.deepEqual(style.crownAnchor, {
+        x: style.displace(1).x,
+        z: style.displace(1).z,
+      });
+    }
+  }
+
+  // The historic style is exempt: a flat ramp reproduces its trunk exactly.
+  const natural = createTrunkStyle({ ...BASE_TRUNK, style: 'natural' });
+  assert.equal(natural.rampAt(0), 1);
+  assert.equal(natural.rampAt(0.5), 1);
 });
 
 test('an unknown trunk style is rejected', () => {

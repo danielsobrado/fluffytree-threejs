@@ -32,6 +32,7 @@ const DEFAULT_STYLE_ID = 'natural';
 const DEFAULT_MOVEMENT = 1;
 const DEFAULT_CURVE_COUNT = 1;
 const DEFAULT_SWEEP = 0;
+const DEFAULT_SEGMENTS = 12;
 
 /**
  * How much of the trunk emerges from the nebari before its movement starts.
@@ -44,10 +45,27 @@ const DEFAULT_SWEEP = 0;
  */
 const ROOT_RAMP_SPAN = 0.36;
 
+/**
+ * The first trunk point above the base sits at `t = 1/segments`, and that point
+ * is what sets the launch angle. Stretching the span for a coarse trunk places
+ * that point equally low on the ramp however many segments the preset uses, so
+ * lowering the segment count in the studio cannot tilt the base out of the
+ * ground.
+ */
+const ROOT_RAMP_SEGMENT_REACH = 4.3;
+
 /** Zero value and zero slope at the base, fully open by the end of the span. */
-function rootRamp(t) {
-  const ratio = Math.min(1, t / ROOT_RAMP_SPAN);
-  return ratio * ratio * (3 - 2 * ratio);
+function createRootRamp(segments) {
+  const segmentCount = Math.max(1, Number(segments) || DEFAULT_SEGMENTS);
+  const span = Math.min(
+    1,
+    Math.max(ROOT_RAMP_SPAN, ROOT_RAMP_SEGMENT_REACH / segmentCount),
+  );
+
+  return (t) => {
+    const ratio = Math.min(1, t / span);
+    return ratio * ratio * (3 - 2 * ratio);
+  };
 }
 
 function rotate(lateral, cross, sweep) {
@@ -250,7 +268,7 @@ export function createTrunkStyle(trunk) {
      * It reaches 1 well before the apex, so it shapes how the trunk leaves the
      * ground without moving the point the crown is anchored to.
      */
-    rampAt: style.legacy ? () => 1 : rootRamp,
+    rampAt: style.legacy ? () => 1 : createRootRamp(trunk.segments),
     // Where the crown sits relative to the preset's own lean. Styles that walk
     // their apex away from the roots take the canopy with them.
     crownAnchor: Object.freeze(

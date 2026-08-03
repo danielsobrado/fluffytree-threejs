@@ -93,7 +93,19 @@ export class PresetVariantStore {
 
     for (const [name, variant] of Object.entries(variants)) {
       if (!variant?.value) continue;
-      presets[toPresetId(name)] = structuredClone(variant.value);
+      const baseId = toPresetId(name);
+      let presetId = baseId;
+      let suffix = 2;
+
+      // Distinct display names can collapse to the same YAML-safe id (for
+      // example, "Old pine" and "Old-pine"). Preserve every saved setting
+      // instead of silently replacing the earlier one in the export.
+      while (Object.hasOwn(presets, presetId)) {
+        presetId = `${baseId}${suffix}`;
+        suffix += 1;
+      }
+
+      presets[presetId] = structuredClone(variant.value);
     }
 
     return { presets };
