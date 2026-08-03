@@ -72,10 +72,6 @@ function createCandidate(
     z: surfacePoint.z + normal.z * radialOffset,
   };
   const clearance = calculateLobeClearance(surfacePoint, lobes, lobe.id);
-  const cardWidth =
-    meanScale *
-    settings.cardScaleSample *
-    FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier;
   const exposure = clearanceToExposure(clearance);
   const outward = normalizeVector({
     x: surfacePoint.x - crownCenter.x,
@@ -92,6 +88,16 @@ function createCandidate(
     outwardAlignment * FOLIAGE_SHELL_CONSTANTS.outwardWeight +
     upwardAlignment * FOLIAGE_SHELL_CONSTANTS.upwardWeight +
     random.next() * FOLIAGE_SHELL_CONSTANTS.scoreJitter;
+  const scale = meanScale * random.range(settings.sizeRatio[0], settings.sizeRatio[1]);
+  const widthRatio = random.range(settings.widthRatio[0], settings.widthRatio[1]);
+  const outwardRatio = random.range(
+    settings.outwardRatio[0],
+    settings.outwardRatio[1],
+  );
+  const cardWidth =
+    scale *
+    widthRatio *
+    FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier;
 
   return {
     candidateIndex,
@@ -102,13 +108,11 @@ function createCandidate(
     exposure,
     clearance,
     score,
+    cardWidth,
     coverageRadius: cardWidth * settings.coverageCardRatio,
-    scale: meanScale * random.range(settings.sizeRatio[0], settings.sizeRatio[1]),
-    widthRatio: random.range(settings.widthRatio[0], settings.widthRatio[1]),
-    outwardRatio: random.range(
-      settings.outwardRatio[0],
-      settings.outwardRatio[1],
-    ),
+    scale,
+    widthRatio,
+    outwardRatio,
     rotation: random.range(0, FOLIAGE_SHELL_CONSTANTS.tau),
     colorMix: clamp01(lobe.colorMix + random.signed() * settings.colorJitter),
     windPhase: random.range(0, FOLIAGE_SHELL_CONSTANTS.tau),
@@ -193,6 +197,7 @@ export class FoliageShellGenerator {
         scale: candidate.scale,
         widthRatio: candidate.widthRatio,
         outwardRatio: candidate.outwardRatio,
+        cardWidth: candidate.cardWidth,
         rotation: candidate.rotation,
         colorMix: candidate.colorMix,
         exposure: candidate.exposure,

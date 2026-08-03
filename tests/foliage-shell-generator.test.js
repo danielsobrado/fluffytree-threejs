@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { normalizedRotatedPointDistance } from '../src/generation/lobe-geometry.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
+import { FOLIAGE_RENDERING_CONSTANTS } from '../src/rendering/foliage-rendering-constants.js';
 import { createTestPreset } from './fixtures/tree-preset-fixture.js';
 
 const NORMAL_TOLERANCE = 1e-9;
@@ -88,6 +89,11 @@ test('foliage shell fins sit outside their source lobe with valid dimensions', (
       instance.normal.y,
       instance.normal.z,
     );
+    const renderedCardWidth =
+      instance.scale *
+      instance.widthRatio *
+      FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier;
+
     assert.ok(Math.abs(normalLength - 1) <= NORMAL_TOLERANCE);
     assert.ok(instance.exposure >= 0 && instance.exposure <= 1);
     assert.ok(instance.exposure >= preset.foliage.shell.exposureThreshold);
@@ -98,6 +104,15 @@ test('foliage shell fins sit outside their source lobe with valid dimensions', (
     assert.ok(instance.widthRatio <= preset.foliage.shell.widthRatio[1]);
     assert.ok(instance.outwardRatio >= preset.foliage.shell.outwardRatio[0]);
     assert.ok(instance.outwardRatio <= preset.foliage.shell.outwardRatio[1]);
+    assert.ok(
+      Math.abs(instance.cardWidth - renderedCardWidth) <= COVERAGE_TOLERANCE,
+    );
+    assert.ok(
+      Math.abs(
+        instance.coverageRadius -
+          renderedCardWidth * preset.foliage.shell.coverageCardRatio,
+      ) <= COVERAGE_TOLERANCE,
+    );
     assert.ok(
       Math.abs(instance.colorMix - lobe.colorMix) <=
         preset.foliage.shell.colorJitter + Number.EPSILON,

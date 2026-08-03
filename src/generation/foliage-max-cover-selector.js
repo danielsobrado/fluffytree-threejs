@@ -1,7 +1,7 @@
 import { FoliageCoverageIndex } from './foliage-coverage-index.js';
-import { selectHierarchicalFoliageMaxCover } from './foliage-max-cover-partitioner.js';
 import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
 import { SpatialHashGrid } from './spatial-hash-grid.js';
+import { StableMaxHeap } from './stable-max-heap.js';
 
 function compareIds(left, right) {
   if (typeof left === 'number' && typeof right === 'number') return left - right;
@@ -18,7 +18,7 @@ function itemPriority(item) {
   return Number(item.exposure ?? 0);
 }
 
-function compareItemPriority(left, right) {
+function compareItemPriorityForSort(left, right) {
   const priorityDifference = itemPriority(right) - itemPriority(left);
   if (priorityDifference !== 0) return priorityDifference;
 
@@ -27,15 +27,39 @@ function compareItemPriority(left, right) {
   return compareIds(itemStableId(left), itemStableId(right));
 }
 
+function compareItemPriorityForHeap(left, right) {
+  const priorityDifference = itemPriority(left) - itemPriority(right);
+  if (priorityDifference !== 0) return priorityDifference;
+
+  const lobeDifference = compareIds(right.lobeId, left.lobeId);
+  if (lobeDifference !== 0) return lobeDifference;
+  return compareIds(itemStableId(right), itemStableId(left));
+}
+
+function compareRatios(left, right) {
+  if (left === right) return 0;
+  if (left === Number.POSITIVE_INFINITY) return 1;
+  if (right === Number.POSITIVE_INFINITY) return -1;
+  return left - right;
+}
+
+function compareCoverageRecords(left, right) {
+  return (
+    compareRatios(left.upperBound, right.upperBound) ||
+    compareItemPriorityForHeap(left.item, right.item)
+  );
+}
+
 function normalDot(left, right) {
   return left.x * right.x + left.y * right.y + left.z * right.z;
 }
 
-function distanceSquared(left, right) {
-  const x = left.x - right.x;
-  const y = left.y - right.y;
-  const z = left.z - right.z;
-  return x * x + y * y + z * z;
+function distance(left, right) {
+  return Math.hypot(
+    left.x - right.x,
+    left.y - right.y,
+    left.z - right.z,
+  );
 }
 
 function validateItem(item) {
@@ -60,16 +84,26 @@ function validateItem(item) {
   }
 }
 
-function isCovered(candidate, selected, coverageRatio) {
+function coverageRatio(candidate, selected) {
   if (
     normalDot(candidate.normal, selected.normal) <
     FOLIAGE_SHELL_CONSTANTS.minimumCoverageNormalDot
   ) {
-    return false;
+    return Number.POSITIVE_INFINITY;
   }
 
-  const radius = selected.coverageRadius * coverageRatio;
-  return distanceSquared(candidate.position, selected.position) <= radius * radius;
+  return distance(candidate.position, selected.position) / selected.coverageRadius;
+}
+
+function findNearbyCoverageRatio(grid, candidate) {
+  let nearest = Number.POSITIVE_INFINITY;
+
+  grid.findNear(candidate.position, (selected) => {
+    nearest = Math.min(nearest, coverageRatio(candidate, selected));
+    return false;
+  });
+
+  return nearest;
 }
 
 function selectCompleteCoverage(items, stopCoverageRatio) {
@@ -83,15 +117,20 @@ function selectCompleteCoverage(items, stopCoverageRatio) {
     ),
   );
   const selected = [];
+  let maximumCoverageRatio = 0;
   let worst = null;
 
-  for (const candidate of [...items].sort(compareItemPriority)) {
-    const covering = grid.findNear(candidate.position, (accepted) =>
-      isCovered(candidate, accepted, stopCoverageRatio),
-    );
+  for (const candidate of [...items].sort(compareItemPriorityForSort)) {
+    const nearest = findNearbyCoverageRatio(grid, candidate);
 
-    if (covering) {
-      worst ??= candidate;
+    if (
+      nearest <=
+      stopCoverageRatio + FOLIAGE_SHELL_CONSTANTS.coverageRatioEpsilon
+    ) {
+      if (nearest > maximumCoverageRatio) {
+        maximumCoverageRatio = nearest;
+        worst = candidate;
+      }
       continue;
     }
 
@@ -99,20 +138,98 @@ function selectCompleteCoverage(items, stopCoverageRatio) {
     grid.insert(candidate.position, candidate);
   }
 
-  return {
-    selected,
-    maximumCoverageRatio: worst ? stopCoverageRatio : 0,
-    worst,
-  };
+  return { selected, maximumCoverageRatio, worst };
 }
 
-function calculateCoverage(items, selected) {
+function selectLobeAnchors(items) {
+  const bestByLobe = new Map();
+
+  for (const item of items) {
+    const current = bestByLobe.get(item.lobeId);
+    if (
+      !current ||
+      compareItemPriorityForHeap(item, current) > 0
+    ) {
+      bestByLobe.set(item.lobeId, item);
+    }
+  }
+
+  return [...bestByLobe.entries()]
+    .sort(([left], [right]) => compareIds(left, right))
+    .map(([, item]) => item);
+}
+
+function bestItem(items) {
+  let best = null;
+
+  for (const item of items) {
+    if (!best || compareItemPriorityForHeap(item, best) > 0) best = item;
+  }
+
+  return best;
+}
+
+function createCoverageIndex(items, selected) {
   const maximumCoverageRadius = Math.max(
     ...items.map((item) => item.coverageRadius),
   );
   const index = new FoliageCoverageIndex(maximumCoverageRadius);
   for (const item of selected) index.add(item);
+  return index;
+}
 
+function isCurrentFarthest(record, heap) {
+  const next = heap.peek();
+  return !next || compareCoverageRecords(record, next) >= 0;
+}
+
+function selectFixedCountCoverage(items, targetCount, minimumPerLobe) {
+  const anchors = minimumPerLobe ? selectLobeAnchors(items) : [bestItem(items)];
+  if (anchors.length > targetCount) {
+    throw new RangeError(
+      'Foliage max-cover targetCount cannot be smaller than mandatory lobe anchors.',
+    );
+  }
+
+  const selected = [];
+  const selectedSet = new Set();
+
+  for (const anchor of anchors) {
+    if (!anchor || selectedSet.has(anchor)) continue;
+    selected.push(anchor);
+    selectedSet.add(anchor);
+  }
+
+  const index = createCoverageIndex(items, selected);
+  const heap = new StableMaxHeap(compareCoverageRecords);
+
+  for (const item of items) {
+    if (selectedSet.has(item)) continue;
+    heap.push({ item, upperBound: index.nearestRatio(item) });
+  }
+
+  while (selected.length < targetCount && heap.size > 0) {
+    const record = heap.pop();
+    if (!record || selectedSet.has(record.item)) continue;
+
+    const refreshed = {
+      item: record.item,
+      upperBound: index.nearestRatio(record.item),
+    };
+    if (!isCurrentFarthest(refreshed, heap)) {
+      heap.push(refreshed);
+      continue;
+    }
+
+    selected.push(refreshed.item);
+    selectedSet.add(refreshed.item);
+    index.add(refreshed.item);
+  }
+
+  return { selected, index };
+}
+
+function calculateCoverage(items, index) {
   let maximumCoverageRatio = 0;
   let worst = null;
 
@@ -175,13 +292,15 @@ export function selectDeterministicFoliageMaxCover(
     });
   }
 
-  const selected = selectHierarchicalFoliageMaxCover(items, boundedTarget, {
+  const result = selectFixedCountCoverage(
+    items,
+    boundedTarget,
     minimumPerLobe,
-  });
-  const coverage = calculateCoverage(items, selected);
+  );
+  const coverage = calculateCoverage(items, result.index);
 
   return Object.freeze({
-    selected: Object.freeze(selected),
+    selected: Object.freeze(result.selected),
     maximumCoverageRatio: coverage.maximumCoverageRatio,
     worst: coverage.worst,
   });

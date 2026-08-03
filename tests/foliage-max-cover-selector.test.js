@@ -32,8 +32,22 @@ test('complete selection accepts a maximal set that covers every candidate', () 
     result.selected.map((item) => item.id),
     [0, 2],
   );
-  assert.equal(result.maximumCoverageRatio, 1);
+  assert.ok(Math.abs(result.maximumCoverageRatio - 1 / 1.1) < 1e-12);
   assert.equal(result.worst.id, 1);
+});
+
+test('complete selection uses each selected card actual coverage radius', () => {
+  const items = [
+    createItem(0, 0, { coverageRadius: 0.4 }),
+    createItem(1, 0.5, { coverageRadius: 2 }),
+  ];
+  const result = selectDeterministicFoliageMaxCover(items);
+
+  assert.deepEqual(
+    result.selected.map((item) => item.id),
+    [0, 1],
+  );
+  assert.equal(result.maximumCoverageRatio, 0);
 });
 
 test('complete selection is independent from input order', () => {
@@ -88,7 +102,7 @@ test('fixed-count reduction keeps one stable anchor per lobe', () => {
   assert.ok(Number.isFinite(result.maximumCoverageRatio));
 });
 
-test('fixed-count global partition represents separated canopy regions', () => {
+test('fixed-count selection takes the globally furthest canopy region', () => {
   const items = [
     createItem(0, 0),
     createItem(1, 1),
@@ -100,9 +114,9 @@ test('fixed-count global partition represents separated canopy regions', () => {
     stopCoverageRatio: null,
     minimumPerLobe: false,
   });
-  const selectedIds = result.selected.map((item) => item.id);
 
-  assert.equal(selectedIds.length, 2);
-  assert.ok(selectedIds.some((id) => id <= 1));
-  assert.ok(selectedIds.some((id) => id >= 2));
+  assert.deepEqual(
+    result.selected.map((item) => item.id),
+    [0, 3],
+  );
 });
