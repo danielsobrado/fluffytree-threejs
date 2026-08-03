@@ -2,21 +2,29 @@ const GATED_METRICS = Object.freeze([
   'holeRatio',
   'largestHoleRatio',
   'coverageRatio',
+  'coverageRetention',
 ]);
 
 function isBelowMinimum(metric) {
-  return metric === 'coverageRatio';
+  return metric === 'coverageRatio' || metric === 'coverageRetention';
 }
 
 function summarize(values) {
+  const finiteValues = values.filter(Number.isFinite);
   return Object.freeze({
-    minimum: values.length === 0 ? 0 : Math.min(...values),
-    maximum: values.length === 0 ? 0 : Math.max(...values),
+    minimum: finiteValues.length === 0 ? 0 : Math.min(...finiteValues),
+    maximum: finiteValues.length === 0 ? 0 : Math.max(...finiteValues),
     mean:
-      values.length === 0
+      finiteValues.length === 0
         ? 0
-        : values.reduce((total, value) => total + value, 0) / values.length,
+        : finiteValues.reduce((total, value) => total + value, 0) /
+          finiteValues.length,
   });
+}
+
+function viewLabel(view) {
+  const lod = view.lodState ? `${view.lodState}/` : '';
+  return `${view.group}/${lod}${view.name}`;
 }
 
 export function summarizeViewMetrics(views) {
@@ -33,10 +41,6 @@ export function summarizeViewMetrics(views) {
   return Object.freeze(summary);
 }
 
-/**
- * A view fails when the camera can see through the model more than the preset
- * allows, either in total or through one single opening.
- */
 export function evaluateSolidityView(view, thresholds) {
   const failures = [];
 
@@ -45,11 +49,16 @@ export function evaluateSolidityView(view, thresholds) {
     if (limit === undefined) continue;
 
     const actual = view[metric];
+    if (!Number.isFinite(actual)) {
+      failures.push(`${viewLabel(view)} ${metric} is not finite`);
+      continue;
+    }
+
     const failed = isBelowMinimum(metric) ? actual < limit : actual > limit;
 
     if (failed) {
       failures.push(
-        `${view.group}/${view.name} ${metric} ${actual.toFixed(5)} ${
+        `${viewLabel(view)} ${metric} ${actual.toFixed(5)} ${
           isBelowMinimum(metric) ? '<' : '>'
         } ${Number(limit).toFixed(5)}`,
       );
