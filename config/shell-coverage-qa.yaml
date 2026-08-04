@@ -1,30 +1,21 @@
-# Leaf placement coverage gate.
+# Leaf coverage gate.
 #
-# The solidity gate renders the alpha-cut foliage and proves the canopy does not
-# show sky through the final material. This gate independently proves that the
-# shell card footprints cover the exposed crown surface without placement-scale
-# gaps. Keeping those responsibilities separate avoids pretending that a scalar
-# radius describes every hole in a detailed leaf silhouette.
+# Generation uses the configured packing radius only as a broad spatial limit.
+# A candidate is covered only when its surface point maps to an opaque texel in
+# at least one rendered card plane after card orientation and linear texture
+# filtering are applied.
 #
-# Generation first performs deterministic global max-cover selection. Every
-# exposed candidate must have a direction-compatible selected cluster within its
-# effective packing radius. When a preset requests a radius beyond the safe quad
-# inradius, generation expands only the shell geometry so the physical radius
-# remains at or below 0.49 of the actual rendered card width.
+# QA then performs two independent checks:
 #
-# QA then performs three independent checks:
-#
-# 1. The physical coverage ratio never exceeds the rendered quad bound.
-# 2. An offset Fibonacci probe set measures the rendered placement without
+# 1. An offset Fibonacci probe set measures centre spacing and leaf area without
 #    replaying the generator candidate set.
-# 3. Adaptive icosphere subdivision certifies every potentially exposed surface
-#    patch. A patch passes only when one direction-compatible card footprint
-#    covers the whole patch after adding conservative world-space and normal
-#    uncertainty. Patches that cannot be proven hidden or covered are subdivided.
+# 2. Adaptive icosphere subdivision certifies every potentially exposed surface
+#    patch. Whole patches are accepted only inside the alpha mask's guaranteed
+#    opaque centre disk. Individual samples outside that disk are checked against
+#    the complete filtered alpha silhouette of every compatible nearby cluster.
 #
-# Continuous coverage is expressed as distance divided by each card's effective
-# coverage radius. A value at or below 1 means the complete patch lies inside the
-# same physically bounded radius used by generation.
+# This keeps the proof tied to the pixels rendered by the material rather than
+# treating the transparent parts of a quad as foliage.
 
 run:
   seedCount: 24
