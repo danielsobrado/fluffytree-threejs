@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { FOLIAGE_SHELL_CONSTANTS } from '../src/generation/foliage-shell-constants.js';
 import { normalizedRotatedPointDistance } from '../src/generation/lobe-geometry.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
 import { FOLIAGE_RENDERING_CONSTANTS } from '../src/rendering/foliage-rendering-constants.js';
@@ -43,28 +44,34 @@ test('every lobe carries clusters and exposed candidates satisfy max-cover', () 
   );
 });
 
-test('each cluster covers using its own rendered card width', () => {
+test('each cluster coverage disk stays inside its rendered card geometry', () => {
   const preset = createTestPreset();
   const tree = new TreeGenerator().generate(preset, 8128);
-  const settings = preset.foliage.shell;
   const widths = new Set();
 
   for (const instance of tree.shell) {
     const cardWidth =
-      instance.scale *
+      instance.shellScale *
       instance.widthRatio *
       FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier;
     widths.add(cardWidth);
+
+    assert.ok(Math.abs(instance.cardWidth - cardWidth) <= COVERAGE_TOLERANCE);
     assert.ok(
-      Math.abs(instance.coverageRadius - cardWidth * settings.coverageCardRatio) <
-        COVERAGE_TOLERANCE,
-      `cluster ${instance.id} covers by a radius its card does not reach`,
+      instance.coverageRadius / cardWidth <=
+        FOLIAGE_SHELL_CONSTANTS.maximumPhysicalCoverageCardRatio +
+          COVERAGE_TOLERANCE,
+      `cluster ${instance.id} claims space beyond its rendered quad`,
+    );
+    assert.equal(
+      instance.physicalCoverageRatio,
+      Math.min(
+        preset.foliage.shell.coverageCardRatio,
+        FOLIAGE_SHELL_CONSTANTS.maximumPhysicalCoverageCardRatio,
+      ),
     );
   }
 
-  // Card size is randomised per cluster, so a radius taken from the preset
-  // average would still satisfy the check above for one lucky instance but not
-  // across the spread.
   assert.ok(widths.size > 1, 'card widths should vary between clusters');
 });
 
@@ -86,7 +93,7 @@ test('foliage shell fins sit outside their source lobe with valid dimensions', (
       instance.normal.z,
     );
     const renderedCardWidth =
-      instance.scale *
+      instance.shellScale *
       instance.widthRatio *
       FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier;
 
@@ -96,6 +103,7 @@ test('foliage shell fins sit outside their source lobe with valid dimensions', (
     assert.ok(Number.isFinite(instance.clearance));
     assert.ok(instance.colorMix >= 0 && instance.colorMix <= 1);
     assert.ok(instance.scale > 0);
+    assert.ok(instance.shellScale > 0);
     assert.ok(instance.widthRatio >= preset.foliage.shell.widthRatio[0]);
     assert.ok(instance.widthRatio <= preset.foliage.shell.widthRatio[1]);
     assert.ok(instance.outwardRatio >= preset.foliage.shell.outwardRatio[0]);
@@ -106,7 +114,7 @@ test('foliage shell fins sit outside their source lobe with valid dimensions', (
     assert.ok(
       Math.abs(
         instance.coverageRadius -
-          renderedCardWidth * preset.foliage.shell.coverageCardRatio,
+          renderedCardWidth * instance.physicalCoverageRatio,
       ) <= COVERAGE_TOLERANCE,
     );
     assert.ok(
