@@ -1,3 +1,7 @@
+import {
+  foliageCardCoverageRatio,
+  guaranteedFoliageCoverageRadius,
+} from '../generation/foliage-card-coverage.js';
 import { FOLIAGE_SHELL_CONSTANTS } from '../generation/foliage-shell-constants.js';
 import { SpatialHashGrid } from '../generation/spatial-hash-grid.js';
 
@@ -36,6 +40,10 @@ function clusterCoverageUpperBound(
   normalUncertainty,
   minimumCoverageNormalDot,
 ) {
+  if (!(record.guaranteedCoverageRadius > 0)) {
+    return Number.POSITIVE_INFINITY;
+  }
+
   const minimumDot = Math.min(
     ...samples.normals.map((normal) => normalDot(normal, record.cluster.normal)),
   );
@@ -49,7 +57,10 @@ function clusterCoverageUpperBound(
       distance(position, record.cluster.position),
     ),
   );
-  return (maximumSampleDistance + worldUncertainty) / record.coverageRadius;
+  return (
+    (maximumSampleDistance + worldUncertainty) /
+    record.guaranteedCoverageRadius
+  );
 }
 
 function sampleCoverageRatio(record, position, normal, minimumCoverageNormalDot) {
@@ -57,17 +68,25 @@ function sampleCoverageRatio(record, position, normal, minimumCoverageNormalDot)
     return Number.POSITIVE_INFINITY;
   }
 
-  return distance(position, record.cluster.position) / record.coverageRadius;
+  return foliageCardCoverageRatio(
+    { position, surfacePoint: position, normal },
+    record.cluster,
+  );
 }
 
 export function createShellCoverageClusterIndex(clusters) {
   const records = clusters.map((cluster) => ({
     cluster,
     coverageRadius: Number(cluster.coverageRadius),
+    guaranteedCoverageRadius: guaranteedFoliageCoverageRadius(cluster),
   }));
   const maximumCoverageRadius = Math.max(
     0,
     ...records.map((record) => record.coverageRadius),
+  );
+  const maximumGuaranteedCoverageRadius = Math.max(
+    0,
+    ...records.map((record) => record.guaranteedCoverageRadius),
   );
   const grid = new SpatialHashGrid(
     Math.max(
@@ -88,6 +107,7 @@ export function createShellCoverageClusterIndex(clusters) {
   return Object.freeze({
     records: Object.freeze(records),
     maximumCoverageRadius,
+    maximumGuaranteedCoverageRadius,
     grid,
   });
 }
@@ -106,7 +126,7 @@ export function findTriangleCoverageUpperBound(
 
   const center = samples.positions.at(-1);
   const queryRadius =
-    index.maximumCoverageRadius * targetRatio + worldUncertainty;
+    index.maximumGuaranteedCoverageRadius * targetRatio + worldUncertainty;
   const nearby = collectNearbyRecords(index, center, queryRadius);
   let best = Number.POSITIVE_INFINITY;
 
@@ -126,11 +146,6 @@ export function findTriangleCoverageUpperBound(
   return best;
 }
 
-/**
- * Finds a covering cluster for one exact surface sample. Records farther than
- * the largest possible passing distance cannot satisfy targetRatio, so the
- * bounded query is enough to prove that an uncovered sample is a real witness.
- */
 export function findSampleCoverageRatio(
   index,
   position,
