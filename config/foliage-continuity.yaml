@@ -5,6 +5,7 @@ profiles:
     coreOverlapSafety: 0.88
     sameMacroOnly: false
     verticalBias: 0.04
+    maximumShellCardWidthSpread: 1.40
     lod:
       - coreScale: 1.00
         bridges: true
@@ -19,6 +20,7 @@ profiles:
     coreOverlapSafety: 0.86
     sameMacroOnly: false
     verticalBias: 0.38
+    maximumShellCardWidthSpread: 2.50
     lod:
       - coreScale: 1.02
         bridges: true
@@ -33,6 +35,7 @@ profiles:
     coreOverlapSafety: 0.87
     sameMacroOnly: false
     verticalBias: 0.14
+    maximumShellCardWidthSpread: 2.60
     lod:
       - coreScale: 1.00
         bridges: true
@@ -47,6 +50,7 @@ profiles:
     coreOverlapSafety: 0.88
     sameMacroOnly: true
     verticalBias: 0.08
+    maximumShellCardWidthSpread: 2.50
     lod:
       - coreScale: 1.00
         bridges: true
