@@ -50,6 +50,7 @@ function createInteriorInstances(
           z: instance.position.z - instance.normal.z * inset,
         },
         scale: instance.scale * scaleRatio,
+        shellScale: (instance.shellScale ?? instance.scale) * scaleRatio,
         exposure: instance.exposure * 0.32,
         colorMix: Math.max(0, instance.colorMix - 0.12),
         rotation: instance.rotation + Math.PI * 0.618,
@@ -130,10 +131,11 @@ export class FoliageShellBuilder {
       quaternion.setFromUnitVectors(LOCAL_OUTWARD, normal);
       twist.setFromAxisAngle(LOCAL_OUTWARD, instance.rotation);
       quaternion.multiply(twist);
+      const shellScale = instance.shellScale ?? instance.scale;
       scale.set(
-        instance.scale * instance.widthRatio * compensatedScaleMultiplier,
-        instance.scale * instance.widthRatio * compensatedScaleMultiplier,
-        instance.scale * instance.outwardRatio * compensatedScaleMultiplier,
+        shellScale * instance.widthRatio * compensatedScaleMultiplier,
+        shellScale * instance.widthRatio * compensatedScaleMultiplier,
+        shellScale * instance.outwardRatio * compensatedScaleMultiplier,
       );
       matrix.compose(position, quaternion, scale);
       shell.setMatrixAt(index, matrix);
