@@ -16,5 +16,11 @@ export const FOLIAGE_SHELL_CONSTANTS = Object.freeze({
   minimumCellSize: 1e-4,
   maximumCoverageSearchRings: 3,
   coverageRatioEpsilon: 1e-12,
+  // A disk beyond half a quad width leaves the rendered geometry in cardinal
+  // directions. Keep a small margin for floating-point and raster boundaries.
+  maximumPhysicalCoverageCardRatio: 0.49,
+  // Presets without a continuity profile still avoid tiny randomized cards
+  // dominating the packing density.
+  defaultMaximumShellCardWidthSpread: 1.4,
   seedSalt: 0x9e3779b9,
 });
