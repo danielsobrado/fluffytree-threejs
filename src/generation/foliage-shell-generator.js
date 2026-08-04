@@ -1,3 +1,4 @@
+import { createFoliageAlphaProfile } from '../rendering/foliage-alpha-profile.js';
 import { createFoliageCardSizing } from './foliage-card-sizing.js';
 import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
 import { selectDeterministicFoliageMaxCover } from './foliage-max-cover-selector.js';
@@ -60,6 +61,7 @@ function createCandidate(
   crownCenter,
   settings,
   maximumCardWidthSpread,
+  alphaProfile,
   random,
   candidateIndex,
 ) {
@@ -115,7 +117,12 @@ function createCandidate(
     outwardRatio,
     cardWidth: sizing.cardWidth,
     coverageRadius: sizing.coverageRadius,
-    physicalCoverageRatio: sizing.physicalCoverageRatio,
+    alphaCoverageRadius:
+      sizing.cardWidth * alphaProfile.guaranteedRadiusRatio,
+    alphaProfile,
+    leafShape: alphaProfile.shapeId,
+    alphaTest: alphaProfile.alphaTest,
+    planesPerCluster: alphaProfile.planesPerCluster,
     rotation: random.range(0, FOLIAGE_SHELL_CONSTANTS.tau),
     colorMix: clamp01(lobe.colorMix + random.signed() * settings.colorJitter),
     windPhase: random.range(0, FOLIAGE_SHELL_CONSTANTS.tau),
@@ -151,6 +158,11 @@ export class FoliageShellGenerator {
         preset.crown.profile
       ] ??
       FOLIAGE_SHELL_CONSTANTS.defaultMaximumShellCardWidthSpread;
+    const alphaProfile = createFoliageAlphaProfile({
+      shapeId: preset.foliage.leafShape,
+      alphaTest: settings.alphaTest,
+      planesPerCluster: settings.planesPerCluster,
+    });
     const lobes = prepareExposureLobes(sourceLobes);
     const crownCenter = calculateCrownCenter(lobes);
     const bestByLobe = new Map();
@@ -168,6 +180,7 @@ export class FoliageShellGenerator {
           crownCenter,
           settings,
           maximumCardWidthSpread,
+          alphaProfile,
           random,
           index,
         );
@@ -215,7 +228,10 @@ export class FoliageShellGenerator {
         exposure: candidate.exposure,
         clearance: candidate.clearance,
         coverageRadius: candidate.coverageRadius,
-        physicalCoverageRatio: candidate.physicalCoverageRatio,
+        alphaCoverageRadius: candidate.alphaCoverageRadius,
+        leafShape: candidate.leafShape,
+        alphaTest: candidate.alphaTest,
+        planesPerCluster: candidate.planesPerCluster,
         windPhase: candidate.windPhase,
       };
     });
