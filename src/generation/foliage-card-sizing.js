@@ -1,5 +1,5 @@
-import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
 import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js';
+import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
 
 function midpoint(pair) {
   return (Number(pair[0]) + Number(pair[1])) * 0.5;
@@ -35,14 +35,7 @@ export function createFoliageCardSizing(
     maximumSpread ??
       FOLIAGE_SHELL_CONSTANTS.defaultMaximumShellCardWidthSpread,
   );
-  const physicalCoverageRatio = Math.min(
-    Number(settings.coverageCardRatio),
-    FOLIAGE_SHELL_CONSTANTS.maximumPhysicalCoverageCardRatio,
-  );
-  const geometryCompensation =
-    Number(settings.coverageCardRatio) / physicalCoverageRatio;
-  const shellScale =
-    meanScale * (widthFactor / widthRatio) * geometryCompensation;
+  const shellScale = meanScale * (widthFactor / widthRatio);
   const cardWidth =
     shellScale *
     widthRatio *
@@ -53,7 +46,6 @@ export function createFoliageCardSizing(
     shellScale,
     widthRatio,
     cardWidth,
-    coverageRadius: cardWidth * physicalCoverageRatio,
-    physicalCoverageRatio,
+    coverageRadius: cardWidth * Number(settings.coverageCardRatio),
   });
 }
