@@ -79,7 +79,7 @@ presets:
         layerOffsetRatio: 0.16
       shell:
         candidatesPerLobe: 640
-        coverageCardRatio: 0.43
+        coverageCardRatio: 0.544
         sizeRatio: [0.1, 0.16]
         widthRatio: [0.72, 1.05]
         outwardRatio: [1.0, 1.35]
@@ -173,7 +173,7 @@ presets:
         layerOffsetRatio: 0.17
       shell:
         candidatesPerLobe: 1600
-        coverageCardRatio: 0.385
+        coverageCardRatio: 0.640
         sizeRatio: [0.105, 0.175]
         widthRatio: [0.68, 1.0]
         outwardRatio: [1.0, 1.32]
@@ -267,7 +267,7 @@ presets:
         layerOffsetRatio: 0.17
       shell:
         candidatesPerLobe: 592
-        coverageCardRatio: 0.43
+        coverageCardRatio: 0.638
         sizeRatio: [0.1, 0.17]
         widthRatio: [0.72, 1.08]
         outwardRatio: [1.02, 1.42]
@@ -374,7 +374,7 @@ presets:
         layerOffsetRatio: 0.16
       shell:
         candidatesPerLobe: 700
-        coverageCardRatio: 0.385
+        coverageCardRatio: 0.681
         sizeRatio: [0.11, 0.18]
         widthRatio: [0.72, 1.05]
         outwardRatio: [1.0, 1.32]
@@ -474,7 +474,7 @@ presets:
         layerOffsetRatio: 0.16
       shell:
         candidatesPerLobe: 720
-        coverageCardRatio: 0.4
+        coverageCardRatio: 0.682
         sizeRatio: [0.11, 0.18]
         widthRatio: [0.72, 1.05]
         outwardRatio: [1.0, 1.32]
@@ -576,7 +576,7 @@ presets:
         candidatesPerLobe: 640
         # Ran at leaf area 9.4 where every other preset sits near 7.5, which put
         # five of twenty-four sweep seeds over both the LOD0 and LOD1 budgets.
-        coverageCardRatio: 0.415
+        coverageCardRatio: 0.685
         sizeRatio: [0.11, 0.18]
         widthRatio: [0.72, 1.05]
         outwardRatio: [1.0, 1.3]
@@ -673,7 +673,7 @@ presets:
         layerOffsetRatio: 0.16
       shell:
         candidatesPerLobe: 420
-        coverageCardRatio: 0.4
+        coverageCardRatio: 0.514
         sizeRatio: [0.12, 0.2]
         widthRatio: [0.72, 1.05]
         outwardRatio: [1.0, 1.3]
@@ -767,7 +767,7 @@ presets:
         layerOffsetRatio: 0.17
       shell:
         candidatesPerLobe: 400
-        coverageCardRatio: 0.4
+        coverageCardRatio: 0.489
         sizeRatio: [0.12, 0.2]
         widthRatio: [0.72, 1.06]
         outwardRatio: [1.0, 1.32]

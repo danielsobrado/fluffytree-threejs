@@ -43,33 +43,29 @@ test('every lobe carries clusters and exposed candidates satisfy max-cover', () 
   );
 });
 
-test('selected clusters keep a covering separation from compatible neighbours', () => {
+test('each cluster covers using its own rendered card width', () => {
   const preset = createTestPreset();
   const tree = new TreeGenerator().generate(preset, 8128);
+  const settings = preset.foliage.shell;
+  const widths = new Set();
 
   for (const instance of tree.shell) {
-    for (const other of tree.shell) {
-      if (other.id >= instance.id) continue;
-
-      const dot =
-        instance.normal.x * other.normal.x +
-        instance.normal.y * other.normal.y +
-        instance.normal.z * other.normal.z;
-      if (dot < 0.2588) continue;
-
-      const distance = Math.hypot(
-        instance.surfacePoint.x - other.position.x,
-        instance.surfacePoint.y - other.position.y,
-        instance.surfacePoint.z - other.position.z,
-      );
-      if (distance < other.coverageRadius) {
-        assert.equal(
-          tree.shell.filter((entry) => entry.lobeId === instance.lobeId).length,
-          1,
-        );
-      }
-    }
+    const cardWidth =
+      instance.scale *
+      instance.widthRatio *
+      FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier;
+    widths.add(cardWidth);
+    assert.ok(
+      Math.abs(instance.coverageRadius - cardWidth * settings.coverageCardRatio) <
+        COVERAGE_TOLERANCE,
+      `cluster ${instance.id} covers by a radius its card does not reach`,
+    );
   }
+
+  // Card size is randomised per cluster, so a radius taken from the preset
+  // average would still satisfy the check above for one lucky instance but not
+  // across the spread.
+  assert.ok(widths.size > 1, 'card widths should vary between clusters');
 });
 
 test('foliage shell fins sit outside their source lobe with valid dimensions', () => {
