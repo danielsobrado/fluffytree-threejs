@@ -12,6 +12,7 @@ import { TreeGenerator } from '../generation/tree-generator.js';
 import { analyzeShellCoverage } from '../qa/shell-coverage-analyzer.js';
 import { disposeObject } from '../rendering/object-disposer.js';
 import { SceneFactory } from '../rendering/scene-factory.js';
+import { TreeImpostorRenderer } from '../rendering/tree-impostor-renderer.js';
 import { TreeMeshBuilder } from '../rendering/tree-mesh-builder.js';
 import { TreeBillboardBatchManager } from '../rendering/tree-billboard-batch-manager.js';
 import { TreeLodController } from '../rendering/tree-lod-controller.js';
@@ -66,6 +67,13 @@ export class TreeDemo {
     this.presetMap = library.presets;
     const presetMap = this.presetMap;
     this.context = this.sceneFactory.create(container, this.sceneConfig);
+    // Impostors are captured from the level they replace, which needs the live
+    // renderer and the same lights the scene is drawn with.
+    this.impostorRenderer = new TreeImpostorRenderer(this.context.renderer);
+    this.impostorRenderer.configureLights(
+      this.context.sun.position.clone().normalize(),
+      this.sceneConfig.lighting,
+    );
     this.applyRequestedView();
     this.billboardBatchManager = new TreeBillboardBatchManager(this.context.scene);
     this.lodController = new TreeLodController(
@@ -131,6 +139,7 @@ export class TreeDemo {
       this.treeDataByPreset.set(entry.preset, treeData);
       const tree = this.treeMeshBuilder.build(treeData, {
         sunDirection: this.context.sun.position.clone().normalize(),
+        impostorRenderer: this.impostorRenderer,
         deferHero: !this.renderSmokeProbe.enabled,
         minimumLod:
           this.stressMode && Number(entry.position[2]) <= -160 ? 3 :
@@ -346,6 +355,7 @@ export class TreeDemo {
       disposeObject(root);
     }
 
+    this.impostorRenderer?.dispose();
     this.context?.renderer.dispose();
     this.treeRoots.length = 0;
     this.lodController?.clear();

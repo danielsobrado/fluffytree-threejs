@@ -115,6 +115,7 @@ export class TreeMeshBuilder {
       minimumLod = 0,
       impostorRotationY = 0,
       onHeroBuilt = null,
+      impostorRenderer = null,
     } = {},
   ) {
     const root = new THREE.Group();
@@ -178,8 +179,16 @@ export class TreeMeshBuilder {
           ]
         : [],
     );
+    // Level 2 is the level the impostor crossfades with, so capturing that is
+    // what makes the two silhouettes agree.
+    const captureLevel = (layout, rotationY) =>
+      impostorRenderer.capture(lod2, layout, rotationY);
+    const capture = impostorRenderer && lod2.children.length > 0
+      ? captureLevel
+      : null;
     let impostor = this.impostorBuilder.build(treeData, {
       rotationY: impostorRotationY,
+      capture,
     });
     const lod3 = createLevel('tree-lod-3', [impostor]);
     const shadowProxy = createShadowProxy(
@@ -244,7 +253,7 @@ export class TreeMeshBuilder {
 
       lod3.remove(impostor);
       disposeImpostor(impostor);
-      impostor = this.impostorBuilder.build(treeData, { rotationY });
+      impostor = this.impostorBuilder.build(treeData, { rotationY, capture });
       lod3.add(impostor);
       configureObjectLodFade(lod3);
       lod3.userData.lod = { index: 3, ...collectLevelMetrics(lod3) };

@@ -117,20 +117,30 @@ function inflateCanopyLobes(treeData) {
   };
 }
 
-function createTexture(treeData, rotationY) {
+function paintCanvas(treeData, canopy, project, rotationY) {
   const canvas = document.createElement('canvas');
   canvas.width = BILLBOARD_TEXTURE_SIZE;
   canvas.height = BILLBOARD_TEXTURE_SIZE;
   const context = canvas.getContext('2d');
   if (!context) throw new Error('Unable to create the tree impostor canvas.');
 
+  drawStructure(context, treeData, project);
+  drawCrown(context, canopy, project, rotationY);
+  return canvas;
+}
+
+function createTexture(treeData, rotationY, capture) {
   const canopy = inflateCanopyLobes(treeData);
   const project = calculateImpostorLayout(canopy, rotationY, {
     textureSize: BILLBOARD_TEXTURE_SIZE,
     paddingRatio: PADDING_RATIO,
   });
-  drawStructure(context, treeData, project);
-  drawCrown(context, canopy, project, rotationY);
+  // Capturing the level this impostor swaps with makes the two match by
+  // construction. Painting stays as the fallback for callers with no renderer,
+  // such as the node-side geometry tests.
+  const canvas = capture
+    ? capture(project, rotationY)
+    : paintCanvas(treeData, canopy, project, rotationY);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.name = `tree-impostor-${treeData.presetId}-${treeData.seed}`;
@@ -143,8 +153,8 @@ function createTexture(treeData, rotationY) {
 }
 
 export class TreeImpostorBuilder {
-  build(treeData, { rotationY = 0 } = {}) {
-    const { texture, project } = createTexture(treeData, rotationY);
+  build(treeData, { rotationY = 0, capture = null } = {}) {
+    const { texture, project } = createTexture(treeData, rotationY, capture);
     const material = new THREE.SpriteMaterial({
       map: texture,
       transparent: true,
