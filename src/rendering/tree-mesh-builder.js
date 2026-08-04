@@ -9,6 +9,25 @@ import { LeafClusterBuilder } from './leaf-cluster-builder.js';
 import { configureObjectLodFade, setObjectLodFade } from './lod-dither-fade.js';
 import { TreeImpostorBuilder } from './tree-impostor-builder.js';
 
+/**
+ * Core scale for the level that carries no leaf cards.
+ *
+ * Levels 0 and 1 draw cards centred on the lobe surface, so the canopy they
+ * render reaches about half a card beyond it. Level 2 is cores only, so its
+ * cores have to stand in for that whole extent. Sharing the near-level scale
+ * shrinks the silhouette at the switch, and the complementary dither crossfade
+ * with the impostor then leaves holes in the difference.
+ */
+function coverOnlyCoreScale(treeData) {
+  const shell = treeData.palette.shell;
+  const canopyExtent =
+    1 +
+    shell.cardScaleSample *
+      FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier *
+      0.5;
+  return canopyExtent / treeData.palette.core.scale;
+}
+
 function createLevel(name, objects) {
   const group = new THREE.Group();
   group.name = name;
@@ -153,7 +172,7 @@ export class TreeMeshBuilder {
               ...foliageResources,
               detail: 0,
               lodIndex: 2,
-              scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.coreScaleMultiplier,
+              scaleMultiplier: coverOnlyCoreScale(treeData),
               name: 'foliage-core-lod2',
             }),
           ]

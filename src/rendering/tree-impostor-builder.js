@@ -1,30 +1,58 @@
 import * as THREE from 'three';
+import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js';
 import { BILLBOARD_TEXTURE_SIZE } from './tree-billboard-atlas.js';
+import { calculateRootFlareScale } from './root-flare-profile.js';
 import {
   calculateImpostorLayout,
   projectImpostorLobe,
 } from './tree-impostor-math.js';
 
 const PADDING_RATIO = 0.08;
+// Painted bark over-covers slightly. Extra dark pixels are invisible at the
+// sizes this level renders at; a shortfall is a hole.
+const STRUCTURE_WIDTH_MARGIN = 1.5;
+
+/**
+ * A flat stroke cannot follow a swept trunk exactly once perspective is applied,
+ * and the mismatch is worst on the styles that move the trunk furthest sideways.
+ * Each segment is therefore stroked at its own width, widened by the root flare
+ * near the ground, so the painted trunk covers the geometry it stands in for
+ * rather than falling inside it and opening a gap during the crossfade.
+ */
+function strokeWidthAt(point, path, treeData, project) {
+  const radius = Number(point.radius ?? path.startRadius);
+  const flareScale =
+    path === treeData.trunk
+      ? calculateRootFlareScale(treeData.trunk.flare, point.y)
+      : 1;
+  return Math.max(
+    1,
+    radius * flareScale * 2 * project.scale * STRUCTURE_WIDTH_MARGIN,
+  );
+}
 
 function drawStructure(context, treeData, project) {
   context.lineCap = 'round';
   context.lineJoin = 'round';
+  context.strokeStyle = treeData.barkPalette[1];
   const paths = [treeData.trunk, ...treeData.branches];
 
   for (const path of paths) {
     const points = path.points;
     if (points.length < 2) continue;
-    context.beginPath();
-    const first = project.point(points[0]);
-    context.moveTo(first.x, first.y);
-    for (const point of points.slice(1)) {
-      const projected = project.point(point);
-      context.lineTo(projected.x, projected.y);
+
+    for (let index = 1; index < points.length; index += 1) {
+      const from = project.point(points[index - 1]);
+      const to = project.point(points[index]);
+      context.beginPath();
+      context.moveTo(from.x, from.y);
+      context.lineTo(to.x, to.y);
+      context.lineWidth = Math.max(
+        strokeWidthAt(points[index - 1], path, treeData, project),
+        strokeWidthAt(points[index], path, treeData, project),
+      );
+      context.stroke();
     }
-    context.lineWidth = Math.max(1, path.startRadius * project.scale * 1.5);
-    context.strokeStyle = treeData.barkPalette[1];
-    context.stroke();
   }
 }
 
@@ -58,6 +86,37 @@ function drawCrown(context, treeData, project, rotationY) {
   }
 }
 
+/**
+ * The rendered canopy reaches past the lobe surface by roughly half a leaf card,
+ * because the cards are centred on that surface. An impostor painted from the
+ * bare lobes therefore stands in for a smaller tree than the one it replaces,
+ * and the far level loses silhouette against the near one. Inflating the lobes
+ * by that protrusion keeps the footprint the same across the switch.
+ *
+ * Only the crown is inflated. The trunk and branches are drawn at their own
+ * size, which is what they render at.
+ */
+function inflateCanopyLobes(treeData) {
+  const shell = treeData.palette.shell;
+  const protrusion =
+    shell.cardScaleSample *
+    FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier *
+    0.5;
+  const inflation = 1 + protrusion;
+
+  return {
+    ...treeData,
+    lobes: treeData.lobes.map((lobe) => ({
+      ...lobe,
+      scale: {
+        x: lobe.scale.x * inflation,
+        y: lobe.scale.y * inflation,
+        z: lobe.scale.z * inflation,
+      },
+    })),
+  };
+}
+
 function createTexture(treeData, rotationY) {
   const canvas = document.createElement('canvas');
   canvas.width = BILLBOARD_TEXTURE_SIZE;
@@ -65,12 +124,13 @@ function createTexture(treeData, rotationY) {
   const context = canvas.getContext('2d');
   if (!context) throw new Error('Unable to create the tree impostor canvas.');
 
-  const project = calculateImpostorLayout(treeData, rotationY, {
+  const canopy = inflateCanopyLobes(treeData);
+  const project = calculateImpostorLayout(canopy, rotationY, {
     textureSize: BILLBOARD_TEXTURE_SIZE,
     paddingRatio: PADDING_RATIO,
   });
   drawStructure(context, treeData, project);
-  drawCrown(context, treeData, project, rotationY);
+  drawCrown(context, canopy, project, rotationY);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.name = `tree-impostor-${treeData.presetId}-${treeData.seed}`;

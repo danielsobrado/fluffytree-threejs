@@ -576,7 +576,7 @@ presets:
         candidatesPerLobe: 640
         # Ran at leaf area 9.4 where every other preset sits near 7.5, which put
         # five of twenty-four sweep seeds over both the LOD0 and LOD1 budgets.
-        coverageCardRatio: 0.685
+        coverageCardRatio: 0.70
         sizeRatio: [0.11, 0.18]
         widthRatio: [0.72, 1.05]
         outwardRatio: [1.0, 1.3]
