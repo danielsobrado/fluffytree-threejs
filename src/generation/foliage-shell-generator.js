@@ -146,7 +146,11 @@ export class FoliageShellGenerator {
   generate(preset, sourceLobes, random) {
     const settings = preset.foliage.shell;
     const maximumCardWidthSpread =
-      preset.continuity?.maximumShellCardWidthSpread;
+      preset.continuity?.maximumShellCardWidthSpread ??
+      FOLIAGE_SHELL_CONSTANTS.maximumShellCardWidthSpreadByProfile[
+        preset.crown.profile
+      ] ??
+      FOLIAGE_SHELL_CONSTANTS.defaultMaximumShellCardWidthSpread;
     const lobes = prepareExposureLobes(sourceLobes);
     const crownCenter = calculateCrownCenter(lobes);
     const bestByLobe = new Map();
