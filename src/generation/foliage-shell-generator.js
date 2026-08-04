@@ -1,3 +1,4 @@
+import { createFoliageCardSizing } from './foliage-card-sizing.js';
 import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
 import { selectDeterministicFoliageMaxCover } from './foliage-max-cover-selector.js';
 import {
@@ -10,7 +11,6 @@ import {
   normalizeVector,
   pointOnLobeSurface,
 } from './lobe-geometry.js';
-import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js';
 
 function clamp01(value) {
   return Math.min(1, Math.max(0, value));
@@ -59,6 +59,7 @@ function createCandidate(
   lobes,
   crownCenter,
   settings,
+  maximumCardWidthSpread,
   random,
   candidateIndex,
 ) {
@@ -88,16 +89,16 @@ function createCandidate(
     outwardAlignment * FOLIAGE_SHELL_CONSTANTS.outwardWeight +
     upwardAlignment * FOLIAGE_SHELL_CONSTANTS.upwardWeight +
     random.next() * FOLIAGE_SHELL_CONSTANTS.scoreJitter;
-  const scale = meanScale * random.range(settings.sizeRatio[0], settings.sizeRatio[1]);
-  const widthRatio = random.range(settings.widthRatio[0], settings.widthRatio[1]);
+  const sizing = createFoliageCardSizing(
+    meanScale,
+    settings,
+    maximumCardWidthSpread,
+    random,
+  );
   const outwardRatio = random.range(
     settings.outwardRatio[0],
     settings.outwardRatio[1],
   );
-  const cardWidth =
-    scale *
-    widthRatio *
-    FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier;
 
   return {
     candidateIndex,
@@ -108,11 +109,13 @@ function createCandidate(
     exposure,
     clearance,
     score,
-    cardWidth,
-    coverageRadius: cardWidth * settings.coverageCardRatio,
-    scale,
-    widthRatio,
+    scale: sizing.scale,
+    shellScale: sizing.shellScale,
+    widthRatio: sizing.widthRatio,
     outwardRatio,
+    cardWidth: sizing.cardWidth,
+    coverageRadius: sizing.coverageRadius,
+    physicalCoverageRatio: sizing.physicalCoverageRatio,
     rotation: random.range(0, FOLIAGE_SHELL_CONSTANTS.tau),
     colorMix: clamp01(lobe.colorMix + random.signed() * settings.colorJitter),
     windPhase: random.range(0, FOLIAGE_SHELL_CONSTANTS.tau),
@@ -142,6 +145,8 @@ function coverEveryLobe(selected, bestByLobe) {
 export class FoliageShellGenerator {
   generate(preset, sourceLobes, random) {
     const settings = preset.foliage.shell;
+    const maximumCardWidthSpread =
+      preset.continuity?.maximumShellCardWidthSpread;
     const lobes = prepareExposureLobes(sourceLobes);
     const crownCenter = calculateCrownCenter(lobes);
     const bestByLobe = new Map();
@@ -158,6 +163,7 @@ export class FoliageShellGenerator {
           lobes,
           crownCenter,
           settings,
+          maximumCardWidthSpread,
           random,
           index,
         );
@@ -196,6 +202,7 @@ export class FoliageShellGenerator {
         position: candidate.position,
         normal: candidate.normal,
         scale: candidate.scale,
+        shellScale: candidate.shellScale,
         widthRatio: candidate.widthRatio,
         outwardRatio: candidate.outwardRatio,
         cardWidth: candidate.cardWidth,
@@ -204,6 +211,7 @@ export class FoliageShellGenerator {
         exposure: candidate.exposure,
         clearance: candidate.clearance,
         coverageRadius: candidate.coverageRadius,
+        physicalCoverageRatio: candidate.physicalCoverageRatio,
         windPhase: candidate.windPhase,
       };
     });
