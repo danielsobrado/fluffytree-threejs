@@ -39,6 +39,15 @@ function coveringRadius(lobe, settings) {
   );
 }
 
+function renderedCardWidth(instance) {
+  return (
+    instance.cardWidth ??
+    instance.scale *
+      instance.widthRatio *
+      FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier
+  );
+}
+
 function createProbeDirection(index, count, phase) {
   const y = 1 - 2 * ((index + 0.5) / count);
   const radius = Math.sqrt(Math.max(0, 1 - y * y));
@@ -177,19 +186,11 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
   const maximumAllowed = Math.max(
     ...lobes.map((lobe) => coveringRadius(lobe, settings)),
   );
-  const cardWidths = tree.shell
-    .map(
-      (instance) =>
-        instance.cardWidth ??
-        instance.scale *
-          instance.widthRatio *
-          FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier,
-    )
-    .sort((left, right) => left - right);
+  const cardWidths = tree.shell.map(renderedCardWidth).sort((left, right) => left - right);
   const maximumPhysicalCoverageRatio = Math.max(
     0,
-    ...tree.shell.map((instance, index) => {
-      const width = cardWidths[index] ?? 0;
+    ...tree.shell.map((instance) => {
+      const width = renderedCardWidth(instance);
       return width > 0
         ? Number(instance.coverageRadius) / width
         : Number.POSITIVE_INFINITY;
