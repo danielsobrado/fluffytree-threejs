@@ -19,8 +19,13 @@ export const FOLIAGE_SHELL_CONSTANTS = Object.freeze({
   // A disk beyond half a quad width leaves the rendered geometry in cardinal
   // directions. Keep a small margin for floating-point and raster boundaries.
   maximumPhysicalCoverageCardRatio: 0.49,
-  // Presets without a continuity profile still avoid tiny randomized cards
-  // dominating the packing density.
+  // Used when a caller constructs presets without loading the continuity file.
+  maximumShellCardWidthSpreadByProfile: Object.freeze({
+    round: 1.4,
+    columnar: 2.5,
+    vase: 2.6,
+    pad: 2.5,
+  }),
   defaultMaximumShellCardWidthSpread: 1.4,
   seedSalt: 0x9e3779b9,
 });
