@@ -1,32 +1,40 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
+import { stampModuleGraph, versionHtmlAssets } from './module-versioning.js';
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const REPOSITORY_ROOT = path.resolve(path.dirname(SCRIPT_PATH), '..');
 const CONFIG_PATH = path.join(REPOSITORY_ROOT, 'pages.config.yml');
 const LOG_PREFIX = '[pages]';
+const SOURCE_MARKER = '.pages-source-sha';
 
 function log(message) {
   console.log(`${LOG_PREFIX} ${message}`);
 }
 
-function runGit(args, { capture = false, allowFailure = false } = {}) {
+function runGit(
+  args,
+  { capture = false, allowFailure = false, cwd = REPOSITORY_ROOT } = {},
+) {
   try {
     const output = execFileSync('git', args, {
-      cwd: REPOSITORY_ROOT,
+      cwd,
       encoding: 'utf8',
       stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
     });
 
     return typeof output === 'string' ? output.trim() : '';
   } catch (error) {
-    if (allowFailure) {
-      return '';
-    }
-
+    if (allowFailure) return '';
     throw error;
   }
 }
@@ -73,19 +81,81 @@ function assertRequiredFiles(commitSha, requiredFiles) {
   }
 }
 
+function releaseCacheKey(workspace) {
+  const release = yaml.load(
+    readFileSync(path.join(workspace, 'config/release.yaml'), 'utf8'),
+  );
+  const version = requireString(release, 'version');
+  const build = requireString(release, 'build');
+  return `${version}-${build}`;
+}
+
+function stampPublishedFiles(workspace, sourceSha) {
+  const cacheKey = releaseCacheKey(workspace);
+  const changedModules = stampModuleGraph(
+    path.join(workspace, 'src'),
+    cacheKey,
+  );
+  const indexPath = path.join(workspace, 'index.html');
+  const currentIndex = readFileSync(indexPath, 'utf8');
+  writeFileSync(indexPath, versionHtmlAssets(currentIndex, cacheKey));
+  writeFileSync(path.join(workspace, SOURCE_MARKER), `${sourceSha}\n`);
+  log(`Versioned ${changedModules} JavaScript modules with ${cacheKey}.`);
+}
+
+function currentPublishedSource(publishRef) {
+  return runGit(['show', `${publishRef}:${SOURCE_MARKER}`], {
+    capture: true,
+    allowFailure: true,
+  });
+}
+
+function createPublishedCommit(sourceSha) {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), 'fluffytree-pages-'));
+  let worktreeAdded = false;
+
+  try {
+    runGit(['worktree', 'add', '--detach', workspace, sourceSha]);
+    worktreeAdded = true;
+    stampPublishedFiles(workspace, sourceSha);
+    runGit(['add', '--all'], { cwd: workspace });
+    runGit(
+      [
+        '-c',
+        'user.name=FluffyTree Pages',
+        '-c',
+        'user.email=pages@users.noreply.github.com',
+        'commit',
+        '-m',
+        `deploy: publish ${sourceSha.slice(0, 12)}`,
+      ],
+      { cwd: workspace },
+    );
+    return runGit(['rev-parse', 'HEAD'], { cwd: workspace, capture: true });
+  } finally {
+    if (worktreeAdded) {
+      runGit(['worktree', 'remove', '--force', workspace], {
+        allowFailure: true,
+      });
+    }
+    rmSync(workspace, { recursive: true, force: true });
+  }
+}
+
 function deploy() {
   const config = loadConfig();
   assertBranchName(config.sourceBranch);
   assertBranchName(config.publishBranch);
 
-  const insideRepository = runGit(['rev-parse', '--is-inside-work-tree'], { capture: true });
+  const insideRepository = runGit(['rev-parse', '--is-inside-work-tree'], {
+    capture: true,
+  });
   if (insideRepository !== 'true') {
     throw new Error('The deployment script must run inside a Git repository.');
   }
 
   log(`Fetching ${config.remote}/${config.sourceBranch}.`);
   runGit(['fetch', config.remote, config.sourceBranch]);
-
   runGit(['fetch', config.remote, config.publishBranch], {
     capture: true,
     allowFailure: true,
@@ -101,22 +171,21 @@ function deploy() {
 
   assertRequiredFiles(sourceSha, config.requiredFiles);
 
-  if (sourceSha === publishSha) {
-    log(`${config.publishBranch} already matches ${config.sourceBranch} at ${sourceSha}.`);
+  if (currentPublishedSource(publishRef) === sourceSha) {
+    log(`${config.publishBranch} already publishes ${sourceSha}.`);
     return;
   }
 
+  const generatedSha = createPublishedCommit(sourceSha);
   const destination = `refs/heads/${config.publishBranch}`;
-  const refspec = `${sourceSha}:${destination}`;
   const args = ['push'];
 
   if (publishSha) {
     args.push(`--force-with-lease=${destination}:${publishSha}`);
   }
 
-  args.push(config.remote, refspec);
-
-  log(`Publishing ${sourceSha} to ${config.remote}/${config.publishBranch}.`);
+  args.push(config.remote, `${generatedSha}:${destination}`);
+  log(`Publishing generated commit ${generatedSha} from ${sourceSha}.`);
   runGit(args);
   log('GitHub Pages branch updated successfully.');
 }
@@ -124,6 +193,9 @@ function deploy() {
 try {
   deploy();
 } catch (error) {
-  console.error(`${LOG_PREFIX} Deployment failed:`, error instanceof Error ? error.message : error);
+  console.error(
+    `${LOG_PREFIX} Deployment failed:`,
+    error instanceof Error ? error.message : error,
+  );
   process.exitCode = 1;
 }
