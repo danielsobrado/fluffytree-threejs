@@ -186,6 +186,15 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
           FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier,
     )
     .sort((left, right) => left - right);
+  const maximumPhysicalCoverageRatio = Math.max(
+    0,
+    ...tree.shell.map((instance, index) => {
+      const width = cardWidths[index] ?? 0;
+      return width > 0
+        ? Number(instance.coverageRadius) / width
+        : Number.POSITIVE_INFINITY;
+    }),
+  );
   const medianCardWidth =
     cardWidths.length === 0
       ? 0
@@ -207,6 +216,7 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
     meanGap: measuredProbes === 0 ? 0 : totalGap / measuredProbes,
     p95Gap: percentile(0.95),
     maximumAllowedRadius: maximumAllowed,
+    maximumPhysicalCoverageRatio,
     gapRatio: maximumAllowed === 0 ? 0 : maximumGap / maximumAllowed,
     medianCardWidth,
     gapCardRatio: medianCardWidth === 0 ? 0 : maximumGap / medianCardWidth,
