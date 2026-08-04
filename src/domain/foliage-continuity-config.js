@@ -8,6 +8,7 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     coreOverlapSafety: 0.88,
     sameMacroOnly: false,
     verticalBias: 0.04,
+    maximumShellCardWidthSpread: 1.4,
     lod: Object.freeze([
       Object.freeze({ coreScale: 1, bridges: true }),
       Object.freeze({ coreScale: 1.04, bridges: true }),
@@ -20,6 +21,7 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     coreOverlapSafety: 0.86,
     sameMacroOnly: false,
     verticalBias: 0.38,
+    maximumShellCardWidthSpread: 2.5,
     lod: Object.freeze([
       Object.freeze({ coreScale: 1.02, bridges: true }),
       Object.freeze({ coreScale: 1.09, bridges: true }),
@@ -32,6 +34,7 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     coreOverlapSafety: 0.87,
     sameMacroOnly: false,
     verticalBias: 0.14,
+    maximumShellCardWidthSpread: 2.6,
     lod: Object.freeze([
       Object.freeze({ coreScale: 1, bridges: true }),
       Object.freeze({ coreScale: 1.06, bridges: true }),
@@ -44,6 +47,7 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     coreOverlapSafety: 0.88,
     sameMacroOnly: true,
     verticalBias: 0.08,
+    maximumShellCardWidthSpread: 2.5,
     lod: Object.freeze([
       Object.freeze({ coreScale: 1, bridges: true }),
       Object.freeze({ coreScale: 1.05, bridges: true }),
@@ -134,6 +138,13 @@ export function resolveFoliageContinuityProfile(config, profile) {
       0,
       0.75,
       `${path}.verticalBias`,
+    ),
+    maximumShellCardWidthSpread: requireRange(
+      source.maximumShellCardWidthSpread ??
+        fallback.maximumShellCardWidthSpread,
+      1,
+      4,
+      `${path}.maximumShellCardWidthSpread`,
     ),
     lod: createLodConfig(source.lod, fallback.lod, `${path}.lod`),
   });
