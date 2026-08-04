@@ -1,3 +1,4 @@
+import { foliageCardCoverageRatio } from './foliage-card-coverage.js';
 import { FoliageCoverageIndex } from './foliage-coverage-index.js';
 import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
 import { SpatialHashGrid } from './spatial-hash-grid.js';
@@ -50,18 +51,6 @@ function compareCoverageRecords(left, right) {
   );
 }
 
-function normalDot(left, right) {
-  return left.x * right.x + left.y * right.y + left.z * right.z;
-}
-
-function distance(left, right) {
-  return Math.hypot(
-    left.x - right.x,
-    left.y - right.y,
-    left.z - right.z,
-  );
-}
-
 function compareCoveragePriorityForSort(left, right) {
   return (
     Number(right.coverageRadius) - Number(left.coverageRadius) ||
@@ -96,17 +85,7 @@ function validateItem(item) {
 }
 
 function coverageRatio(candidate, selected) {
-  if (
-    normalDot(candidate.normal, selected.normal) <
-    FOLIAGE_SHELL_CONSTANTS.minimumCoverageNormalDot
-  ) {
-    return Number.POSITIVE_INFINITY;
-  }
-
-  return (
-    distance(coverageTargetPosition(candidate), selected.position) /
-    selected.coverageRadius
-  );
+  return foliageCardCoverageRatio(candidate, selected);
 }
 
 function findNearbyCoverageRatio(grid, candidate) {
@@ -134,9 +113,6 @@ function selectCompleteCoverage(items, stopCoverageRatio) {
   let maximumCoverageRatio = 0;
   let worst = null;
 
-  // Larger rendered cards can cover every point a colocated smaller card can.
-  // Taking them first avoids allowing a small random card to suppress a nearby
-  // larger candidate and then leave a gap between finite surface samples.
   for (const candidate of [...items].sort(compareCoveragePriorityForSort)) {
     const nearest = findNearbyCoverageRatio(grid, candidate);
 
@@ -168,10 +144,7 @@ function selectLobeAnchors(items) {
 
   for (const item of items) {
     const current = bestByLobe.get(item.lobeId);
-    if (
-      !current ||
-      compareItemPriorityForHeap(item, current) > 0
-    ) {
+    if (!current || compareItemPriorityForHeap(item, current) > 0) {
       bestByLobe.set(item.lobeId, item);
     }
   }
