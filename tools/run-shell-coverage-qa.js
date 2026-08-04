@@ -4,6 +4,7 @@ import process from 'node:process';
 import { parseArgs } from 'node:util';
 import { load } from 'js-yaml';
 import { createTreePresetMap } from '../src/domain/tree-preset.js';
+import { FOLIAGE_SHELL_CONSTANTS } from '../src/generation/foliage-shell-constants.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
 import { analyzeShellCoverage } from '../src/qa/shell-coverage-analyzer.js';
 
@@ -38,7 +39,7 @@ function summarize(values_) {
   };
 }
 
-const report = { schemaVersion: 2, presets: {}, passed: true, seedCount };
+const report = { schemaVersion: 3, presets: {}, passed: true, seedCount };
 
 for (const [presetId, preset] of presets) {
   const thresholds = configuration.thresholds[presetId];
@@ -52,6 +53,7 @@ for (const [presetId, preset] of presets) {
   const leafAreaIndices = [];
   const clusterCounts = [];
   const candidateCoverageRatios = [];
+  const physicalCoverageRatios = [];
   const continuousTriangleCounts = [];
   const failures = [];
   let bareLobeTotal = 0;
@@ -69,6 +71,7 @@ for (const [presetId, preset] of presets) {
     leafAreaIndices.push(metrics.leafAreaIndex);
     clusterCounts.push(metrics.clusterCount);
     candidateCoverageRatios.push(tree.shellCandidateCoverageRatio);
+    physicalCoverageRatios.push(metrics.maximumPhysicalCoverageRatio);
     continuousTriangleCounts.push(metrics.continuous.trianglesVisited);
     bareLobeTotal += metrics.bareExposedLobes;
     continuousUncoveredTotal += metrics.continuous.uncoveredTriangleCount;
@@ -81,6 +84,16 @@ for (const [presetId, preset] of presets) {
       seedFailures.push(
         `candidateCoverageRatio ${tree.shellCandidateCoverageRatio.toFixed(6)} > ` +
           `${thresholds.maximumCandidateCoverageRatio}`,
+      );
+    }
+    if (
+      metrics.maximumPhysicalCoverageRatio >
+      FOLIAGE_SHELL_CONSTANTS.maximumPhysicalCoverageCardRatio +
+        FOLIAGE_SHELL_CONSTANTS.coverageRatioEpsilon
+    ) {
+      seedFailures.push(
+        `physicalCoverageRatio ${metrics.maximumPhysicalCoverageRatio.toFixed(6)} > ` +
+          `${FOLIAGE_SHELL_CONSTANTS.maximumPhysicalCoverageCardRatio}`,
       );
     }
     if (metrics.gapCardRatio > thresholds.gapCardRatio) {
@@ -123,6 +136,7 @@ for (const [presetId, preset] of presets) {
     bareExposedLobeTotal: bareLobeTotal,
     continuousUncoveredTriangleTotal: continuousUncoveredTotal,
     candidateCoverageRatio: summarize(candidateCoverageRatios),
+    physicalCoverageRatio: summarize(physicalCoverageRatios),
     gapRatio: summarize(gapRatios),
     gapCardRatio: summarize(gapCardRatios),
     leafAreaIndex: summarize(leafAreaIndices),
@@ -135,6 +149,7 @@ for (const [presetId, preset] of presets) {
   console.log(
     `${presetId.padEnd(16)} ${passed ? 'PASS' : 'FAIL'} ` +
       `candidate max=${summary.candidateCoverageRatio.maximum.toFixed(3)} ` +
+      `physical max=${summary.physicalCoverageRatio.maximum.toFixed(3)} ` +
       `gapCard max=${summary.gapCardRatio.maximum.toFixed(3)} ` +
       `leafArea min=${summary.leafAreaIndex.minimum.toFixed(2)} ` +
       `clusters p50=${summary.clusterCount.p50} ` +
