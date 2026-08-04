@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createFoliageCardSizing } from '../src/generation/foliage-card-sizing.js';
-import { FOLIAGE_SHELL_CONSTANTS } from '../src/generation/foliage-shell-constants.js';
 import { FOLIAGE_RENDERING_CONSTANTS } from '../src/rendering/foliage-rendering-constants.js';
 
 const TOLERANCE = 1e-12;
@@ -16,29 +15,28 @@ function createRandom(ratios) {
   };
 }
 
-test('packing beyond the quad inradius expands geometry instead of coverage', () => {
-  const settings = {
+test('packing changes coverage without resizing rendered geometry', () => {
+  const baseSettings = {
     sizeRatio: [0.12, 0.12],
     widthRatio: [1, 1],
-    coverageCardRatio: 0.8,
   };
-  const sizing = createFoliageCardSizing(
+  const loose = createFoliageCardSizing(
     2,
-    settings,
+    { ...baseSettings, coverageCardRatio: 0.8 },
     1.4,
     createRandom([0.5, 0.5]),
   );
-  const requestedRadius =
-    sizing.scale *
-    sizing.widthRatio *
-    FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier *
-    settings.coverageCardRatio;
+  const tight = createFoliageCardSizing(
+    2,
+    { ...baseSettings, coverageCardRatio: 0.4 },
+    1.4,
+    createRandom([0.5, 0.5]),
+  );
 
-  assert.ok(Math.abs(sizing.coverageRadius - requestedRadius) <= TOLERANCE);
-  assert.ok(sizing.shellScale > sizing.scale);
+  assert.equal(loose.cardWidth, tight.cardWidth);
+  assert.equal(loose.shellScale, tight.shellScale);
   assert.ok(
-    sizing.coverageRadius / sizing.cardWidth <=
-      FOLIAGE_SHELL_CONSTANTS.maximumPhysicalCoverageCardRatio + TOLERANCE,
+    Math.abs(loose.coverageRadius - tight.coverageRadius * 2) <= TOLERANCE,
   );
 });
 
@@ -61,17 +59,12 @@ test('profile spread limits random card widths without changing their center', (
     spread,
     createRandom([1, 1]),
   );
-  const geometryCompensation =
-    settings.coverageCardRatio /
-    FOLIAGE_SHELL_CONSTANTS.maximumPhysicalCoverageCardRatio;
   const minimumFactor =
     minimum.cardWidth /
-    FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier /
-    geometryCompensation;
+    FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier;
   const maximumFactor =
     maximum.cardWidth /
-    FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier /
-    geometryCompensation;
+    FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier;
   const center =
     ((settings.sizeRatio[0] + settings.sizeRatio[1]) * 0.5) *
     ((settings.widthRatio[0] + settings.widthRatio[1]) * 0.5);
