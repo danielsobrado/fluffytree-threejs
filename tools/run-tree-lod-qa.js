@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { load } from 'js-yaml';
-import { createTreePresetMap } from '../src/domain/tree-preset.js';
+import { PresetLibrary } from '../src/domain/preset-library.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
 import {
   analyzeTreeLodBudgets,
@@ -8,16 +8,16 @@ import {
 } from '../src/qa/tree-lod-budget-analyzer.js';
 
 const treeConfig = load(fs.readFileSync('config/tree-presets.yaml', 'utf8'));
+const continuityConfig = load(
+  fs.readFileSync('config/foliage-continuity.yaml', 'utf8'),
+);
 const sceneConfig = load(fs.readFileSync('config/scene.yaml', 'utf8'));
-const presets = createTreePresetMap(treeConfig);
+const presets = PresetLibrary.fromConfig(treeConfig, continuityConfig).presets;
 const budgets = {
   maximumTriangles: [25000, 8000, 2000, 2],
   maximumDrawCalls: [5, 4, 2, 1],
   maximumShadowTriangles: 2000,
 };
-// Cluster counts follow from covering the crown surface rather than from a fixed
-// per-lobe quota, so they vary with the seed. Every preset is therefore measured
-// across a seed sweep as well as at the seeds the demo layout ships with.
 const SWEEP_SEED_COUNT = 24;
 const SWEEP_FIRST_SEED = 90001;
 const SWEEP_SEED_STEP = 7919;
