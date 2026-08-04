@@ -1,25 +1,30 @@
-# Leaf coverage gate.
+# Leaf placement coverage gate.
 #
-# The solidity gate proves nothing shows through the opaque canopy mass. This
-# gate proves the rendered leaf cards cover the exposed crown surface.
+# The solidity gate renders the alpha-cut foliage and proves the canopy does not
+# show sky through the final material. This gate independently proves that the
+# shell card footprints cover the exposed crown surface without placement-scale
+# gaps. Keeping those responsibilities separate avoids pretending that a scalar
+# radius describes every hole in a detailed leaf silhouette.
 #
 # Generation first performs deterministic global max-cover selection. Every
 # exposed candidate must have a direction-compatible selected cluster within its
-# conservative coverage radius. That radius is derived from the selected card's
-# actual randomized rendered width, not from the preset's average card size.
+# effective packing radius. When a preset requests a radius beyond the safe quad
+# inradius, generation expands only the shell geometry so the physical radius
+# remains at or below 0.49 of the actual rendered card width.
 #
-# QA then performs two independent checks:
+# QA then performs three independent checks:
 #
-# 1. An offset Fibonacci probe set measures the rendered result without replaying
-#    the generator candidate set.
-# 2. Adaptive icosphere subdivision certifies every potentially exposed surface
-#    patch. A patch passes only when one direction-compatible card covers the
-#    whole patch after adding conservative world-space and normal uncertainty.
-#    Patches that cannot be proven hidden or covered are subdivided.
+# 1. The physical coverage ratio never exceeds the rendered quad bound.
+# 2. An offset Fibonacci probe set measures the rendered placement without
+#    replaying the generator candidate set.
+# 3. Adaptive icosphere subdivision certifies every potentially exposed surface
+#    patch. A patch passes only when one direction-compatible card footprint
+#    covers the whole patch after adding conservative world-space and normal
+#    uncertainty. Patches that cannot be proven hidden or covered are subdivided.
 #
 # Continuous coverage is expressed as distance divided by each card's effective
 # coverage radius. A value at or below 1 means the complete patch lies inside the
-# same conservative radius used by generation.
+# same physically bounded radius used by generation.
 
 run:
   seedCount: 24
