@@ -180,9 +180,10 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
   const cardWidths = tree.shell
     .map(
       (instance) =>
+        instance.cardWidth ??
         instance.scale *
-        instance.widthRatio *
-        FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier,
+          instance.widthRatio *
+          FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier,
     )
     .sort((left, right) => left - right);
   const medianCardWidth =
