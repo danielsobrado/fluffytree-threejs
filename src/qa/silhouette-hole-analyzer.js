@@ -65,11 +65,40 @@ function measureHole(mask, width, height, state, start, thick, visited) {
   return { pixels: visited.length, thickPixels };
 }
 
+function createIntegralMask(mask, width, height) {
+  const stride = width + 1;
+  const integral = new Uint32Array(stride * (height + 1));
+
+  for (let y = 0; y < height; y += 1) {
+    let rowTotal = 0;
+    const maskRow = y * width;
+    const previousRow = y * stride;
+    const outputRow = (y + 1) * stride;
+
+    for (let x = 0; x < width; x += 1) {
+      rowTotal += mask[maskRow + x] !== 0 ? 1 : 0;
+      integral[outputRow + x + 1] = integral[previousRow + x + 1] + rowTotal;
+    }
+  }
+
+  return { integral, stride };
+}
+
+function sumRectangle(integral, stride, left, top, right, bottom) {
+  const topRow = top * stride;
+  const bottomRow = (bottom + 1) * stride;
+  return (
+    integral[bottomRow + right + 1] -
+    integral[topRow + right + 1] -
+    integral[bottomRow + left] +
+    integral[topRow + left]
+  );
+}
+
 /**
  * Marks background pixels whose whole (2 * radius + 1) square neighbourhood is
- * also background. A hole containing at least one marked pixel is wide enough to
- * see through; the single-pixel stipple between neighbouring leaf cards, which is
- * what makes the canopy read as foliage rather than as a solid shell, is not.
+ * also background. A summed-area mask keeps this linear in image size even for
+ * large visibility-scaled transition radii.
  */
 function markThickBackground(mask, width, height, radius) {
   const thick = new Uint8Array(width * height);
@@ -81,35 +110,26 @@ function markThickBackground(mask, width, height, radius) {
     return thick;
   }
 
-  const horizontal = new Uint8Array(width * height);
-
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      let open = 1;
-      for (let offset = -radius; offset <= radius && open === 1; offset += 1) {
-        const sampleX = x + offset;
-        if (sampleX < 0 || sampleX >= width || mask[sampleX + y * width] !== 0) {
-          open = 0;
-        }
-      }
-      horizontal[x + y * width] = open;
-    }
+  const normalizedRadius = Math.ceil(radius);
+  if (
+    normalizedRadius * 2 + 1 > width ||
+    normalizedRadius * 2 + 1 > height
+  ) {
+    return thick;
   }
 
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      let open = 1;
-      for (let offset = -radius; offset <= radius && open === 1; offset += 1) {
-        const sampleY = y + offset;
-        if (
-          sampleY < 0 ||
-          sampleY >= height ||
-          horizontal[x + sampleY * width] === 0
-        ) {
-          open = 0;
-        }
-      }
-      thick[x + y * width] = open;
+  const { integral, stride } = createIntegralMask(mask, width, height);
+  const maximumX = width - normalizedRadius;
+  const maximumY = height - normalizedRadius;
+
+  for (let y = normalizedRadius; y < maximumY; y += 1) {
+    const top = y - normalizedRadius;
+    const bottom = y + normalizedRadius;
+    for (let x = normalizedRadius; x < maximumX; x += 1) {
+      const left = x - normalizedRadius;
+      const right = x + normalizedRadius;
+      thick[x + y * width] =
+        sumRectangle(integral, stride, left, top, right, bottom) === 0 ? 1 : 0;
     }
   }
 
