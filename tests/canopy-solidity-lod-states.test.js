@@ -12,6 +12,12 @@ const EXPECTED_IDS = Object.freeze([
   'lod2-lod3',
 ]);
 
+const EXPECTED_TRANSITION_PIXEL_KEYS = Object.freeze([
+  'nearPixels',
+  'mediumPixels',
+  'farPixels',
+]);
+
 test('solidity QA covers every rendered LOD and adjacent transition', () => {
   assert.deepEqual(
     CANOPY_SOLIDITY_LOD_STATES.map((state) => state.id),
@@ -52,4 +58,15 @@ test('transition states use complementary half fades on adjacent levels', () => 
       { index: index + 1, fade: 0.5, invert: true },
     ]);
   });
+});
+
+test('transition states use the same projected-size thresholds as runtime LOD', () => {
+  const transitions = CANOPY_SOLIDITY_LOD_STATES.filter(
+    (state) => state.kind === 'transition',
+  );
+
+  assert.deepEqual(
+    transitions.map((state) => state.projectedPixelsKey),
+    EXPECTED_TRANSITION_PIXEL_KEYS,
+  );
 });
