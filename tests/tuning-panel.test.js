@@ -27,6 +27,7 @@ function createPanel() {
   const rebuilds = [];
   const demo = {
     rebuildPreset: (presetId) => rebuilds.push(presetId),
+    analyzeCoverage: () => null,
   };
   const panel = new TuningPanel(demo, library);
 
@@ -36,6 +37,7 @@ function createPanel() {
   panel.presetSelect = { value: panel.presetId };
   panel.root = { classList: { contains: () => true } };
   panel.status = { textContent: '', dataset: {} };
+  panel.coverageRows = new Map();
 
   return { panel, library, rebuilds };
 }
@@ -59,6 +61,27 @@ test('an apply already yielding to paint cannot rebuild a stale preset', async (
 
   assert.equal(await applied, true);
   assert.deepEqual(rebuilds, []);
+});
+
+test('a newer same-preset edit makes an older yielding apply stale', async () => {
+  const { panel, library, rebuilds } = createPanel();
+
+  panel.commit('trunk.bend', 0.61);
+  clearTimeout(panel.commitTimer);
+  panel.commitTimer = null;
+  const firstApply = panel.apply();
+
+  panel.commit('trunk.bend', 0.72);
+  clearTimeout(panel.commitTimer);
+  panel.commitTimer = null;
+
+  assert.equal(await firstApply, true);
+  assert.deepEqual(rebuilds, []);
+  assert.equal(panel.config.trunk.bend, 0.72);
+
+  assert.equal(await panel.apply(), true);
+  assert.deepEqual(rebuilds, ['first']);
+  assert.equal(library.rawValue('first').trunk.bend, 0.72);
 });
 
 test('a failed rebuild restores the previous library and editor configuration', async () => {
@@ -104,7 +127,7 @@ test('a failed open-studio preset switch restores the previous editor selection'
   assert.equal(panel.presetSelect.value, 'first');
 });
 
-test('loading a cross-preset variant cannot bypass a failed studio switch', () => {
+test('loading a cross-preset variant cannot bypass a failed studio switch', async () => {
   const { panel } = createPanel();
   const previousConfig = panel.config;
   panel.root = { classList: { contains: () => false } };
@@ -121,12 +144,38 @@ test('loading a cross-preset variant cannot bypass a failed studio switch', () =
     throw new Error('studio failed');
   };
 
-  panel.loadVariant();
+  assert.equal(await panel.loadVariant(), false);
 
   assert.equal(panel.presetId, 'first');
   assert.equal(panel.config, previousConfig);
   assert.equal(panel.controlContext.config, previousConfig);
   assert.equal(panel.presetSelect.value, 'first');
+});
+
+test('loading waits for a pending edit so a failed variant rolls back to the visible tree', async () => {
+  const { panel, library } = createPanel();
+  panel.variantSelect = { value: 'saved' };
+  panel.nameInput = { value: '' };
+  const variant = createValue('Saved');
+  variant.trunk.bend = 0.88;
+  panel.store = {
+    load: () => ({ basePresetId: 'first', value: variant }),
+  };
+
+  let rebuildCount = 0;
+  panel.demo.rebuildPreset = () => {
+    rebuildCount += 1;
+    if (rebuildCount === 2) throw new Error('variant failed');
+  };
+
+  panel.commit('trunk.bend', 0.77);
+  assert.equal(await panel.loadVariant(), false);
+
+  assert.equal(rebuildCount, 2);
+  assert.equal(library.rawValue('first').trunk.bend, 0.77);
+  assert.equal(panel.config.trunk.bend, 0.77);
+  assert.equal(panel.controlContext.config, panel.config);
+  assert.equal(panel.status.textContent, 'variant failed');
 });
 
 test('a failed reseed is contained and reported', () => {
