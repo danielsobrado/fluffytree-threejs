@@ -23,6 +23,22 @@ function selectSamples(treeData, density) {
   );
 }
 
+function createEmptyLeafShell(settings) {
+  const empty = new THREE.Group();
+  empty.name = 'hero-leaf-shell';
+  empty.userData.heroLeaves = {
+    clusterCount: 0,
+    surfaceClusterCount: 0,
+    sourceSampleCount: 0,
+    layerCount: settings.layerCount,
+    leafCount: 0,
+    innerInsetRatio: getInnerInsetRatio(settings),
+    outerOffsetRatio: getOuterOffsetRatio(settings),
+    tangentialJitterRatio: getTangentialJitterRatio(settings),
+  };
+  return empty;
+}
+
 export class LeafClusterBuilder {
   constructor({
     geometryFactory = new LeafClusterGeometryFactory(),
@@ -32,19 +48,18 @@ export class LeafClusterBuilder {
 
   build(treeData) {
     const settings = treeData.palette.heroLeaves;
-    const selected = settings.enabled
-      ? selectSamples(treeData, settings.density)
-      : [];
-    const field = new CrownVolumeField(treeData);
-    const surfaceRecords = createSurfaceRecords(selected, settings.layerCount);
-    const records = surfaceRecords;
-
-    if (records.length === 0) {
-      const empty = new THREE.Group();
-      empty.name = 'hero-leaf-shell';
-      return empty;
+    if (!settings.enabled || settings.density <= 0 || treeData.shell.length === 0) {
+      return createEmptyLeafShell(settings);
     }
 
+    const selected = selectSamples(treeData, settings.density);
+    if (selected.length === 0) return createEmptyLeafShell(settings);
+
+    const surfaceRecords = createSurfaceRecords(selected, settings.layerCount);
+    if (surfaceRecords.length === 0) return createEmptyLeafShell(settings);
+
+    const field = new CrownVolumeField(treeData);
+    const records = surfaceRecords;
     const geometry = this.geometryFactory.create(settings);
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
