@@ -240,7 +240,8 @@ export class TreeBillboardBatchManager {
 
   setFade(handle, value, invert = false) {
     if (!handle) return;
-    handle.batch.state.setFade(handle.index, value, invert);
+    if (!handle.batch.state.setFade(handle.index, value, invert)) return;
+
     const fade = handle.batch.mesh.geometry.getAttribute('treeBillboardFade');
     const inverted = handle.batch.mesh.geometry.getAttribute('treeBillboardInvert');
     fade.setX(handle.index, handle.batch.state.fades[handle.index]);
