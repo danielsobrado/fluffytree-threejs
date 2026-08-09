@@ -23,7 +23,7 @@ export class TreeBillboardBatchState {
       throw new RangeError(`Unknown billboard instance ${index}.`);
     }
 
-    const fade = Math.min(1, Math.max(0, value));
+    const fade = Math.fround(Math.min(1, Math.max(0, value)));
     const inverted = invert ? 1 : 0;
     if (this.fades[index] === fade && this.inverted[index] === inverted) {
       return false;
