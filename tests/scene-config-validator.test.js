@@ -52,3 +52,13 @@ test('scene validation rejects invalid camera clipping planes', () => {
     /camera\.far.*greater than.*camera\.near/,
   );
 });
+
+test('scene validation rejects malformed colors', () => {
+  const config = loadSceneConfig();
+  config.lighting.sunColor = 'sunny';
+
+  assert.throws(
+    () => validateSceneConfig(config),
+    /lighting\.sunColor.*#RRGGBB color/,
+  );
+});
