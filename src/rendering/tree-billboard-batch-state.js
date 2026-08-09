@@ -24,11 +24,17 @@ export class TreeBillboardBatchState {
     }
 
     const fade = Math.min(1, Math.max(0, value));
+    const inverted = invert ? 1 : 0;
+    if (this.fades[index] === fade && this.inverted[index] === inverted) {
+      return false;
+    }
+
     const wasActive = this.fades[index] > VISIBLE_FADE_THRESHOLD;
     const isActive = fade > VISIBLE_FADE_THRESHOLD;
     if (wasActive !== isActive) this.activeCount += isActive ? 1 : -1;
 
     this.fades[index] = fade;
-    this.inverted[index] = invert ? 1 : 0;
+    this.inverted[index] = inverted;
+    return true;
   }
 }
