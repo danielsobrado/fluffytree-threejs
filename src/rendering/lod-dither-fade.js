@@ -9,7 +9,7 @@ const DITHER_SHADER = `
   }
 `;
 
-const LOD_FADE_STATES_KEY = 'lodFadeStates';
+const LOD_FADE_CACHE_KEY = 'lodFadeCache';
 
 function visitMaterials(root, visitor) {
   root.traverse((object) => {
@@ -33,12 +33,27 @@ function collectLodFadeStates(root) {
     states.push(state);
   });
   root.userData ??= {};
-  root.userData[LOD_FADE_STATES_KEY] = states;
+  root.userData[LOD_FADE_CACHE_KEY] = {
+    states,
+    children: [...(root.children ?? [])],
+  };
   return states;
 }
 
+function isLodFadeCacheCurrent(root, cache) {
+  const children = root.children ?? [];
+  if (children.length !== cache.children.length) return false;
+  for (let index = 0; index < children.length; index += 1) {
+    if (children[index] !== cache.children[index]) return false;
+  }
+  return true;
+}
+
 function getLodFadeStates(root) {
-  return root.userData?.[LOD_FADE_STATES_KEY] ?? collectLodFadeStates(root);
+  const cache = root.userData?.[LOD_FADE_CACHE_KEY];
+  return cache && isLodFadeCacheCurrent(root, cache)
+    ? cache.states
+    : collectLodFadeStates(root);
 }
 
 export function configureLodDitherFade(material) {
