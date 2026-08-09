@@ -37,3 +37,34 @@ test('generation queue leaves later tasks for the next frame', () => {
   assert.equal(queue.process(8), 1);
   assert.deepEqual(completed, ['a', 'b', 'c']);
 });
+
+test('tasks enqueued while processing preserve FIFO order', () => {
+  let time = 0;
+  const queue = new FrameBudgetQueue({ now: () => time });
+  const completed = [];
+
+  queue.enqueue('a', () => {
+    completed.push('a');
+    queue.enqueue('c', () => completed.push('c'));
+  });
+  queue.enqueue('b', () => completed.push('b'));
+
+  assert.equal(queue.process(1), 3);
+  assert.deepEqual(completed, ['a', 'b', 'c']);
+  assert.equal(queue.length, 0);
+});
+
+test('failed tasks are removed and still contribute timing metrics', () => {
+  let time = 0;
+  const queue = new FrameBudgetQueue({ now: () => time });
+  queue.enqueue('broken', () => {
+    time += 7;
+    throw new Error('broken');
+  });
+
+  assert.throws(() => queue.process(8), /broken/);
+  assert.equal(queue.length, 0);
+  assert.equal(queue.maximumTaskDuration, 7);
+  assert.equal(queue.lastProcessDuration, 7);
+  assert.equal(queue.enqueue('broken', () => {}), true);
+});
