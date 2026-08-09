@@ -5,6 +5,8 @@ import {
   toPresetId,
 } from '../src/ui/preset-variant-store.js';
 
+const STORAGE_KEY = 'fluffytree.tuning.variants.v1';
+
 function createStorage(initial = {}) {
   const entries = new Map(Object.entries(initial));
 
@@ -51,8 +53,41 @@ test('deleting reports whether anything was there', () => {
 });
 
 test('corrupt storage reads as empty instead of throwing', () => {
-  const storage = createStorage({ 'fluffytree.tuning.variants.v1': 'not json' });
+  const storage = createStorage({ [STORAGE_KEY]: 'not json' });
   assert.deepEqual(new PresetVariantStore(storage).list(), []);
+});
+
+test('structurally invalid storage cannot crash listing or loading', () => {
+  const storage = createStorage({
+    [STORAGE_KEY]: JSON.stringify({
+      missing: null,
+      text: 'old-format',
+      valid: {
+        basePresetId: 'roundOrchard',
+        savedAt: 'bad-date',
+        value: { trunk: { bend: 0.2 } },
+      },
+    }),
+  });
+  const store = new PresetVariantStore(storage);
+
+  assert.deepEqual(store.list(), [
+    { name: 'valid', basePresetId: 'roundOrchard', savedAt: 0 },
+  ]);
+  assert.equal(store.load('missing'), null);
+  assert.equal(store.load('text'), null);
+  assert.equal(store.load('valid').value.trunk.bend, 0.2);
+});
+
+test('array storage roots are rejected instead of behaving like variant maps', () => {
+  const storage = createStorage({
+    [STORAGE_KEY]: JSON.stringify([{ value: { marker: true } }]),
+  });
+  const store = new PresetVariantStore(storage);
+
+  assert.deepEqual(store.list(), []);
+  assert.equal(store.save('Pine', 'test', { trunk: {} }), true);
+  assert.equal(store.list().length, 1);
 });
 
 test('a storage that refuses writes still reports the failure without throwing', () => {
