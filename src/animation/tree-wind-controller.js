@@ -9,6 +9,7 @@ export class TreeWindController {
     this.strength = strength;
     this.speed = speed;
     this.states = [];
+    this.stateSet = new Set();
     this.wrappedTrees = new WeakSet();
   }
 
@@ -22,9 +23,10 @@ export class TreeWindController {
           : [];
       for (const material of materials) {
         const state = material.userData.windState;
-        if (!state || this.states.includes(state)) continue;
+        if (!state || this.stateSet.has(state)) continue;
         state.phase = phase;
         state.strength = this.strength;
+        this.stateSet.add(state);
         this.states.push(state);
       }
     });
@@ -46,6 +48,7 @@ export class TreeWindController {
 
   clear() {
     this.states.length = 0;
+    this.stateSet.clear();
     this.wrappedTrees = new WeakSet();
   }
 }
