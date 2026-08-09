@@ -77,6 +77,44 @@ test('a failed rebuild restores the previous library and editor configuration', 
   assert.equal(panel.status.dataset.tone, 'error');
 });
 
+test('a failed studio scene change reports the error without throwing', () => {
+  const { panel } = createPanel();
+  panel.demo.setStudioPreset = () => {
+    throw new Error('studio failed');
+  };
+
+  assert.equal(panel.tryStudioPreset('first'), false);
+  assert.equal(panel.status.textContent, 'studio failed');
+  assert.equal(panel.status.dataset.tone, 'error');
+});
+
+test('a failed open-studio preset switch restores the previous editor selection', () => {
+  const { panel } = createPanel();
+  const previousConfig = panel.config;
+  panel.root = { classList: { contains: () => false } };
+  panel.soloInput = { checked: true };
+  panel.demo.setStudioPreset = () => {
+    throw new Error('studio failed');
+  };
+
+  assert.equal(panel.selectPreset('second'), false);
+  assert.equal(panel.presetId, 'first');
+  assert.equal(panel.config, previousConfig);
+  assert.equal(panel.controlContext.config, previousConfig);
+  assert.equal(panel.presetSelect.value, 'first');
+});
+
+test('a failed reseed is contained and reported', () => {
+  const { panel } = createPanel();
+  panel.demo.reseed = () => {
+    throw new Error('seed failed');
+  };
+
+  assert.equal(panel.reseedScene(), false);
+  assert.equal(panel.status.textContent, 'seed failed');
+  assert.equal(panel.status.dataset.tone, 'error');
+});
+
 test('the studio labels reference height as metadata rather than geometry', () => {
   const controls = TUNING_GROUPS.flatMap((group) => group.controls);
   const referenceHeight = controls.find((control) => control.path === 'height');
