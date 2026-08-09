@@ -16,6 +16,7 @@ import { TreeImpostorRenderer } from '../rendering/tree-impostor-renderer.js';
 import { TreeMeshBuilder } from '../rendering/tree-mesh-builder.js';
 import { TreeBillboardBatchManager } from '../rendering/tree-billboard-batch-manager.js';
 import { TreeLodController } from '../rendering/tree-lod-controller.js';
+import { measureViewport } from '../rendering/viewport-size.js';
 import { createDemoOverlay } from '../ui/demo-overlay.js';
 
 // The live readout has to mean the same thing as `npm run qa:coverage`, so it
@@ -55,6 +56,7 @@ export class TreeDemo {
     this.render = this.render.bind(this);
     this.stressSamples = [];
     this.stressReported = false;
+    this.destroyed = true;
   }
 
   start(container, sceneConfig, library, releaseVersion, overlayTitle) {
@@ -67,6 +69,7 @@ export class TreeDemo {
     this.presetMap = library.presets;
     const presetMap = this.presetMap;
     this.context = this.sceneFactory.create(container, this.sceneConfig);
+    this.destroyed = false;
     // Impostors are captured from the level they replace, which needs the live
     // renderer and the same lights the scene is drawn with.
     this.impostorRenderer = new TreeImpostorRenderer(this.context.renderer);
@@ -93,7 +96,7 @@ export class TreeDemo {
     }))];
 
     this.canopySolidityProbe.install();
-    createDemoOverlay(container, labels, overlayTitle);
+    this.overlay = createDemoOverlay(container, labels, overlayTitle);
     this.rebuildTrees();
     window.addEventListener('resize', this.handleResize);
     window.addEventListener('keydown', this.handleKeyDown);
@@ -246,6 +249,8 @@ export class TreeDemo {
     // One presented frame guarantees every hero material has compiled before the
     // probe reads pixels back from its own render target.
     await new Promise((resolve) => requestAnimationFrame(resolve));
+    if (this.destroyed || !this.context) return;
+
     await this.canopySolidityProbe.run({
       renderer: this.context.renderer,
       scene: this.context.scene,
@@ -254,9 +259,9 @@ export class TreeDemo {
   }
 
   handleResize() {
+    if (this.destroyed || !this.context) return;
     const { camera, renderer } = this.context;
-    const width = this.container.clientWidth;
-    const height = this.container.clientHeight;
+    const { width, height } = measureViewport(this.container);
 
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
@@ -276,13 +281,15 @@ export class TreeDemo {
   }
 
   render() {
+    if (this.destroyed || !this.context) return;
     const elapsed = this.clock.getElapsedTime();
+    const { height } = measureViewport(this.container);
     this.generationQueue.process(this.sceneConfig.lod.generationBudgetMs);
     this.windController.update(elapsed);
     this.context.controls.update();
     this.lodController.update(
       this.context.camera,
-      this.container.clientHeight,
+      height,
       this.context.renderer,
     );
     this.context.renderer.render(this.context.scene, this.context.camera);
@@ -346,21 +353,46 @@ export class TreeDemo {
   }
 
   destroy() {
+    if (this.destroyed) return;
+    this.destroyed = true;
+
     window.removeEventListener('resize', this.handleResize);
     window.removeEventListener('keydown', this.handleKeyDown);
-    this.context?.renderer.setAnimationLoop(null);
-    this.context?.controls.dispose();
+    const context = this.context;
+    context?.renderer.setAnimationLoop(null);
+    this.generationQueue.clear();
+    this.lodController?.clear();
+    this.windController.clear();
+    this.billboardBatchManager?.clear();
 
     for (const root of this.treeRoots) {
+      context?.scene.remove(root);
       disposeObject(root);
+    }
+    this.treeRoots.length = 0;
+    this.treeDataByPreset.clear();
+
+    if (context?.ground) {
+      context.scene.remove(context.ground);
+      disposeObject(context.ground);
     }
 
     this.impostorRenderer?.dispose();
-    this.context?.renderer.dispose();
-    this.treeRoots.length = 0;
-    this.lodController?.clear();
-    this.billboardBatchManager?.clear();
-    this.generationQueue.clear();
-    this.windController.clear();
+    context?.controls.dispose();
+    context?.renderer.dispose();
+    context?.renderer.domElement?.remove?.();
+    this.overlay?.remove();
+
+    this.context = null;
+    this.container = null;
+    this.impostorRenderer = null;
+    this.billboardBatchManager = null;
+    this.lodController = null;
+    this.overlay = null;
+    this.library = null;
+    this.presetMap = null;
+    this.sceneConfig = null;
+    this.studioLayout = null;
+    this.studioPresetId = null;
   }
 }
