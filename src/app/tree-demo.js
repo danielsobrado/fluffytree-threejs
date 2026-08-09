@@ -377,6 +377,7 @@ export class TreeDemo {
     const container = this.container;
     const message = serializeQaError(error);
     logger.error('Procedural tree render loop failed.', error);
+    this.renderSmokeProbe.fail(error);
     reportQaStatus('error', message);
 
     try {
