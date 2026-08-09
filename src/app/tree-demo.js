@@ -74,8 +74,8 @@ export class TreeDemo {
     this.library = library;
     this.presetMap = library.presets;
     const presetMap = this.presetMap;
-    this.context = this.sceneFactory.create(container, this.sceneConfig);
     this.viewportHeight = measureViewport(container).height;
+    this.context = this.sceneFactory.create(container, this.sceneConfig);
     this.destroyed = false;
     // Impostors are captured from the level they replace, which needs the live
     // renderer and the same lights the scene is drawn with.
@@ -135,7 +135,6 @@ export class TreeDemo {
     const seed = Number(entry.seed) + this.seedOffset * 1009;
     const treeData = this.treeGenerator.generate(preset, seed, {
       includeSurfaceSamples: !this.stressMode,
-      includeLodCostSummaries: false,
     });
     let tree = null;
 
@@ -364,7 +363,11 @@ export class TreeDemo {
     }
 
     if (event.key.toLowerCase() === 'r' && !event.repeat) {
-      this.reseed();
+      try {
+        this.reseed();
+      } catch (error) {
+        logger.error('Failed to generate a new tree seed.', error);
+      }
     }
   }
 
