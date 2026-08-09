@@ -3,6 +3,11 @@ import {
   normalizedRotatedPointDistance,
 } from '../generation/lobe-geometry.js';
 import { calculateHoleRatio, countComponents } from './mask-analyzer.js';
+import {
+  createLobeProjection,
+  projectedLobeContains,
+  projectedLobeRow,
+} from './lobe-projection.js';
 
 const PROJECTION_PADDING = 0.04;
 const FIN_WIDTH_PROJECTION_FACTOR = 0.55;
@@ -25,18 +30,22 @@ function projectedFinRadius(instance, axis) {
   );
 }
 
-function calculateProjectionBounds(tree, horizontalAxis) {
+function createLobeProjections(tree, horizontalAxis) {
+  return tree.lobes.map((lobe) => createLobeProjection(lobe, horizontalAxis));
+}
+
+function calculateProjectionBounds(tree, horizontalAxis, lobeProjections) {
   const horizontalValues = [];
   const verticalValues = [];
 
-  for (const lobe of tree.lobes) {
+  for (const projection of lobeProjections) {
     horizontalValues.push(
-      lobe.position[horizontalAxis] - lobe.scale[horizontalAxis],
-      lobe.position[horizontalAxis] + lobe.scale[horizontalAxis],
+      projection.centerX - projection.horizontalExtent,
+      projection.centerX + projection.horizontalExtent,
     );
     verticalValues.push(
-      lobe.position.y - lobe.scale.y,
-      lobe.position.y + lobe.scale.y,
+      projection.centerY - projection.verticalExtent,
+      projection.centerY + projection.verticalExtent,
     );
   }
 
@@ -132,6 +141,80 @@ function rasterizeEllipse(mask, resolution, bounds, ellipse) {
   }
 }
 
+function rasterizeLobe(mask, resolution, bounds, projection) {
+  const horizontalSpan = bounds.horizontalMaximum - bounds.horizontalMinimum;
+  const verticalSpan = bounds.verticalMaximum - bounds.verticalMinimum;
+  const minimumX = Math.max(
+    0,
+    toPixel(
+      projection.centerX - projection.horizontalExtent,
+      bounds.horizontalMinimum,
+      bounds.horizontalMaximum,
+      resolution,
+    ),
+  );
+  const maximumX = Math.min(
+    resolution - 1,
+    toPixel(
+      projection.centerX + projection.horizontalExtent,
+      bounds.horizontalMinimum,
+      bounds.horizontalMaximum,
+      resolution,
+    ),
+  );
+  const minimumY = Math.max(
+    0,
+    toPixel(
+      projection.centerY - projection.verticalExtent,
+      bounds.verticalMinimum,
+      bounds.verticalMaximum,
+      resolution,
+    ),
+  );
+  const maximumY = Math.min(
+    resolution - 1,
+    toPixel(
+      projection.centerY + projection.verticalExtent,
+      bounds.verticalMinimum,
+      bounds.verticalMaximum,
+      resolution,
+    ),
+  );
+
+  for (let y = minimumY; y <= maximumY; y += 1) {
+    const worldY =
+      bounds.verticalMinimum + ((y + 0.5) / resolution) * verticalSpan;
+    const row = projectedLobeRow(projection, worldY);
+    if (!row) continue;
+    const rowMinimum = Math.max(
+      minimumX,
+      toPixel(
+        row.minimum,
+        bounds.horizontalMinimum,
+        bounds.horizontalMaximum,
+        resolution,
+      ),
+    );
+    const rowMaximum = Math.min(
+      maximumX,
+      toPixel(
+        row.maximum,
+        bounds.horizontalMinimum,
+        bounds.horizontalMaximum,
+        resolution,
+      ),
+    );
+
+    for (let x = rowMinimum; x <= rowMaximum; x += 1) {
+      const worldX =
+        bounds.horizontalMinimum + ((x + 0.5) / resolution) * horizontalSpan;
+      if (projectedLobeContains(projection, worldX, worldY)) {
+        mask[y * resolution + x] = 1;
+      }
+    }
+  }
+}
+
 function countMask(mask) {
   let count = 0;
   for (const value of mask) count += value;
@@ -139,19 +222,18 @@ function countMask(mask) {
 }
 
 function analyzeProjection(tree, horizontalAxis, resolution) {
-  const bounds = calculateProjectionBounds(tree, horizontalAxis);
+  const lobeProjections = createLobeProjections(tree, horizontalAxis);
+  const bounds = calculateProjectionBounds(
+    tree,
+    horizontalAxis,
+    lobeProjections,
+  );
   const coreMask = new Uint8Array(resolution * resolution);
   const combinedMask = new Uint8Array(resolution * resolution);
 
-  for (const lobe of tree.lobes) {
-    const ellipse = {
-      horizontal: lobe.position[horizontalAxis],
-      vertical: lobe.position.y,
-      horizontalRadius: lobe.scale[horizontalAxis],
-      verticalRadius: lobe.scale.y,
-    };
-    rasterizeEllipse(coreMask, resolution, bounds, ellipse);
-    rasterizeEllipse(combinedMask, resolution, bounds, ellipse);
+  for (const projection of lobeProjections) {
+    rasterizeLobe(coreMask, resolution, bounds, projection);
+    rasterizeLobe(combinedMask, resolution, bounds, projection);
   }
 
   for (const instance of tree.shell) {
