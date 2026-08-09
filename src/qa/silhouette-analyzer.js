@@ -1,5 +1,10 @@
 import { correlation, mean, rootMeanSquareError } from './qa-math.js';
 import { calculateHoleRatio, countComponents } from './mask-analyzer.js';
+import {
+  createLobeProjection,
+  projectedLobeContains,
+  projectedLobeRow,
+} from './lobe-projection.js';
 
 const PROJECTION_PADDING = 0.03;
 const PROFILE_BANDS = Object.freeze({
@@ -8,22 +13,30 @@ const PROFILE_BANDS = Object.freeze({
   upper: [0.67, 0.88],
 });
 
-function getProjectionBounds(lobes, horizontalAxis) {
+function createProjections(lobes, horizontalAxis) {
+  return lobes.map((lobe) => createLobeProjection(lobe, horizontalAxis));
+}
+
+function getProjectionBounds(projections) {
   const horizontalMinimum = Math.min(
-    ...lobes.map(
-      (lobe) => lobe.position[horizontalAxis] - lobe.scale[horizontalAxis],
+    ...projections.map(
+      (projection) => projection.centerX - projection.horizontalExtent,
     ),
   );
   const horizontalMaximum = Math.max(
-    ...lobes.map(
-      (lobe) => lobe.position[horizontalAxis] + lobe.scale[horizontalAxis],
+    ...projections.map(
+      (projection) => projection.centerX + projection.horizontalExtent,
     ),
   );
   const verticalMinimum = Math.min(
-    ...lobes.map((lobe) => lobe.position.y - lobe.scale.y),
+    ...projections.map(
+      (projection) => projection.centerY - projection.verticalExtent,
+    ),
   );
   const verticalMaximum = Math.max(
-    ...lobes.map((lobe) => lobe.position.y + lobe.scale.y),
+    ...projections.map(
+      (projection) => projection.centerY + projection.verticalExtent,
+    ),
   );
   const horizontalPadding =
     (horizontalMaximum - horizontalMinimum) * PROJECTION_PADDING;
@@ -42,18 +55,16 @@ function toPixel(value, minimum, maximum, resolution) {
   return Math.floor(((value - minimum) / (maximum - minimum)) * resolution);
 }
 
-function rasterizeLobes(lobes, horizontalAxis, bounds, resolution) {
+function rasterizeLobes(projections, bounds, resolution) {
   const mask = new Uint8Array(resolution * resolution);
   const horizontalSpan = bounds.horizontalMaximum - bounds.horizontalMinimum;
   const verticalSpan = bounds.verticalMaximum - bounds.verticalMinimum;
 
-  for (const lobe of lobes) {
-    const horizontalRadius = lobe.scale[horizontalAxis];
-    const verticalRadius = lobe.scale.y;
+  for (const projection of projections) {
     const minimumX = Math.max(
       0,
       toPixel(
-        lobe.position[horizontalAxis] - horizontalRadius,
+        projection.centerX - projection.horizontalExtent,
         bounds.horizontalMinimum,
         bounds.horizontalMaximum,
         resolution,
@@ -62,7 +73,7 @@ function rasterizeLobes(lobes, horizontalAxis, bounds, resolution) {
     const maximumX = Math.min(
       resolution - 1,
       toPixel(
-        lobe.position[horizontalAxis] + horizontalRadius,
+        projection.centerX + projection.horizontalExtent,
         bounds.horizontalMinimum,
         bounds.horizontalMaximum,
         resolution,
@@ -71,7 +82,7 @@ function rasterizeLobes(lobes, horizontalAxis, bounds, resolution) {
     const minimumY = Math.max(
       0,
       toPixel(
-        lobe.position.y - verticalRadius,
+        projection.centerY - projection.verticalExtent,
         bounds.verticalMinimum,
         bounds.verticalMaximum,
         resolution,
@@ -80,7 +91,7 @@ function rasterizeLobes(lobes, horizontalAxis, bounds, resolution) {
     const maximumY = Math.min(
       resolution - 1,
       toPixel(
-        lobe.position.y + verticalRadius,
+        projection.centerY + projection.verticalExtent,
         bounds.verticalMinimum,
         bounds.verticalMaximum,
         resolution,
@@ -90,15 +101,12 @@ function rasterizeLobes(lobes, horizontalAxis, bounds, resolution) {
     for (let y = minimumY; y <= maximumY; y += 1) {
       const worldY =
         bounds.verticalMinimum + ((y + 0.5) / resolution) * verticalSpan;
-      const normalizedY = (worldY - lobe.position.y) / verticalRadius;
-      const horizontalFactor = Math.sqrt(
-        Math.max(0, 1 - normalizedY ** 2),
-      );
-      const rowRadius = horizontalRadius * horizontalFactor;
+      const row = projectedLobeRow(projection, worldY);
+      if (!row) continue;
       const rowMinimum = Math.max(
         minimumX,
         toPixel(
-          lobe.position[horizontalAxis] - rowRadius,
+          row.minimum,
           bounds.horizontalMinimum,
           bounds.horizontalMaximum,
           resolution,
@@ -107,7 +115,7 @@ function rasterizeLobes(lobes, horizontalAxis, bounds, resolution) {
       const rowMaximum = Math.min(
         maximumX,
         toPixel(
-          lobe.position[horizontalAxis] + rowRadius,
+          row.maximum,
           bounds.horizontalMinimum,
           bounds.horizontalMaximum,
           resolution,
@@ -117,10 +125,7 @@ function rasterizeLobes(lobes, horizontalAxis, bounds, resolution) {
       for (let x = rowMinimum; x <= rowMaximum; x += 1) {
         const worldX =
           bounds.horizontalMinimum + ((x + 0.5) / resolution) * horizontalSpan;
-        const normalizedX =
-          (worldX - lobe.position[horizontalAxis]) / horizontalRadius;
-
-        if (normalizedX ** 2 + normalizedY ** 2 <= 1) {
+        if (projectedLobeContains(projection, worldX, worldY)) {
           mask[y * resolution + x] = 1;
         }
       }
@@ -203,30 +208,21 @@ function compareMasks(lobeMask, envelopeMask) {
   };
 }
 
-function widthAtHeight(lobes, horizontalAxis, worldY) {
+function widthAtHeight(projections, worldY) {
   let minimum = Number.POSITIVE_INFINITY;
   let maximum = Number.NEGATIVE_INFINITY;
 
-  for (const lobe of lobes) {
-    const normalizedY = (worldY - lobe.position.y) / lobe.scale.y;
-    if (Math.abs(normalizedY) > 1) continue;
-    const halfWidth =
-      lobe.scale[horizontalAxis] *
-      Math.sqrt(Math.max(0, 1 - normalizedY ** 2));
-    minimum = Math.min(
-      minimum,
-      lobe.position[horizontalAxis] - halfWidth,
-    );
-    maximum = Math.max(
-      maximum,
-      lobe.position[horizontalAxis] + halfWidth,
-    );
+  for (const projection of projections) {
+    const row = projectedLobeRow(projection, worldY);
+    if (!row) continue;
+    minimum = Math.min(minimum, row.minimum);
+    maximum = Math.max(maximum, row.maximum);
   }
 
   return Number.isFinite(minimum) ? maximum - minimum : 0;
 }
 
-function analyzeProfile(lobes, envelope, horizontalAxis, sampleCount) {
+function analyzeProfile(projections, envelope, sampleCount) {
   const observed = [];
   const expected = [];
   const bands = { lower: [], middle: [], upper: [] };
@@ -235,7 +231,7 @@ function analyzeProfile(lobes, envelope, horizontalAxis, sampleCount) {
     const normalizedHeight = (index + 0.5) / sampleCount;
     const worldY =
       envelope.crown.baseHeight + normalizedHeight * envelope.crown.height;
-    const width = widthAtHeight(lobes, horizontalAxis, worldY);
+    const width = widthAtHeight(projections, worldY);
     observed.push(width);
     expected.push(envelope.radiusAt(normalizedHeight) * 2);
 
@@ -248,8 +244,12 @@ function analyzeProfile(lobes, envelope, horizontalAxis, sampleCount) {
 
   const observedMaximum = Math.max(...observed);
   const expectedMaximum = Math.max(...expected);
-  const normalizedObserved = observed.map((value) => value / observedMaximum);
-  const normalizedExpected = expected.map((value) => value / expectedMaximum);
+  const normalizedObserved = observed.map((value) =>
+    observedMaximum <= Number.EPSILON ? 0 : value / observedMaximum,
+  );
+  const normalizedExpected = expected.map((value) =>
+    expectedMaximum <= Number.EPSILON ? 0 : value / expectedMaximum,
+  );
   const lower = mean(bands.lower);
   const middle = mean(bands.middle);
   const upper = mean(bands.upper);
@@ -270,13 +270,9 @@ export function analyzeSilhouette(
   resolution,
   profileSampleCount,
 ) {
-  const bounds = getProjectionBounds(lobes, horizontalAxis);
-  const lobeMask = rasterizeLobes(
-    lobes,
-    horizontalAxis,
-    bounds,
-    resolution,
-  );
+  const projections = createProjections(lobes, horizontalAxis);
+  const bounds = getProjectionBounds(projections);
+  const lobeMask = rasterizeLobes(projections, bounds, resolution);
   const envelopeMask = rasterizeEnvelope(
     envelope,
     horizontalAxis,
@@ -298,6 +294,6 @@ export function analyzeSilhouette(
       occupiedCount,
     ),
     ...compareMasks(lobeMask, envelopeMask),
-    ...analyzeProfile(lobes, envelope, horizontalAxis, profileSampleCount),
+    ...analyzeProfile(projections, envelope, profileSampleCount),
   };
 }
