@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { disposeObject } from './object-disposer.js';
 import { measureViewport } from './viewport-size.js';
 
 function createRenderer(container, config) {
@@ -87,21 +88,33 @@ export class SceneFactory {
       config.scene.fogFar,
     );
 
-    const renderer = createRenderer(container, config);
-    const camera = createCamera(container, config);
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.enablePan = false;
-    controls.minDistance = 7;
-    controls.maxDistance = config.camera.controlsMaxDistance ?? 34;
-    controls.maxPolarAngle = Math.PI * 0.48;
-    controls.target.fromArray(config.camera.target);
-    controls.update();
+    let renderer = null;
+    let controls = null;
+    let ground = null;
 
-    const { hemisphere, sun } = createLights(config);
-    const ground = createGround(config);
-    scene.add(hemisphere, sun, ground);
+    try {
+      renderer = createRenderer(container, config);
+      const camera = createCamera(container, config);
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.enablePan = false;
+      controls.minDistance = 7;
+      controls.maxDistance = config.camera.controlsMaxDistance ?? 34;
+      controls.maxPolarAngle = Math.PI * 0.48;
+      controls.target.fromArray(config.camera.target);
+      controls.update();
 
-    return { scene, renderer, camera, controls, sun, ground };
+      const { hemisphere, sun } = createLights(config);
+      ground = createGround(config);
+      scene.add(hemisphere, sun, ground);
+
+      return { scene, renderer, camera, controls, sun, ground };
+    } catch (error) {
+      controls?.dispose();
+      if (ground) disposeObject(ground);
+      renderer?.dispose();
+      renderer?.domElement?.remove?.();
+      throw error;
+    }
   }
 }
