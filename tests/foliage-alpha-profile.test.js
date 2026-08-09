@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { foliageCardCoverageRatio } from '../src/generation/foliage-card-coverage.js';
-import { createFoliageAlphaProfile } from '../src/rendering/foliage-alpha-profile.js';
+import {
+  createFoliageAlphaPixels,
+  createFoliageAlphaProfile,
+} from '../src/rendering/foliage-alpha-profile.js';
 import { LEAF_SHAPE_IDS } from '../src/rendering/leaf-shape-library.js';
 
 const ALPHA_TEST = 0.46;
@@ -26,6 +29,20 @@ test('guaranteed alpha radius is opaque for every leaf shape', () => {
       );
     }
   }
+});
+
+test('cached alpha pixels remain detached for callers', () => {
+  const first = createFoliageAlphaPixels('broadleaf', 32);
+  const second = createFoliageAlphaPixels('broadleaf', 32);
+
+  assert.notEqual(first, second);
+  assert.deepEqual(first, second);
+
+  const original = second[0];
+  first[0] = original === 255 ? 0 : 255;
+
+  const third = createFoliageAlphaPixels('broadleaf', 32);
+  assert.equal(third[0], original);
 });
 
 test('coverage checks the filtered alpha mask instead of the card square', () => {
