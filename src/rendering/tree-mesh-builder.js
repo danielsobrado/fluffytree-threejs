@@ -324,7 +324,6 @@ export class TreeMeshBuilder {
 
         try {
           configureObjectLodFade(nextImpostor);
-          setObjectLodFade(nextImpostor, 0);
           lod3.add(nextImpostor);
           lod3.remove(previousImpostor);
           const nextMetrics = { index: 3, ...collectLevelMetrics(lod3) };
