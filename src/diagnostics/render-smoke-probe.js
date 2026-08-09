@@ -1,3 +1,4 @@
+import { logger } from '../core/logger.js';
 import { RENDER_SMOKE_CONSTANTS } from './render-smoke-constants.js';
 import { reportQaStatus, serializeQaError } from './qa-status-reporter.js';
 
@@ -213,13 +214,13 @@ export class RenderSmokeProbe {
   }
 
   fail(error) {
-    if (!this.enabled) return;
+    if (!this.enabled || this.failed) return;
 
     this.failed = true;
     this.root.dataset[STATUS_ATTRIBUTE] = 'error';
     this.root.dataset[ERROR_ATTRIBUTE] = serializeQaError(error);
     reportQaStatus('error', serializeQaError(error));
-    console.error('Render smoke probe failed.', error);
+    logger.error('Render smoke probe failed.', error);
   }
 }
 
