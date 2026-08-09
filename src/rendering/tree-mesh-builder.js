@@ -120,7 +120,10 @@ export class TreeMeshBuilder {
   ) {
     const root = new THREE.Group();
     root.name = `tree-${treeData.presetId}`;
-    const textures = this.textureSetFactory.create(treeData.palette);
+    const textures = this.textureSetFactory.create(treeData.palette, {
+      palette: minimumLod <= 2,
+      alpha: minimumLod <= 1,
+    });
     const foliageResources = {
       paletteTexture: textures.palette,
       alphaTexture: textures.alpha,
