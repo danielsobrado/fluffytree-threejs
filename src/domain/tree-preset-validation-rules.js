@@ -117,3 +117,8 @@ export const PAIR_RULES = Object.freeze([
   Object.freeze({ path: 'foliage.shell.widthRatio', positive: true }),
   Object.freeze({ path: 'foliage.shell.outwardRatio', positive: true }),
 ]);
+
+export const STRING_ARRAY_RULES = Object.freeze([
+  Object.freeze({ path: 'trunk.barkPalette', minimumLength: 3 }),
+  Object.freeze({ path: 'foliage.palette', minimumLength: 2 }),
+]);
