@@ -52,3 +52,19 @@ test('unavailable levels collapse into the nearest built representation', () => 
     [0, 1, 0, 0],
   );
 });
+
+test('LOD weights can reuse caller-owned buffers', () => {
+  const weights = [9, 9, 9, 9];
+
+  assert.equal(calculateLodWeights(300, SETTINGS, weights), weights);
+  assert.deepEqual(weights, [0.5, 0.5, 0, 0]);
+  assert.equal(
+    remapUnavailableLodWeights(
+      weights,
+      { minimumLevel: 2, heroReady: false },
+      weights,
+    ),
+    weights,
+  );
+  assert.deepEqual(weights, [0, 0, 1, 0]);
+});
