@@ -32,6 +32,7 @@ const COVERAGE_PROBE_OPTIONS = Object.freeze({
 });
 
 const STUDIO_SEED = 411287;
+const RESEED_STEP = 1009;
 
 export class TreeDemo {
   constructor({
@@ -132,7 +133,7 @@ export class TreeDemo {
       throw new Error(`Layout references unknown tree preset '${entry.preset}'.`);
     }
 
-    const seed = Number(entry.seed) + this.seedOffset * 1009;
+    const seed = (Number(entry.seed) + Math.imul(this.seedOffset, RESEED_STEP)) >>> 0;
     const treeData = this.treeGenerator.generate(preset, seed, {
       includeSurfaceSamples: !this.stressMode,
     });
