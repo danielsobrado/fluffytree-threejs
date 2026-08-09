@@ -4,6 +4,7 @@ import {
   formatReleaseVersion,
 } from './app/release-title.js';
 import { TreeDemo } from './app/tree-demo.js';
+import { validateSceneConfig } from './config/scene-config-validator.js';
 import { YamlConfigLoader } from './config/yaml-config-loader.js';
 import { logger } from './core/logger.js';
 import { markRenderSmokeBootstrapFailure } from './diagnostics/render-smoke-probe.js';
@@ -51,13 +52,14 @@ async function bootstrap() {
       return;
     }
 
-    const [releaseConfig, sceneConfig, treeConfig, continuityConfig] =
+    const [releaseConfig, rawSceneConfig, treeConfig, continuityConfig] =
       await Promise.all([
         loader.load(CONFIG_URLS.release),
         loader.load(CONFIG_URLS.scene),
         loader.load(CONFIG_URLS.trees),
         loader.load(CONFIG_URLS.foliageContinuity),
       ]);
+    const sceneConfig = validateSceneConfig(rawSceneConfig);
     const releaseVersion = formatReleaseVersion(releaseConfig);
     const overlayTitle = formatOverlayTitle(releaseConfig);
     applyDocumentTitle(releaseConfig);
