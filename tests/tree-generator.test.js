@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
+import { analyzeTreeLodBudgets } from '../src/qa/tree-lod-budget-analyzer.js';
 import { createTestPreset } from './fixtures/tree-preset-fixture.js';
 
 const preset = createTestPreset();
+
+function createQaGenerator() {
+  return new TreeGenerator({ lodCostAnalyzer: analyzeTreeLodBudgets });
+}
 
 test('tree generation is deterministic for the same seed', () => {
   const generator = new TreeGenerator();
@@ -41,7 +46,7 @@ test('generated tree respects requested topology counts', () => {
   assert.equal(tree.clumps.length, preset.crown.clumps.macroCount);
   assert.equal(tree.sprayRecords, tree.shell);
   assert.ok(tree.bounds.minimum.y <= 0);
-  assert.equal(tree.lodCostSummaries.lodTriangles.length, 4);
+  assert.equal(Object.hasOwn(tree, 'lodCostSummaries'), false);
 });
 
 test('runtime generation omits obsolete foliage surface samples', () => {
@@ -56,14 +61,23 @@ test('runtime generation omits obsolete foliage surface samples', () => {
   );
   assert.equal(tree.lobes.length, preset.crown.lobeCount);
   assert.ok(tree.branches.length >= preset.crown.lobeCount);
-  assert.equal(tree.lodCostSummaries.heroLeafClusters, 0);
 });
 
-test('runtime generation can skip QA-only LOD cost analysis', () => {
-  const tree = new TreeGenerator().generate(preset, 44, {
-    includeLodCostSummaries: false,
+test('QA callers can opt into LOD cost summaries with an injected analyzer', () => {
+  const tree = createQaGenerator().generate(preset, 44, {
+    includeLodCostSummaries: true,
   });
 
-  assert.equal(Object.hasOwn(tree, 'lodCostSummaries'), false);
-  assert.ok(tree.shell.length > 0);
+  assert.equal(tree.lodCostSummaries.lodTriangles.length, 4);
+  assert.ok(tree.lodCostSummaries.heroLeafClusters > 0);
+});
+
+test('LOD cost summary opt-in fails fast without an analyzer', () => {
+  assert.throws(
+    () =>
+      new TreeGenerator().generate(preset, 44, {
+        includeLodCostSummaries: true,
+      }),
+    /require an injected analyzer/,
+  );
 });
