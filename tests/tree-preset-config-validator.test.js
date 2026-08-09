@@ -65,6 +65,28 @@ test('tree preset validation rejects fractional structural counts', () => {
   );
 });
 
+test('tree preset validation rejects more primary limbs than lobes', () => {
+  const config = mutateRoundOrchard((preset) => {
+    preset.trunk.branching.primaryCount = preset.crown.lobeCount + 1;
+  });
+
+  assert.throws(
+    () => PresetLibrary.fromConfig(config),
+    /primaryCount.*must not exceed.*lobeCount/,
+  );
+});
+
+test('tree preset validation rejects more macro clumps than lobes', () => {
+  const config = mutateRoundOrchard((preset) => {
+    preset.crown.clumps.macroCount = preset.crown.lobeCount + 1;
+  });
+
+  assert.throws(
+    () => PresetLibrary.fromConfig(config),
+    /macroCount.*must not exceed.*lobeCount/,
+  );
+});
+
 test('tree preset validation rejects a trunk that grows toward its tip', () => {
   const config = mutateRoundOrchard((preset) => {
     preset.trunk.topRadius = preset.trunk.baseRadius + 0.01;
