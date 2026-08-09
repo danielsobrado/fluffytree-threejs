@@ -1,4 +1,4 @@
-import { inverseRotateVectorEuler, normalizeVector } from './lobe-geometry.js';
+import { normalizeVector } from './lobe-geometry.js';
 
 const MINIMUM_SMOOTHNESS = 1e-4;
 const MINIMUM_GRADIENT_EPSILON = 1e-4;
@@ -16,22 +16,44 @@ function smoothMinimum(left, right, smoothing) {
   return Math.min(left, right) - (blend * blend * blend * radius) / 6;
 }
 
+function prepareDistanceLobe(lobe) {
+  const rotation = lobe.rotation ?? { x: 0, y: 0, z: 0 };
+  const inverseX = -rotation.x;
+  const inverseY = -rotation.y;
+  const inverseZ = -rotation.z;
+
+  return {
+    position: lobe.position,
+    inverseScaleX: 1 / lobe.scale.x,
+    inverseScaleY: 1 / lobe.scale.y,
+    inverseScaleZ: 1 / lobe.scale.z,
+    minimumScale: Math.min(lobe.scale.x, lobe.scale.y, lobe.scale.z),
+    cosX: Math.cos(inverseX),
+    sinX: Math.sin(inverseX),
+    cosY: Math.cos(inverseY),
+    sinY: Math.sin(inverseY),
+    cosZ: Math.cos(inverseZ),
+    sinZ: Math.sin(inverseZ),
+  };
+}
+
 function ellipsoidDistance(point, lobe) {
-  const local = inverseRotateVectorEuler(
-    {
-      x: point.x - lobe.position.x,
-      y: point.y - lobe.position.y,
-      z: point.z - lobe.position.z,
-    },
-    lobe.rotation,
-  );
+  const x = point.x - lobe.position.x;
+  const y = point.y - lobe.position.y;
+  const z = point.z - lobe.position.z;
+  const xAfterZ = x * lobe.cosZ - y * lobe.sinZ;
+  const yAfterZ = x * lobe.sinZ + y * lobe.cosZ;
+  const xAfterY = xAfterZ * lobe.cosY + z * lobe.sinY;
+  const zAfterY = -xAfterZ * lobe.sinY + z * lobe.cosY;
+  const yAfterX = yAfterZ * lobe.cosX - zAfterY * lobe.sinX;
+  const zAfterX = yAfterZ * lobe.sinX + zAfterY * lobe.cosX;
   const normalizedLength = Math.hypot(
-    local.x / lobe.scale.x,
-    local.y / lobe.scale.y,
-    local.z / lobe.scale.z,
+    xAfterY * lobe.inverseScaleX,
+    yAfterX * lobe.inverseScaleY,
+    zAfterX * lobe.inverseScaleZ,
   );
-  const minimumScale = Math.min(lobe.scale.x, lobe.scale.y, lobe.scale.z);
-  return (normalizedLength - 1) * minimumScale;
+
+  return (normalizedLength - 1) * lobe.minimumScale;
 }
 
 function createNoisePhases(seed) {
@@ -85,6 +107,7 @@ export class CrownVolumeField {
     }
 
     this.lobes = treeData.lobes;
+    this.distanceLobes = this.lobes.map(prepareDistanceLobe);
     this.settings = treeData.palette.volume;
     this.phases = createNoisePhases(treeData.seed);
     this.bounds = calculateBounds(this.lobes, this.settings.padding);
@@ -97,7 +120,7 @@ export class CrownVolumeField {
   sample(point) {
     let distance = Number.POSITIVE_INFINITY;
 
-    for (const lobe of this.lobes) {
+    for (const lobe of this.distanceLobes) {
       distance = smoothMinimum(
         distance,
         ellipsoidDistance(point, lobe),
