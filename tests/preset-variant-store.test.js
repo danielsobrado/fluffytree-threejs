@@ -107,7 +107,7 @@ test('special object-property names save and remove safely', () => {
   assert.equal(store.load('__proto__'), null);
 });
 
-test('a storage that refuses writes still reports the failure without throwing', () => {
+test('a storage that refuses writes falls back to session memory', () => {
   const storage = {
     getItem: () => null,
     setItem: () => {
@@ -115,8 +115,28 @@ test('a storage that refuses writes still reports the failure without throwing',
     },
     removeItem: () => {},
   };
+  const store = new PresetVariantStore(storage);
 
-  assert.equal(new PresetVariantStore(storage).save('Pine', 'test', {}), false);
+  assert.equal(store.save('Pine', 'test', { marker: 1 }), false);
+  assert.equal(store.load('Pine').value.marker, 1);
+  assert.equal(store.save('Maple', 'test', { marker: 2 }), false);
+  assert.deepEqual(
+    store.list().map((variant) => variant.name).sort(),
+    ['Maple', 'Pine'],
+  );
+});
+
+test('explicit memory storage reports session-only writes', () => {
+  const entries = new Map();
+  const storage = {
+    persistent: false,
+    getItem: (key) => entries.get(key) ?? null,
+    setItem: (key, value) => entries.set(key, value),
+  };
+  const store = new PresetVariantStore(storage);
+
+  assert.equal(store.save('Pine', 'test', { marker: true }), false);
+  assert.equal(store.load('Pine').value.marker, true);
 });
 
 test('exported settings are shaped like the preset configuration file', () => {
