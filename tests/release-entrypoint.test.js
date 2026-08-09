@@ -19,5 +19,6 @@ test('static entrypoint matches the configured release and cache version', () =>
 
   assert.ok(html.includes(`<title>${formatDocumentTitle(release)}</title>`));
   assert.ok(html.includes(`styles/main.css?v=${assetVersion}`));
+  assert.ok(html.includes(`src/bootstrap-fallback.js?v=${assetVersion}`));
   assert.ok(html.includes(`src/main.js?v=${assetVersion}`));
 });
