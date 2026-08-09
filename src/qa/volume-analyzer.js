@@ -3,11 +3,42 @@ import {
   normalizedRotatedPointDistance,
 } from '../generation/lobe-geometry.js';
 
+const ENVELOPE_RADIUS_MARGIN = 1.2;
+const ASYMMETRY_X_RANGE = 0.42;
+const ASYMMETRY_Z_RANGE = 0.18;
+
 function pointInsideLobe(point, lobe) {
   return normalizedRotatedPointDistance(point, lobe) <= 1;
 }
 
+function calculateEnvelopeBounds(envelope) {
+  const { crown, anchor } = envelope;
+  const radialExtent = crown.radius * ENVELOPE_RADIUS_MARGIN;
+  const xMinimumCenter =
+    anchor.x + Math.min(0, crown.lean[0]) - crown.asymmetry * ASYMMETRY_X_RANGE;
+  const xMaximumCenter =
+    anchor.x + Math.max(0, crown.lean[0]) + crown.asymmetry * ASYMMETRY_X_RANGE;
+  const zMinimumCenter =
+    anchor.z + Math.min(0, crown.lean[1]) - crown.asymmetry * ASYMMETRY_Z_RANGE;
+  const zMaximumCenter =
+    anchor.z + Math.max(0, crown.lean[1]) + crown.asymmetry * ASYMMETRY_Z_RANGE;
+
+  return {
+    minimum: {
+      x: xMinimumCenter - radialExtent,
+      y: crown.baseHeight,
+      z: zMinimumCenter - radialExtent,
+    },
+    maximum: {
+      x: xMaximumCenter + radialExtent,
+      y: crown.baseHeight + crown.height,
+      z: zMaximumCenter + radialExtent,
+    },
+  };
+}
+
 function calculateBounds(lobes, envelope) {
+  const envelopeBounds = calculateEnvelopeBounds(envelope);
   const extents = lobes.map((lobe) => ({
     lobe,
     extent: lobeAxisAlignedExtents(lobe),
@@ -16,29 +47,29 @@ function calculateBounds(lobes, envelope) {
   return {
     minimum: {
       x: Math.min(
-        -envelope.crown.radius * 1.2,
+        envelopeBounds.minimum.x,
         ...extents.map(({ lobe, extent }) => lobe.position.x - extent.x),
       ),
       y: Math.min(
-        envelope.crown.baseHeight,
+        envelopeBounds.minimum.y,
         ...extents.map(({ lobe, extent }) => lobe.position.y - extent.y),
       ),
       z: Math.min(
-        -envelope.crown.radius * 1.2,
+        envelopeBounds.minimum.z,
         ...extents.map(({ lobe, extent }) => lobe.position.z - extent.z),
       ),
     },
     maximum: {
       x: Math.max(
-        envelope.crown.radius * 1.2,
+        envelopeBounds.maximum.x,
         ...extents.map(({ lobe, extent }) => lobe.position.x + extent.x),
       ),
       y: Math.max(
-        envelope.crown.baseHeight + envelope.crown.height,
+        envelopeBounds.maximum.y,
         ...extents.map(({ lobe, extent }) => lobe.position.y + extent.y),
       ),
       z: Math.max(
-        envelope.crown.radius * 1.2,
+        envelopeBounds.maximum.z,
         ...extents.map(({ lobe, extent }) => lobe.position.z + extent.z),
       ),
     },
