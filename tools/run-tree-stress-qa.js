@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { load } from 'js-yaml';
 import { createStressSceneConfig } from '../src/app/stress-scene.js';
 import { validateSceneConfig } from '../src/config/scene-config-validator.js';
-import { createValidatedTreePresetMap } from '../src/domain/validated-tree-preset-map.js';
+import { PresetLibrary } from '../src/domain/preset-library.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
 import { analyzeTreeLodBudgets } from '../src/qa/tree-lod-budget-analyzer.js';
 import {
@@ -15,9 +15,11 @@ const baseScene = validateSceneConfig(
   load(fs.readFileSync('config/scene.yaml', 'utf8')),
 );
 const scene = validateSceneConfig(createStressSceneConfig(baseScene));
-const presets = createValidatedTreePresetMap(
-  load(fs.readFileSync('config/tree-presets.yaml', 'utf8')),
+const treeConfig = load(fs.readFileSync('config/tree-presets.yaml', 'utf8'));
+const continuityConfig = load(
+  fs.readFileSync('config/foliage-continuity.yaml', 'utf8'),
 );
+const presets = PresetLibrary.fromConfig(treeConfig, continuityConfig).presets;
 const generator = new TreeGenerator();
 const viewportHeight = 720;
 const focalPixels =
