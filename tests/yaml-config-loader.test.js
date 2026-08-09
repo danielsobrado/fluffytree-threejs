@@ -51,6 +51,24 @@ test('YAML config loader reports network failures with the source URL', async ()
   });
 });
 
+test('YAML config loader reports body read failures with the source URL', async () => {
+  const cause = new Error('connection reset');
+  const loader = new YamlConfigLoader({
+    fetchImpl: async () => ({
+      ok: true,
+      async text() {
+        throw cause;
+      },
+    }),
+  });
+
+  await assert.rejects(loader.load('./config/truncated.yaml'), (error) => {
+    assert.match(error.message, /truncated\.yaml/);
+    assert.equal(error.cause, cause);
+    return true;
+  });
+});
+
 test('YAML config loader reports parse failures with the source URL', async () => {
   const loader = new YamlConfigLoader({
     fetchImpl: async () => response('value: [\n'),
@@ -68,5 +86,8 @@ test('YAML config loader rejects arrays at the document root', async () => {
     fetchImpl: async () => response('- first\n- second\n'),
   });
 
-  await assert.rejects(loader.load('./config/list.yaml'), /did not contain an object/);
+  await assert.rejects(
+    loader.load('./config/list.yaml'),
+    /did not contain an object/,
+  );
 });
