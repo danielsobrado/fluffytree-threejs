@@ -2,6 +2,7 @@ import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js';
 import { getLeafShape, sampleLeafAlpha } from './leaf-shape-library.js';
 
 const PROFILE_CACHE = new Map();
+const PIXEL_CACHE = new Map();
 const CHANNEL_COUNT = 4;
 const MAXIMUM_CARD_RADIUS = 0.49;
 
@@ -33,22 +34,22 @@ function requirePlaneCount(value) {
   return planeCount;
 }
 
-export function createFoliageAlphaPixels(
-  shapeId,
-  resolution = FOLIAGE_RENDERING_CONSTANTS.alphaTextureResolution,
-) {
-  const size = requireResolution(resolution);
-  const leafShape = getLeafShape(shapeId);
-  const data = new Uint8Array(size * size * CHANNEL_COUNT);
+function createPixelTemplate(shapeId, resolution) {
+  const key = `${shapeId}:${resolution}`;
+  const cached = PIXEL_CACHE.get(key);
+  if (cached) return cached;
 
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      const normalizedX = (x + 0.5) / size - 0.5;
-      const normalizedY = (y + 0.5) / size - 0.5;
+  const leafShape = getLeafShape(shapeId);
+  const data = new Uint8Array(resolution * resolution * CHANNEL_COUNT);
+
+  for (let y = 0; y < resolution; y += 1) {
+    for (let x = 0; x < resolution; x += 1) {
+      const normalizedX = (x + 0.5) / resolution - 0.5;
+      const normalizedY = (y + 0.5) / resolution - 0.5;
       const alpha = Math.round(
         sampleLeafAlpha(normalizedX, normalizedY, leafShape) * 255,
       );
-      const offset = (y * size + x) * CHANNEL_COUNT;
+      const offset = (y * resolution + x) * CHANNEL_COUNT;
       data[offset] = alpha;
       data[offset + 1] = alpha;
       data[offset + 2] = alpha;
@@ -56,7 +57,16 @@ export function createFoliageAlphaPixels(
     }
   }
 
+  PIXEL_CACHE.set(key, data);
   return data;
+}
+
+export function createFoliageAlphaPixels(
+  shapeId,
+  resolution = FOLIAGE_RENDERING_CONSTANTS.alphaTextureResolution,
+) {
+  const size = requireResolution(resolution);
+  return createPixelTemplate(shapeId, size).slice();
 }
 
 function channel(data, resolution, x, y) {
@@ -125,7 +135,7 @@ export function createFoliageAlphaProfile({
   const cached = PROFILE_CACHE.get(key);
   if (cached) return cached;
 
-  const pixels = createFoliageAlphaPixels(shapeId, size);
+  const pixels = createPixelTemplate(shapeId, size);
   const profile = Object.freeze({
     shapeId,
     alphaTest: threshold,
