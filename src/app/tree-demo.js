@@ -234,8 +234,15 @@ export class TreeDemo {
 
   /** A fresh set of trees from the same presets. */
   reseed() {
+    const previousSeedOffset = this.seedOffset;
     this.seedOffset += 1;
-    this.rebuildTrees();
+
+    try {
+      this.rebuildTrees();
+    } catch (error) {
+      this.seedOffset = previousSeedOffset;
+      throw error;
+    }
   }
 
   /**
@@ -248,6 +255,8 @@ export class TreeDemo {
   setStudioPreset(presetId) {
     if (this.stressMode) return;
 
+    const previousPresetId = this.studioPresetId;
+    const previousLayout = this.studioLayout;
     this.studioPresetId = presetId ?? null;
     this.studioLayout = presetId
       ? [
@@ -259,7 +268,15 @@ export class TreeDemo {
           },
         ]
       : null;
-    this.rebuildTrees();
+
+    try {
+      this.rebuildTrees();
+    } catch (error) {
+      this.studioPresetId = previousPresetId;
+      this.studioLayout = previousLayout;
+      throw error;
+    }
+
     if (presetId) this.frameStudioTree(presetId);
   }
 
