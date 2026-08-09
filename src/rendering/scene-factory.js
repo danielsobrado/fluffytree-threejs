@@ -5,20 +5,27 @@ import { measureViewport } from './viewport-size.js';
 
 function createRenderer(container, config) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-  const { width, height } = measureViewport(container);
-  renderer.setPixelRatio(
-    Math.min(window.devicePixelRatio, config.renderer.maxPixelRatio),
-  );
-  renderer.setSize(width, height);
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.shadowMap.autoUpdate = false;
-  renderer.shadowMap.needsUpdate = true;
-  container.appendChild(renderer.domElement);
-  return renderer;
+
+  try {
+    const { width, height } = measureViewport(container);
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio, config.renderer.maxPixelRatio),
+    );
+    renderer.setSize(width, height);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
+    container.appendChild(renderer.domElement);
+    return renderer;
+  } catch (error) {
+    renderer.dispose();
+    renderer.domElement?.remove?.();
+    throw error;
+  }
 }
 
 function createCamera(container, config) {
@@ -35,16 +42,24 @@ function createCamera(container, config) {
 
 function createGround(config) {
   const geometry = new THREE.CircleGeometry(config.scene.groundSize * 0.5, 96);
-  const material = new THREE.MeshStandardMaterial({
-    color: config.scene.groundColor,
-    roughness: 1,
-    metalness: 0,
-  });
-  const ground = new THREE.Mesh(geometry, material);
-  ground.name = 'ground';
-  ground.rotation.x = -Math.PI / 2;
-  ground.receiveShadow = true;
-  return ground;
+  let material = null;
+
+  try {
+    material = new THREE.MeshStandardMaterial({
+      color: config.scene.groundColor,
+      roughness: 1,
+      metalness: 0,
+    });
+    const ground = new THREE.Mesh(geometry, material);
+    ground.name = 'ground';
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    return ground;
+  } catch (error) {
+    geometry.dispose();
+    material?.dispose();
+    throw error;
+  }
 }
 
 function createLights(config) {
