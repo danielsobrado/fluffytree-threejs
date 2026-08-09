@@ -155,30 +155,42 @@ function createTexture(treeData, rotationY, capture) {
 export class TreeImpostorBuilder {
   build(treeData, { rotationY = 0, capture = null } = {}) {
     const { texture, project } = createTexture(treeData, rotationY, capture);
-    const material = new THREE.SpriteMaterial({
-      map: texture,
-      transparent: true,
-      alphaTest: 0.08,
-      depthWrite: true,
-      fog: true,
-      toneMapped: true,
-    });
-    material.name = 'tree-impostor-material';
-    material.userData.disposables = [texture];
+    let material = null;
 
-    const sprite = new THREE.Sprite(material);
-    sprite.name = 'tree-impostor';
-    sprite.center.set(0.5, 0.5);
-    sprite.position.set(project.anchor.x, project.anchor.y, project.anchor.z);
-    sprite.scale.set(project.worldSize, project.worldSize, 1);
-    sprite.userData.impostor = {
-      triangleCount: 2,
-      textureSize: BILLBOARD_TEXTURE_SIZE,
-      rotationY,
-      contentWidth: project.width,
-      contentHeight: project.height,
-      worldSize: project.worldSize,
-    };
-    return sprite;
+    try {
+      material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        alphaTest: 0.08,
+        depthWrite: true,
+        fog: true,
+        toneMapped: true,
+      });
+      material.name = 'tree-impostor-material';
+      material.userData.disposables = [texture];
+
+      const sprite = new THREE.Sprite(material);
+      sprite.name = 'tree-impostor';
+      sprite.center.set(0.5, 0.5);
+      sprite.position.set(project.anchor.x, project.anchor.y, project.anchor.z);
+      sprite.scale.set(project.worldSize, project.worldSize, 1);
+      sprite.userData.impostor = {
+        triangleCount: 2,
+        textureSize: BILLBOARD_TEXTURE_SIZE,
+        rotationY,
+        contentWidth: project.width,
+        contentHeight: project.height,
+        worldSize: project.worldSize,
+      };
+
+      material = null;
+      return sprite;
+    } catch (error) {
+      if (material) {
+        material.dispose();
+      }
+      texture.dispose();
+      throw error;
+    }
   }
 }
