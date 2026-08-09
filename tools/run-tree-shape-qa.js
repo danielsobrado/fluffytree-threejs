@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { load } from 'js-yaml';
-import { createTreePresetMap } from '../src/domain/tree-preset.js';
+import { createValidatedTreePresetMap } from '../src/domain/validated-tree-preset-map.js';
 import { renderQaMarkdown } from '../src/qa/qa-report-renderer.js';
 import { TreeShapeQaRunner } from '../src/qa/tree-shape-qa-runner.js';
 
@@ -66,7 +66,7 @@ async function main() {
   }
 
   const report = new TreeShapeQaRunner().run(
-    createTreePresetMap(presetConfiguration),
+    createValidatedTreePresetMap(presetConfiguration),
     qaConfiguration,
   );
   const outputDirectory = options.output;
