@@ -35,11 +35,17 @@ export class TreeLodController {
   }
 
   register(tree) {
+    const lodState = tree.userData.lod;
     this.entries.push({
       tree,
-      stableLevel: tree.userData.lod.currentLevel ?? 1,
-      appliedFades: new Array(tree.userData.lod.levels.length).fill(Number.NaN),
-      appliedInverts: new Array(tree.userData.lod.levels.length).fill(null),
+      stableLevel: lodState.currentLevel ?? 1,
+      appliedFades: new Array(lodState.levels.length).fill(Number.NaN),
+      appliedInverts: new Array(lodState.levels.length).fill(null),
+      weights: new Array(lodState.levels.length).fill(0),
+      availability: {
+        minimumLevel: lodState.minimumLevel ?? 0,
+        heroReady: lodState.heroReady,
+      },
     });
   }
 
@@ -100,6 +106,7 @@ export class TreeLodController {
   update(camera, viewportHeight, renderer) {
     const focalPixels =
       viewportHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) * 0.5));
+    const prewarmPixels = this.settings.nearPixels * (1 - this.settings.hysteresis);
     let shadowChanged = false;
 
     for (const entry of this.entries) {
@@ -118,7 +125,6 @@ export class TreeLodController {
         ),
       );
 
-      const prewarmPixels = this.settings.nearPixels * (1 - this.settings.hysteresis);
       if (
         minimumLevel === 0 &&
         !lodState.heroReady &&
@@ -128,10 +134,14 @@ export class TreeLodController {
         this.queueHeroBuild(entry, lodState);
       }
 
-      const weights = remapUnavailableLodWeights(
-        calculateLodWeights(projectedPixels, this.settings),
-        { minimumLevel, heroReady: lodState.heroReady },
+      const weights = calculateLodWeights(
+        projectedPixels,
+        this.settings,
+        entry.weights,
       );
+      entry.availability.minimumLevel = minimumLevel;
+      entry.availability.heroReady = lodState.heroReady;
+      remapUnavailableLodWeights(weights, entry.availability, weights);
       const firstVisibleLevel = findFirstVisibleLevel(weights);
 
       for (let index = 0; index < lodState.levels.length; index += 1) {
