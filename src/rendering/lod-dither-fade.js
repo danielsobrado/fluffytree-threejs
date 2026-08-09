@@ -9,6 +9,17 @@ const DITHER_SHADER = `
   }
 `;
 
+function visitMaterials(root, visitor) {
+  root.traverse((object) => {
+    const materials = Array.isArray(object.material)
+      ? object.material
+      : object.material
+        ? [object.material]
+        : [];
+    for (const material of materials) visitor(material);
+  });
+}
+
 export function configureLodDitherFade(material) {
   if (material.userData.lodFade) return material;
   const previousCompile = material.onBeforeCompile;
@@ -36,30 +47,42 @@ export function configureLodDitherFade(material) {
 }
 
 export function configureObjectLodFade(root) {
-  root.traverse((object) => {
-    if (!object.material) return;
-    const materials = Array.isArray(object.material)
-      ? object.material
-      : [object.material];
-    materials.forEach(configureLodDitherFade);
-  });
+  visitMaterials(root, configureLodDitherFade);
   return root;
+}
+
+export function snapshotObjectLodFade(root) {
+  const states = [];
+  const seen = new Set();
+
+  visitMaterials(root, (material) => {
+    const state = material.userData.lodFade;
+    if (!state || seen.has(state)) return;
+    seen.add(state);
+    states.push({ state, value: state.value, invert: state.invert });
+  });
+
+  return {
+    visible: root.visible,
+    states,
+  };
+}
+
+export function restoreObjectLodFade(root, snapshot) {
+  root.visible = snapshot.visible;
+  for (const entry of snapshot.states) {
+    entry.state.value = entry.value;
+    entry.state.invert = entry.invert;
+  }
 }
 
 export function setObjectLodFade(root, value, invert = false) {
   const fade = Math.min(1, Math.max(0, value));
   root.visible = fade > 0.001;
-  root.traverse((object) => {
-    const materials = Array.isArray(object.material)
-      ? object.material
-      : object.material
-        ? [object.material]
-        : [];
-    for (const material of materials) {
-      if (material.userData.lodFade) {
-        material.userData.lodFade.value = fade;
-        material.userData.lodFade.invert = invert ? 1 : 0;
-      }
+  visitMaterials(root, (material) => {
+    if (material.userData.lodFade) {
+      material.userData.lodFade.value = fade;
+      material.userData.lodFade.invert = invert ? 1 : 0;
     }
   });
 }
