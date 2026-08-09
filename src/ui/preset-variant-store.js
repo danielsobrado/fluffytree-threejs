@@ -30,6 +30,15 @@ function resolveStorage() {
   }
 }
 
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeSavedAt(value) {
+  const savedAt = Number(value);
+  return Number.isFinite(savedAt) ? savedAt : 0;
+}
+
 export class PresetVariantStore {
   constructor(storage = resolveStorage()) {
     this.storage = storage;
@@ -38,7 +47,7 @@ export class PresetVariantStore {
   read() {
     try {
       const parsed = JSON.parse(this.storage.getItem(STORAGE_KEY) ?? '{}');
-      return parsed && typeof parsed === 'object' ? parsed : {};
+      return isRecord(parsed) ? parsed : {};
     } catch {
       return {};
     }
@@ -56,17 +65,19 @@ export class PresetVariantStore {
   /** Newest first, so the list reads as a history of what was tried. */
   list() {
     return Object.entries(this.read())
+      .filter(([, variant]) => isRecord(variant))
       .map(([name, variant]) => ({
         name,
-        basePresetId: variant.basePresetId ?? null,
-        savedAt: variant.savedAt ?? 0,
+        basePresetId:
+          typeof variant.basePresetId === 'string' ? variant.basePresetId : null,
+        savedAt: normalizeSavedAt(variant.savedAt),
       }))
       .sort((left, right) => right.savedAt - left.savedAt);
   }
 
   load(name) {
     const variant = this.read()[name];
-    return variant?.value ? structuredClone(variant) : null;
+    return isRecord(variant) && variant.value ? structuredClone(variant) : null;
   }
 
   save(name, basePresetId, value) {
@@ -92,7 +103,7 @@ export class PresetVariantStore {
     const presets = {};
 
     for (const [name, variant] of Object.entries(variants)) {
-      if (!variant?.value) continue;
+      if (!isRecord(variant) || !variant.value) continue;
       const baseId = toPresetId(name);
       let presetId = baseId;
       let suffix = 2;
