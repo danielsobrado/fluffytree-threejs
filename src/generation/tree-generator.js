@@ -7,7 +7,6 @@ import { LobeConnectionAnalyzer } from './lobe-connection-analyzer.js';
 import { LobeConnectivityEnforcer } from './lobe-connectivity-enforcer.js';
 import { LobeGenerator } from './lobe-generator.js';
 import { SeededRandom } from './seeded-random.js';
-import { analyzeTreeLodBudgets } from '../qa/tree-lod-budget-analyzer.js';
 
 function createShellSeed(seed) {
   return (Number(seed) ^ FOLIAGE_SHELL_CONSTANTS.seedSalt) >>> 0;
@@ -80,18 +79,20 @@ export class TreeGenerator {
     lobeConnectionAnalyzer = new LobeConnectionAnalyzer(),
     branchGenerator = new BranchGenerator(),
     foliageShellGenerator = new FoliageShellGenerator(),
+    lodCostAnalyzer = null,
   } = {}) {
     this.lobeGenerator = lobeGenerator;
     this.lobeConnectivityEnforcer = lobeConnectivityEnforcer;
     this.lobeConnectionAnalyzer = lobeConnectionAnalyzer;
     this.branchGenerator = branchGenerator;
     this.foliageShellGenerator = foliageShellGenerator;
+    this.lodCostAnalyzer = lodCostAnalyzer;
   }
 
   generate(
     preset,
     seed,
-    { includeSurfaceSamples = true, includeLodCostSummaries = true } = {},
+    { includeSurfaceSamples = true, includeLodCostSummaries = false } = {},
   ) {
     const random = new SeededRandom(seed);
     const envelope = new CrownEnvelope(preset.crown);
@@ -136,7 +137,10 @@ export class TreeGenerator {
     };
 
     if (includeLodCostSummaries) {
-      tree.lodCostSummaries = analyzeTreeLodBudgets(tree);
+      if (typeof this.lodCostAnalyzer !== 'function') {
+        throw new Error('LOD cost summaries require an injected analyzer.');
+      }
+      tree.lodCostSummaries = this.lodCostAnalyzer(tree);
     }
 
     return Object.freeze(tree);
