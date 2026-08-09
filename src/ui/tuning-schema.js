@@ -156,7 +156,6 @@ export const TUNING_GROUPS = Object.freeze([
       vector('crown.lean', 'Lean', -2, 2, 0.01, ['X', 'Z']),
       integer('crown.clumps.macroCount', 'Macro clumps', 1, 10),
       range('crown.clumps.separation', 'Clump separation', 0, 1, 0.01),
-      range('crown.clumps.anchoring', 'Clump anchoring', 0, 1, 0.01),
       range('crown.clumps.silhouetteBreakup', 'Silhouette breakup', 0, 1, 0.01),
     ]),
   }),
