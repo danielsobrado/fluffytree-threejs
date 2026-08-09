@@ -7,6 +7,7 @@ import { FoliageShellBuilder } from './foliage-shell-builder.js';
 import { FoliageTextureSetFactory } from './foliage-texture-set-factory.js';
 import { LeafClusterBuilder } from './leaf-cluster-builder.js';
 import { configureObjectLodFade, setObjectLodFade } from './lod-dither-fade.js';
+import { disposeObject } from './object-disposer.js';
 import { TreeImpostorBuilder } from './tree-impostor-builder.js';
 
 /**
@@ -28,12 +29,16 @@ function coverOnlyCoreScale(treeData) {
   return canopyExtent / treeData.palette.core.scale;
 }
 
-function createLevel(name, objects) {
+function createLevel(name) {
   const group = new THREE.Group();
   group.name = name;
-  if (objects.length > 0) group.add(...objects);
-  configureObjectLodFade(group);
   return group;
+}
+
+function populateLevel(level, factories = []) {
+  for (const factory of factories) level.add(factory());
+  configureObjectLodFade(level);
+  return level;
 }
 
 function geometryTriangles(object) {
@@ -62,30 +67,54 @@ function disposeImpostor(impostor) {
   impostor.material.dispose();
 }
 
+function disposeDetachedObjects(objects, preserveResources = []) {
+  if (objects.length === 0) return;
+  const holder = new THREE.Group();
+  holder.add(...objects);
+  disposeObject(holder, { preserveResources });
+}
+
+function buildDetachedObjects(factories, preserveResources = []) {
+  const objects = [];
+
+  try {
+    for (const factory of factories) objects.push(factory());
+    return objects;
+  } catch (error) {
+    disposeDetachedObjects(objects, preserveResources);
+    throw error;
+  }
+}
+
 function createShadowProxy(treeData, branchMeshBuilder, crownShadowProxyBuilder) {
   const group = new THREE.Group();
   group.name = 'tree-shadow-proxy';
   group.visible = false;
 
-  const structure = branchMeshBuilder.build(treeData, {
-    maxBranchOrder: 1,
-    radialSegments: 6,
-    trunkCurveSamples: 8,
-    branchCurveSamples: 4,
-    castShadow: true,
-    receiveShadow: false,
-    name: 'tree-structure-shadow-proxy',
-  });
-  structure.material.colorWrite = false;
-  structure.material.depthWrite = false;
-  structure.renderOrder = -1;
-  structure.userData.shadowProxy = {
-    visibleSurface: false,
-    triangleCount: geometryTriangles(structure),
-  };
-
-  group.add(structure, crownShadowProxyBuilder.build(treeData));
-  return group;
+  try {
+    const structure = branchMeshBuilder.build(treeData, {
+      maxBranchOrder: 1,
+      radialSegments: 6,
+      trunkCurveSamples: 8,
+      branchCurveSamples: 4,
+      castShadow: true,
+      receiveShadow: false,
+      name: 'tree-structure-shadow-proxy',
+    });
+    structure.material.colorWrite = false;
+    structure.material.depthWrite = false;
+    structure.renderOrder = -1;
+    structure.userData.shadowProxy = {
+      visibleSurface: false,
+      triangleCount: geometryTriangles(structure),
+    };
+    group.add(structure);
+    group.add(crownShadowProxyBuilder.build(treeData));
+    return group;
+  } catch (error) {
+    disposeObject(group);
+    throw error;
+  }
 }
 
 export class TreeMeshBuilder {
@@ -124,167 +153,218 @@ export class TreeMeshBuilder {
       palette: minimumLod <= 2,
       alpha: minimumLod <= 1,
     });
+    const sharedFoliageResources = [textures.palette, textures.alpha].filter(Boolean);
+    root.userData.disposables = sharedFoliageResources;
     const foliageResources = {
       paletteTexture: textures.palette,
       alphaTexture: textures.alpha,
       sunDirection,
     };
 
-    const lod0 = createLevel('tree-lod-0', []);
-    const lod1 = createLevel(
-      'tree-lod-1',
-      minimumLod <= 1
-        ? [
-            this.branchMeshBuilder.build(treeData, {
-              maxBranchOrder: 2,
-              radialSegments: 8,
-              trunkCurveSamples: 14,
-              branchCurveSamples: 7,
-              castShadow: false,
-              name: 'tree-structure-lod1',
-            }),
-            this.foliageCoreBuilder.build(treeData, {
-              ...foliageResources,
-              detail: 1,
-              lodIndex: 1,
-              scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.coreScaleMultiplier,
-              name: 'foliage-core-lod1',
-            }),
-            this.foliageShellBuilder.build(treeData, {
-              ...foliageResources,
-              density: FOLIAGE_RENDERING_CONSTANTS.mediumShellDensity,
-              planesPerCluster: 1,
-              scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier,
-              name: 'foliage-shell-lod1',
-            }),
-          ]
-        : [],
-    );
-    const lod2 = createLevel(
-      'tree-lod-2',
-      minimumLod <= 2
-        ? [
-            this.branchMeshBuilder.build(treeData, {
-              maxBranchOrder: 1,
-              radialSegments: 6,
-              trunkCurveSamples: 8,
-              branchCurveSamples: 4,
-              castShadow: false,
-              name: 'tree-structure-lod2',
-            }),
-            this.foliageCoreBuilder.build(treeData, {
-              ...foliageResources,
-              detail: 0,
-              lodIndex: 2,
-              scaleMultiplier: coverOnlyCoreScale(treeData),
-              name: 'foliage-core-lod2',
-            }),
-          ]
-        : [],
-    );
-    // Level 2 is the level the impostor crossfades with, so capturing that is
-    // what makes the two silhouettes agree.
-    const captureLevel = (layout, rotationY) =>
-      impostorRenderer.capture(lod2, layout, rotationY);
-    const capture = impostorRenderer && lod2.children.length > 0
-      ? captureLevel
-      : null;
-    let impostor = this.impostorBuilder.build(treeData, {
-      rotationY: impostorRotationY,
-      capture,
-    });
-    const lod3 = createLevel('tree-lod-3', [impostor]);
-    const shadowProxy = createShadowProxy(
-      treeData,
-      this.branchMeshBuilder,
-      this.shadowProxyBuilder,
-    );
-    const levels = [lod0, lod1, lod2, lod3];
-    levels.forEach((level, index) => {
-      level.userData.lod = {
-        index,
-        ...collectLevelMetrics(level),
-      };
-      setObjectLodFade(level, index === Math.max(1, minimumLod) ? 1 : 0);
-    });
+    try {
+      const lod0 = createLevel('tree-lod-0');
+      const lod1 = createLevel('tree-lod-1');
+      const lod2 = createLevel('tree-lod-2');
+      const lod3 = createLevel('tree-lod-3');
+      root.add(lod0, lod1, lod2, lod3);
 
-    const buildHero = () => {
-      if (root.userData.lod?.heroReady || minimumLod > 0) return;
-      const heroLeaves = this.leafClusterBuilder.build(treeData);
-      lod0.add(
-        this.branchMeshBuilder.build(treeData, {
-          maxBranchOrder: 3,
-          radialSegments: 10,
-          castShadow: false,
-          name: 'tree-structure',
-        }),
-        // The low-poly core keeps the crown opaque. Shape-aware connector
-        // instances bridge only the core components that would otherwise split.
-        this.foliageCoreBuilder.build(treeData, {
-          ...foliageResources,
-          detail: 1,
-          lodIndex: 0,
-          scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.coreScaleMultiplier,
-          name: 'foliage-core-lod0',
-        }),
-        this.foliageShellBuilder.build(treeData, {
-          ...foliageResources,
-          density: 1,
-          planesPerCluster: treeData.palette.shell.planesPerCluster,
-          scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier,
-          interiorDensity: FOLIAGE_RENDERING_CONSTANTS.heroInteriorDensity,
-          interiorInsetRatio: 0.3,
-          interiorScaleRatio: 1.08,
-          name: 'foliage-shell-lod0',
-        }),
-        heroLeaves,
+      populateLevel(
+        lod1,
+        minimumLod <= 1
+          ? [
+              () =>
+                this.branchMeshBuilder.build(treeData, {
+                  maxBranchOrder: 2,
+                  radialSegments: 8,
+                  trunkCurveSamples: 14,
+                  branchCurveSamples: 7,
+                  castShadow: false,
+                  name: 'tree-structure-lod1',
+                }),
+              () =>
+                this.foliageCoreBuilder.build(treeData, {
+                  ...foliageResources,
+                  detail: 1,
+                  lodIndex: 1,
+                  scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.coreScaleMultiplier,
+                  name: 'foliage-core-lod1',
+                }),
+              () =>
+                this.foliageShellBuilder.build(treeData, {
+                  ...foliageResources,
+                  density: FOLIAGE_RENDERING_CONSTANTS.mediumShellDensity,
+                  planesPerCluster: 1,
+                  scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier,
+                  name: 'foliage-shell-lod1',
+                }),
+            ]
+          : [],
       );
-      configureObjectLodFade(lod0);
-      lod0.userData.lod = { index: 0, ...collectLevelMetrics(lod0) };
-      setObjectLodFade(lod0, 0);
-      root.userData.lod.heroReady = true;
-      root.userData.tree.leafClusterCount =
-        heroLeaves.userData.heroLeaves?.clusterCount ?? 0;
-      root.userData.tree.leafCount = heroLeaves.userData.heroLeaves?.leafCount ?? 0;
-      root.userData.tree.lodCosts[0] = lod0.userData.lod;
-      onHeroBuilt?.(lod0);
-    };
+      populateLevel(
+        lod2,
+        minimumLod <= 2
+          ? [
+              () =>
+                this.branchMeshBuilder.build(treeData, {
+                  maxBranchOrder: 1,
+                  radialSegments: 6,
+                  trunkCurveSamples: 8,
+                  branchCurveSamples: 4,
+                  castShadow: false,
+                  name: 'tree-structure-lod2',
+                }),
+              () =>
+                this.foliageCoreBuilder.build(treeData, {
+                  ...foliageResources,
+                  detail: 0,
+                  lodIndex: 2,
+                  scaleMultiplier: coverOnlyCoreScale(treeData),
+                  name: 'foliage-core-lod2',
+                }),
+            ]
+          : [],
+      );
 
-    const rebuildImpostor = (rotationY) => {
-      const currentRotation = impostor.userData.impostor?.rotationY ?? 0;
-      if (Math.abs(currentRotation - rotationY) <= Number.EPSILON) return;
-
-      lod3.remove(impostor);
-      disposeImpostor(impostor);
-      impostor = this.impostorBuilder.build(treeData, { rotationY, capture });
+      // Level 2 is the level the impostor crossfades with, so capturing that is
+      // what makes the two silhouettes agree.
+      const captureLevel = (layout, rotationY) =>
+        impostorRenderer.capture(lod2, layout, rotationY);
+      const capture =
+        impostorRenderer && lod2.children.length > 0 ? captureLevel : null;
+      let impostor = this.impostorBuilder.build(treeData, {
+        rotationY: impostorRotationY,
+        capture,
+      });
       lod3.add(impostor);
       configureObjectLodFade(lod3);
-      lod3.userData.lod = { index: 3, ...collectLevelMetrics(lod3) };
-      setObjectLodFade(lod3, 0);
-      if (root.userData.tree) root.userData.tree.lodCosts[3] = lod3.userData.lod;
-    };
 
-    root.userData.tree = {
-      presetId: treeData.presetId,
-      seed: treeData.seed,
-      height: treeData.height,
-      controlLobeCount: treeData.lobes.length,
-      branchCount: treeData.branches.length,
-      leafClusterCount: 0,
-      leafCount: 0,
-      lodCosts: levels.map((level) => level.userData.lod),
-    };
-    root.userData.lod = {
-      levels,
-      shadowProxy,
-      currentLevel: Math.max(1, minimumLod),
-      minimumLevel: minimumLod,
-      heroReady: false,
-      buildHero,
-      rebuildImpostor,
-    };
-    root.add(...levels, shadowProxy);
-    if (!deferHero && minimumLod === 0) buildHero();
-    return root;
+      const shadowProxy = createShadowProxy(
+        treeData,
+        this.branchMeshBuilder,
+        this.shadowProxyBuilder,
+      );
+      root.add(shadowProxy);
+      configureObjectLodFade(lod0);
+
+      const levels = [lod0, lod1, lod2, lod3];
+      levels.forEach((level, index) => {
+        level.userData.lod = {
+          index,
+          ...collectLevelMetrics(level),
+        };
+        setObjectLodFade(level, index === Math.max(1, minimumLod) ? 1 : 0);
+      });
+
+      const buildHero = () => {
+        if (root.userData.lod?.heroReady || minimumLod > 0) return;
+
+        const heroObjects = buildDetachedObjects(
+          [
+            () =>
+              this.branchMeshBuilder.build(treeData, {
+                maxBranchOrder: 3,
+                radialSegments: 10,
+                castShadow: false,
+                name: 'tree-structure',
+              }),
+            () =>
+              this.foliageCoreBuilder.build(treeData, {
+                ...foliageResources,
+                detail: 1,
+                lodIndex: 0,
+                scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.coreScaleMultiplier,
+                name: 'foliage-core-lod0',
+              }),
+            () =>
+              this.foliageShellBuilder.build(treeData, {
+                ...foliageResources,
+                density: 1,
+                planesPerCluster: treeData.palette.shell.planesPerCluster,
+                scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier,
+                interiorDensity: FOLIAGE_RENDERING_CONSTANTS.heroInteriorDensity,
+                interiorInsetRatio: 0.3,
+                interiorScaleRatio: 1.08,
+                name: 'foliage-shell-lod0',
+              }),
+            () => this.leafClusterBuilder.build(treeData),
+          ],
+          sharedFoliageResources,
+        );
+        const heroLeaves = heroObjects.at(-1);
+
+        try {
+          lod0.add(...heroObjects);
+          configureObjectLodFade(lod0);
+          lod0.userData.lod = { index: 0, ...collectLevelMetrics(lod0) };
+          setObjectLodFade(lod0, 0);
+          root.userData.lod.heroReady = true;
+          root.userData.tree.leafClusterCount =
+            heroLeaves.userData.heroLeaves?.clusterCount ?? 0;
+          root.userData.tree.leafCount = heroLeaves.userData.heroLeaves?.leafCount ?? 0;
+          root.userData.tree.lodCosts[0] = lod0.userData.lod;
+        } catch (error) {
+          root.userData.lod.heroReady = false;
+          for (const object of heroObjects) lod0.remove(object);
+          disposeDetachedObjects(heroObjects, sharedFoliageResources);
+          throw error;
+        }
+
+        onHeroBuilt?.(lod0);
+      };
+
+      const rebuildImpostor = (rotationY) => {
+        const currentRotation = impostor.userData.impostor?.rotationY ?? 0;
+        if (Math.abs(currentRotation - rotationY) <= Number.EPSILON) return;
+
+        const nextImpostor = this.impostorBuilder.build(treeData, {
+          rotationY,
+          capture,
+        });
+
+        try {
+          lod3.add(nextImpostor);
+          configureObjectLodFade(lod3);
+          const nextMetrics = { index: 3, ...collectLevelMetrics(lod3) };
+          setObjectLodFade(lod3, 0);
+          lod3.remove(impostor);
+          disposeImpostor(impostor);
+          impostor = nextImpostor;
+          lod3.userData.lod = nextMetrics;
+          if (root.userData.tree) {
+            root.userData.tree.lodCosts[3] = lod3.userData.lod;
+          }
+        } catch (error) {
+          lod3.remove(nextImpostor);
+          disposeImpostor(nextImpostor);
+          throw error;
+        }
+      };
+
+      root.userData.tree = {
+        presetId: treeData.presetId,
+        seed: treeData.seed,
+        height: treeData.height,
+        controlLobeCount: treeData.lobes.length,
+        branchCount: treeData.branches.length,
+        leafClusterCount: 0,
+        leafCount: 0,
+        lodCosts: levels.map((level) => level.userData.lod),
+      };
+      root.userData.lod = {
+        levels,
+        shadowProxy,
+        currentLevel: Math.max(1, minimumLod),
+        minimumLevel: minimumLod,
+        heroReady: false,
+        buildHero,
+        rebuildImpostor,
+      };
+      root.add(shadowProxy);
+      if (!deferHero && minimumLod === 0) buildHero();
+      return root;
+    } catch (error) {
+      disposeObject(root);
+      throw error;
+    }
   }
 }
