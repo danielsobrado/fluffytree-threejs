@@ -1,3 +1,5 @@
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+
 function requireObject(parent, key) {
   const value = parent?.[key];
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -10,6 +12,14 @@ function requireString(parent, key, path) {
   const value = parent[key];
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(`Scene configuration '${path}.${key}' must be a non-empty string.`);
+  }
+  return value;
+}
+
+function requireColor(parent, key, path) {
+  const value = requireString(parent, key, path);
+  if (!HEX_COLOR_PATTERN.test(value)) {
+    throw new Error(`Scene configuration '${path}.${key}' must be a #RRGGBB color.`);
   }
   return value;
 }
@@ -50,14 +60,14 @@ function requireVector(parent, key, path, size = 3) {
 
 function validateSceneSection(config) {
   const scene = requireObject(config, 'scene');
-  requireString(scene, 'backgroundColor', 'scene');
-  requireString(scene, 'fogColor', 'scene');
+  requireColor(scene, 'backgroundColor', 'scene');
+  requireColor(scene, 'fogColor', 'scene');
   const fogNear = requireFinite(scene, 'fogNear', 'scene', { minimum: 0 });
   const fogFar = requirePositive(scene, 'fogFar', 'scene');
   if (fogFar <= fogNear) {
     throw new Error("Scene configuration 'scene.fogFar' must be greater than 'scene.fogNear'.");
   }
-  requireString(scene, 'groundColor', 'scene');
+  requireColor(scene, 'groundColor', 'scene');
   requirePositive(scene, 'groundSize', 'scene');
 }
 
@@ -111,10 +121,10 @@ function validateLod(config) {
 
 function validateLighting(config) {
   const lighting = requireObject(config, 'lighting');
-  requireString(lighting, 'hemisphereSkyColor', 'lighting');
-  requireString(lighting, 'hemisphereGroundColor', 'lighting');
+  requireColor(lighting, 'hemisphereSkyColor', 'lighting');
+  requireColor(lighting, 'hemisphereGroundColor', 'lighting');
   requireFinite(lighting, 'hemisphereIntensity', 'lighting', { minimum: 0 });
-  requireString(lighting, 'sunColor', 'lighting');
+  requireColor(lighting, 'sunColor', 'lighting');
   requireFinite(lighting, 'sunIntensity', 'lighting', { minimum: 0 });
   requireVector(lighting, 'sunPosition', 'lighting');
 }
