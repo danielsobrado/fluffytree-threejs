@@ -53,6 +53,39 @@ test('scene validation rejects invalid camera clipping planes', () => {
   );
 });
 
+test('scene validation rejects a camera placed exactly on its target', () => {
+  const config = loadSceneConfig();
+  config.camera.position = [...config.camera.target];
+
+  assert.throws(
+    () => validateSceneConfig(config),
+    /camera\.position.*differ from.*camera\.target/,
+  );
+});
+
+test('scene validation rejects a zero sun direction', () => {
+  const config = loadSceneConfig();
+  config.lighting.sunPosition = [0, 0, 0];
+
+  assert.throws(
+    () => validateSceneConfig(config),
+    /lighting\.sunPosition.*zero vector/,
+  );
+});
+
+test('scene validation rejects seeds that would truncate or wrap', () => {
+  for (const seed of [-1, 1.5, 0x100000000]) {
+    const config = loadSceneConfig();
+    config.layout[0].seed = seed;
+
+    assert.throws(
+      () => validateSceneConfig(config),
+      /layout\[0\]\.seed.*(?:>= 0|<= 4294967295|unsigned 32-bit integer)/,
+      String(seed),
+    );
+  }
+});
+
 test('scene validation rejects malformed colors', () => {
   const config = loadSceneConfig();
   config.lighting.sunColor = 'sunny';
