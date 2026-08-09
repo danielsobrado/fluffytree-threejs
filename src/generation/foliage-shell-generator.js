@@ -22,19 +22,20 @@ function averageScale(lobe) {
 }
 
 function calculateCrownCenter(lobes) {
-  const total = lobes.reduce(
-    (result, lobe) => ({
-      x: result.x + lobe.position.x,
-      y: result.y + lobe.position.y,
-      z: result.z + lobe.position.z,
-    }),
-    { x: 0, y: 0, z: 0 },
-  );
+  let x = 0;
+  let y = 0;
+  let z = 0;
+
+  for (const lobe of lobes) {
+    x += lobe.position.x;
+    y += lobe.position.y;
+    z += lobe.position.z;
+  }
 
   return {
-    x: total.x / lobes.length,
-    y: total.y / lobes.length,
-    z: total.z / lobes.length,
+    x: x / lobes.length,
+    y: y / lobes.length,
+    z: z / lobes.length,
   };
 }
 
@@ -192,7 +193,6 @@ export class FoliageShellGenerator {
       bestByLobe.set(lobe.id, best);
     }
 
-    exposed.sort(compareCandidates);
     const maxCover = selectDeterministicFoliageMaxCover(exposed, {
       targetCount: exposed.length,
       stopCoverageRatio: 0.5,
