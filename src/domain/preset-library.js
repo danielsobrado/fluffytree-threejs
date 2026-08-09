@@ -1,4 +1,5 @@
 import { resolveFoliageContinuityProfile } from './foliage-continuity-config.js';
+import { validateTreePresetConfig } from './tree-preset-config-validator.js';
 import { createTreePreset } from './tree-preset.js';
 
 /**
@@ -17,11 +18,20 @@ function clone(value) {
 
 export class PresetLibrary {
   static fromConfig(config, continuityConfig = null) {
-    if (!config?.presets || typeof config.presets !== 'object') {
+    if (
+      !config?.presets ||
+      typeof config.presets !== 'object' ||
+      Array.isArray(config.presets)
+    ) {
       throw new Error("Tree configuration must define a 'presets' object.");
     }
 
-    return new PresetLibrary(Object.entries(config.presets), continuityConfig);
+    const entries = Object.entries(config.presets);
+    if (entries.length === 0) {
+      throw new Error("Tree configuration 'presets' must not be empty.");
+    }
+
+    return new PresetLibrary(entries, continuityConfig);
   }
 
   constructor(entries = [], continuityConfig = null) {
@@ -57,6 +67,7 @@ export class PresetLibrary {
 
   /** Validates before storing, so a rejected edit leaves the library untouched. */
   set(id, value) {
+    validateTreePresetConfig(id, value);
     const basePreset = createTreePreset(id, value);
     const continuity = resolveFoliageContinuityProfile(
       this.continuityConfig,
