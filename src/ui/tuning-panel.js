@@ -561,21 +561,25 @@ export class TuningPanel {
       return;
     }
 
-    this.flushScheduledApply();
+    if (!this.flushScheduledApply()) return;
 
-    // A variant saved from a preset that has since been removed still loads,
-    // onto whichever preset is being edited now.
-    if (variant.basePresetId && this.library.has(variant.basePresetId)) {
-      this.presetId = variant.basePresetId;
-      this.presetSelect.value = this.presetId;
+    // A variant saved from a preset that has since been removed still loads
+    // onto whichever preset is being edited now. Existing bases switch through
+    // the same transactional path as the preset picker so a failed rebuild
+    // cannot leave the panel describing a different tree from the scene.
+    if (
+      variant.basePresetId &&
+      this.library.has(variant.basePresetId) &&
+      variant.basePresetId !== this.presetId &&
+      !this.selectPreset(variant.basePresetId)
+    ) {
+      return;
     }
 
     this.config = variant.value;
     this.controlContext.config = this.config;
     this.refreshControls();
     this.nameInput.value = name;
-    // `rebuildPreset` moves the studio to this preset when solo is on, so the
-    // loaded settings are what ends up on screen either way.
     void this.apply();
   }
 
