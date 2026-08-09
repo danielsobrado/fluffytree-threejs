@@ -60,3 +60,42 @@ test('continuity configuration rejects card width spread below one', () => {
     /maximumShellCardWidthSpread/,
   );
 });
+
+test('continuity configuration rejects numeric strings instead of coercing them', () => {
+  assert.throws(
+    () =>
+      resolveFoliageContinuityProfile(
+        { verticalBias: '0.25' },
+        'round',
+      ),
+    /verticalBias.*finite number/,
+  );
+});
+
+test('continuity configuration rejects malformed profile overrides', () => {
+  assert.throws(
+    () =>
+      resolveFoliageContinuityProfile(
+        { profiles: { round: [] } },
+        'round',
+      ),
+    /profiles\.round.*object/,
+  );
+});
+
+test('continuity configuration rejects malformed LOD entries', () => {
+  assert.throws(
+    () =>
+      resolveFoliageContinuityProfile(
+        {
+          lod: [
+            { coreScale: 1, bridges: true },
+            1,
+            { coreScale: 1, bridges: true },
+          ],
+        },
+        'round',
+      ),
+    /lod\[1\].*object/,
+  );
+});
