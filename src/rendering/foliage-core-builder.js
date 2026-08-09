@@ -43,74 +43,86 @@ export class FoliageCoreBuilder {
       lodIndex,
       scaleMultiplier,
     });
-    const geometry = this.geometryFactory.create(detail);
-    addFoliageInstanceAttributes(geometry, layout.instances, {
-      getExposure: (instance) => instance.exposure,
-      getCrownDirection: (instance) =>
-        crownDirection(instance.position, treeData.crownCenter),
-    });
+    let geometry = null;
+    let material = null;
 
-    const material = this.materialFactory.create({
-      foliage: treeData.palette,
-      paletteTexture,
-      sunDirection,
-    });
-    const foliage = new THREE.InstancedMesh(
-      geometry,
-      material,
-      layout.instances.length,
-    );
-    const matrix = new THREE.Matrix4();
-    const position = new THREE.Vector3();
-    const rotation = new THREE.Euler();
-    const direction = new THREE.Vector3();
-    const quaternion = new THREE.Quaternion();
-    const scale = new THREE.Vector3();
+    try {
+      geometry = this.geometryFactory.create(detail);
+      addFoliageInstanceAttributes(geometry, layout.instances, {
+        getExposure: (instance) => instance.exposure,
+        getCrownDirection: (instance) =>
+          crownDirection(instance.position, treeData.crownCenter),
+      });
 
-    layout.instances.forEach((instance, index) => {
-      position.set(
-        instance.position.x,
-        instance.position.y,
-        instance.position.z,
+      material = this.materialFactory.create({
+        foliage: treeData.palette,
+        paletteTexture,
+        sunDirection,
+      });
+      const foliage = new THREE.InstancedMesh(
+        geometry,
+        material,
+        layout.instances.length,
       );
-      if (instance.kind === 'bridge') {
-        direction
-          .set(
-            instance.direction.x,
-            instance.direction.y,
-            instance.direction.z,
-          )
-          .normalize();
-        quaternion.setFromUnitVectors(LOCAL_BRIDGE_AXIS, direction);
-      } else {
-        rotation.set(
-          instance.rotation.x,
-          instance.rotation.y,
-          instance.rotation.z,
-        );
-        quaternion.setFromEuler(rotation);
-      }
-      scale.set(instance.scale.x, instance.scale.y, instance.scale.z);
-      matrix.compose(position, quaternion, scale);
-      foliage.setMatrixAt(index, matrix);
-    });
+      const matrix = new THREE.Matrix4();
+      const position = new THREE.Vector3();
+      const rotation = new THREE.Euler();
+      const direction = new THREE.Vector3();
+      const quaternion = new THREE.Quaternion();
+      const scale = new THREE.Vector3();
 
-    foliage.instanceMatrix.setUsage(THREE.StaticDrawUsage);
-    foliage.instanceMatrix.needsUpdate = true;
-    foliage.name = name;
-    foliage.castShadow = false;
-    foliage.receiveShadow = true;
-    foliage.computeBoundingBox();
-    foliage.computeBoundingSphere();
-    foliage.userData.foliageCore = {
-      instanceCount: layout.instances.length,
-      lobeInstanceCount: layout.lobeInstanceCount,
-      bridgeInstanceCount: layout.bridgeInstanceCount,
-      effectiveCoreScale: layout.effectiveCoreScale,
-      profile: layout.profile,
-      detail,
-      lodIndex,
-    };
-    return foliage;
+      layout.instances.forEach((instance, index) => {
+        position.set(
+          instance.position.x,
+          instance.position.y,
+          instance.position.z,
+        );
+        if (instance.kind === 'bridge') {
+          direction
+            .set(
+              instance.direction.x,
+              instance.direction.y,
+              instance.direction.z,
+            )
+            .normalize();
+          quaternion.setFromUnitVectors(LOCAL_BRIDGE_AXIS, direction);
+        } else {
+          rotation.set(
+            instance.rotation.x,
+            instance.rotation.y,
+            instance.rotation.z,
+          );
+          quaternion.setFromEuler(rotation);
+        }
+        scale.set(instance.scale.x, instance.scale.y, instance.scale.z);
+        matrix.compose(position, quaternion, scale);
+        foliage.setMatrixAt(index, matrix);
+      });
+
+      foliage.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+      foliage.instanceMatrix.needsUpdate = true;
+      foliage.name = name;
+      foliage.castShadow = false;
+      foliage.receiveShadow = true;
+      foliage.computeBoundingBox();
+      foliage.computeBoundingSphere();
+      foliage.userData.foliageCore = {
+        instanceCount: layout.instances.length,
+        lobeInstanceCount: layout.lobeInstanceCount,
+        bridgeInstanceCount: layout.bridgeInstanceCount,
+        effectiveCoreScale: layout.effectiveCoreScale,
+        profile: layout.profile,
+        detail,
+        lodIndex,
+      };
+
+      geometry = null;
+      material = null;
+      return foliage;
+    } catch (error) {
+      geometry?.dispose();
+      material?.dispose();
+      throw error;
+    }
   }
 }
