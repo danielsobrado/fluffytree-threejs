@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import { load } from 'js-yaml';
 import { createStressSceneConfig } from '../src/app/stress-scene.js';
-import { createTreePresetMap } from '../src/domain/tree-preset.js';
+import { validateSceneConfig } from '../src/config/scene-config-validator.js';
+import { createValidatedTreePresetMap } from '../src/domain/validated-tree-preset-map.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
 import { analyzeTreeLodBudgets } from '../src/qa/tree-lod-budget-analyzer.js';
 import {
@@ -10,10 +11,11 @@ import {
   createBillboardAtlasLayout,
 } from '../src/rendering/tree-billboard-atlas.js';
 
-const scene = createStressSceneConfig(
+const baseScene = validateSceneConfig(
   load(fs.readFileSync('config/scene.yaml', 'utf8')),
 );
-const presets = createTreePresetMap(
+const scene = validateSceneConfig(createStressSceneConfig(baseScene));
+const presets = createValidatedTreePresetMap(
   load(fs.readFileSync('config/tree-presets.yaml', 'utf8')),
 );
 const generator = new TreeGenerator();
