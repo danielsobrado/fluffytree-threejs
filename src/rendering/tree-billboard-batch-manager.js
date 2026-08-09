@@ -191,9 +191,10 @@ export class TreeBillboardBatchManager {
         atlas,
         state: new TreeBillboardBatchState(this.capacity),
       };
+
+      this.scene.add(mesh);
       presetBatches.push(batch);
       this.batches.set(presetId, presetBatches);
-      this.scene.add(mesh);
       return batch;
     } catch (error) {
       if (mesh) this.scene.remove(mesh);
@@ -272,13 +273,13 @@ export class TreeBillboardBatchManager {
       batch.mesh.geometry.getAttribute('treeBillboardFade').setX(index, 0);
       batch.mesh.geometry.getAttribute('treeBillboardInvert').setX(index, 0);
 
+      releaseSourceTexture(impostor, sourceTexture);
       batch.state.add(tree);
       batch.mesh.count = batch.state.entries.length;
       batch.mesh.instanceMatrix.needsUpdate = true;
       scale.needsUpdate = true;
       uvTransform.needsUpdate = true;
       impostor.visible = false;
-      releaseSourceTexture(impostor, sourceTexture);
 
       const handle = { batch, index };
       tree.userData.lod.billboardBatch = handle;
