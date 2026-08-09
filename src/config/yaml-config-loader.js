@@ -22,7 +22,13 @@ export class YamlConfigLoader {
       );
     }
 
-    const text = await response.text();
+    let text;
+    try {
+      text = await response.text();
+    } catch (error) {
+      throw new Error(`Failed to read configuration '${url}'.`, { cause: error });
+    }
+
     let config;
     try {
       config = load(text);
