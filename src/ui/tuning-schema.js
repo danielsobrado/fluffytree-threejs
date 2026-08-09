@@ -128,7 +128,6 @@ export const TUNING_GROUPS = Object.freeze([
       pair('trunk.branching.childCount', 'Children per limb', 1, 4, 1, {
         integral: true,
       }),
-      range('trunk.branching.lengthDecay', 'Length decay', 0.35, 0.9, 0.01),
       range('trunk.branching.radiusDecay', 'Radius decay', 0.35, 0.9, 0.01),
       range('trunk.branching.upwardBias', 'Upward bias', 0, 1, 0.01),
       range('trunk.branching.gnarl', 'Gnarl', 0, 1, 0.01),
