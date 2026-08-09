@@ -125,9 +125,7 @@ export const TUNING_GROUPS = Object.freeze([
     controls: Object.freeze([
       integer('trunk.branching.depth', 'Depth', 1, 4),
       integer('trunk.branching.primaryCount', 'Primary limbs', 2, 7),
-      pair('trunk.branching.childCount', 'Children per limb', 1, 4, 1, {
-        integral: true,
-      }),
+      integer('trunk.branching.childCount.1', 'Max children per limb', 1, 4),
       range('trunk.branching.radiusDecay', 'Radius decay', 0.35, 0.9, 0.01),
       range('trunk.branching.upwardBias', 'Upward bias', 0, 1, 0.01),
       range('trunk.branching.gnarl', 'Gnarl', 0, 1, 0.01),
