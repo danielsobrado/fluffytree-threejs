@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { SCENE_RUNTIME_CONSTANTS } from '../config/scene-runtime-constants.js';
 import { disposeObject } from './object-disposer.js';
 import { measureViewport } from './viewport-size.js';
 
@@ -113,7 +114,7 @@ export class SceneFactory {
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.enablePan = false;
-      controls.minDistance = 7;
+      controls.minDistance = SCENE_RUNTIME_CONSTANTS.minimumOrbitDistance;
       controls.maxDistance = config.camera.controlsMaxDistance ?? 34;
       controls.maxPolarAngle = Math.PI * 0.48;
       controls.target.fromArray(config.camera.target);
