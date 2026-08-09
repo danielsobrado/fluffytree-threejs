@@ -58,3 +58,12 @@ test('runtime generation omits obsolete foliage surface samples', () => {
   assert.ok(tree.branches.length >= preset.crown.lobeCount);
   assert.equal(tree.lodCostSummaries.heroLeafClusters, 0);
 });
+
+test('runtime generation can skip QA-only LOD cost analysis', () => {
+  const tree = new TreeGenerator().generate(preset, 44, {
+    includeLodCostSummaries: false,
+  });
+
+  assert.equal(Object.hasOwn(tree, 'lodCostSummaries'), false);
+  assert.ok(tree.shell.length > 0);
+});
