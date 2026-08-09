@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   calculateBillboardAtlasSlot,
+  calculateBillboardAtlasUvTransform,
   createBillboardAtlasLayout,
 } from '../src/rendering/tree-billboard-atlas.js';
 
@@ -26,7 +27,25 @@ test('billboard atlas assigns every tree a unique normalized slot', () => {
   assert.ok(last.offsetY + last.scaleY <= 1);
 });
 
-test('billboard atlas rejects invalid slots', () => {
+test('billboard atlas UVs stay half a texel inside their cell', () => {
+  const layout = createBillboardAtlasLayout(32);
+  const slot = calculateBillboardAtlasSlot(0, layout);
+  const uv = calculateBillboardAtlasUvTransform(slot, 768, 768);
+  const inset = 0.5 / 768;
+
+  assert.equal(uv.offsetX, inset);
+  assert.equal(uv.offsetY, 5 / 6 + inset);
+  assert.equal(uv.scaleX, 1 / 6 - inset * 2);
+  assert.equal(uv.scaleY, 1 / 6 - inset * 2);
+  assert.equal(uv.offsetX + uv.scaleX, 1 / 6 - inset);
+  assert.equal(uv.offsetY + uv.scaleY, 1 - inset);
+});
+
+test('billboard atlas rejects invalid slots and texture sizes', () => {
   const layout = createBillboardAtlasLayout(4);
+  const slot = calculateBillboardAtlasSlot(0, layout);
+
   assert.throws(() => calculateBillboardAtlasSlot(4, layout), RangeError);
+  assert.throws(() => calculateBillboardAtlasUvTransform(slot, 0, 256), RangeError);
+  assert.throws(() => calculateBillboardAtlasUvTransform(slot, 256, 0), RangeError);
 });
