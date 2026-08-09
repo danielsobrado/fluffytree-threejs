@@ -10,12 +10,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
 import { stampModuleGraph, versionHtmlAssets } from './module-versioning.js';
+import { releaseCacheKeyFromYaml } from './release-cache-key.js';
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const REPOSITORY_ROOT = path.resolve(path.dirname(SCRIPT_PATH), '..');
 const CONFIG_PATH = path.join(REPOSITORY_ROOT, 'pages.config.yml');
 const LOG_PREFIX = '[pages]';
 const SOURCE_MARKER = '.pages-source-sha';
+const RELEASE_PATH = 'config/release.yaml';
 
 function log(message) {
   console.log(`${LOG_PREFIX} ${message}`);
@@ -82,12 +84,17 @@ function assertRequiredFiles(commitSha, requiredFiles) {
 }
 
 function releaseCacheKey(workspace) {
-  const release = yaml.load(
-    readFileSync(path.join(workspace, 'config/release.yaml'), 'utf8'),
+  return releaseCacheKeyFromYaml(
+    readFileSync(path.join(workspace, RELEASE_PATH), 'utf8'),
   );
-  const version = requireString(release, 'version');
-  const build = requireString(release, 'build');
-  return `${version}-${build}`;
+}
+
+function releaseCacheKeyAtRef(ref) {
+  const source = runGit(['show', `${ref}:${RELEASE_PATH}`], {
+    capture: true,
+    allowFailure: true,
+  });
+  return source ? releaseCacheKeyFromYaml(source) : null;
 }
 
 function stampPublishedFiles(workspace, sourceSha) {
@@ -108,6 +115,18 @@ function currentPublishedSource(publishRef) {
     capture: true,
     allowFailure: true,
   });
+}
+
+function assertFreshReleaseCacheKey(sourceSha, publishRef, publishSha) {
+  if (!publishSha) return;
+
+  const sourceKey = releaseCacheKeyAtRef(sourceSha);
+  const publishedKey = releaseCacheKeyAtRef(publishRef);
+  if (publishedKey && sourceKey === publishedKey) {
+    throw new Error(
+      `Release cache key '${sourceKey}' is already published. Increment config/release.yaml before deploying a new source commit.`,
+    );
+  }
 }
 
 function createPublishedCommit(sourceSha) {
@@ -176,6 +195,7 @@ function deploy() {
     return;
   }
 
+  assertFreshReleaseCacheKey(sourceSha, publishRef, publishSha);
   const generatedSha = createPublishedCommit(sourceSha);
   const destination = `refs/heads/${config.publishBranch}`;
   const args = ['push'];
