@@ -29,3 +29,38 @@ test('wind controller discovers materials created by deferred hero LOD', () => {
   controller.update(3);
   assert.equal(controller.states[0].time, 6);
 });
+
+test('wind controller registers a shared material state only once', () => {
+  const sharedState = { time: 0, phase: 0, strength: 0 };
+  const tree = {
+    userData: { lod: {} },
+    traverse(visitor) {
+      visitor({ material: { userData: { windState: sharedState } } });
+      visitor({ material: { userData: { windState: sharedState } } });
+    },
+  };
+  const controller = new TreeWindController();
+
+  controller.register(tree, 11);
+  controller.register(tree, 11);
+
+  assert.equal(controller.states.length, 1);
+});
+
+test('clearing wind state allows fresh trees to register normally', () => {
+  const state = { time: 0, phase: 0, strength: 0 };
+  const tree = {
+    userData: { lod: {} },
+    traverse(visitor) {
+      visitor({ material: { userData: { windState: state } } });
+    },
+  };
+  const controller = new TreeWindController();
+
+  controller.register(tree, 1);
+  controller.clear();
+  controller.register(tree, 2);
+
+  assert.equal(controller.states.length, 1);
+  assert.equal(controller.states[0], state);
+});
