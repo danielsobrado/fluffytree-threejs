@@ -17,11 +17,7 @@ test('static entrypoint matches the configured release and cache version', () =>
   const releaseVersion = formatReleaseVersion(release);
   const assetVersion = releaseVersion.slice(1).replace('+', '-');
 
-  assert.match(html, new RegExp(`<title>${escapeRegex(formatDocumentTitle(release))}</title>`));
-  assert.match(html, new RegExp(`styles/main\\.css\\?v=${escapeRegex(assetVersion)}`));
-  assert.match(html, new RegExp(`src/main\\.js\\?v=${escapeRegex(assetVersion)}`));
+  assert.ok(html.includes(`<title>${formatDocumentTitle(release)}</title>`));
+  assert.ok(html.includes(`styles/main.css?v=${assetVersion}`));
+  assert.ok(html.includes(`src/main.js?v=${assetVersion}`));
 });
-
-function escapeRegex(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
