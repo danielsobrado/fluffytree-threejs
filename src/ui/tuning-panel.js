@@ -312,6 +312,16 @@ export class TuningPanel {
     }
   }
 
+  restoreConfiguration(presetId, previous, failedConfig) {
+    this.library.set(presetId, previous);
+
+    if (this.presetId === presetId && this.config === failedConfig) {
+      this.config = previous;
+      this.controlContext.config = this.config;
+      this.refreshControls();
+    }
+  }
+
   /**
    * Validates, swaps the preset in and rebuilds. A rejected configuration is
    * reported and rolled back so the panel and the scene never disagree.
@@ -322,6 +332,7 @@ export class TuningPanel {
   apply() {
     const presetId = this.presetId;
     const config = this.config;
+    const previous = this.library.rawValue(presetId);
 
     if (!this.storeConfiguration(presetId, config)) return Promise.resolve(false);
 
@@ -346,6 +357,11 @@ export class TuningPanel {
           this.refreshCoverage();
           resolve(true);
         } catch (error) {
+          try {
+            this.restoreConfiguration(presetId, previous, config);
+          } catch (rollbackError) {
+            logger.error('Failed to roll back the tuned preset.', rollbackError);
+          }
           logger.error('Failed to rebuild the tuned preset.', error);
           this.setStatus(error.message, 'error');
           resolve(false);
