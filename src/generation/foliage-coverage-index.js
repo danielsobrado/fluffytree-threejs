@@ -1,35 +1,9 @@
+import { foliageCardCoverageRatio } from './foliage-card-coverage.js';
 import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
 import { SpatialHashGrid } from './spatial-hash-grid.js';
 
-function normalDot(left, right) {
-  return left.x * right.x + left.y * right.y + left.z * right.z;
-}
-
-function distance(left, right) {
-  return Math.hypot(
-    left.x - right.x,
-    left.y - right.y,
-    left.z - right.z,
-  );
-}
-
 function coverageTargetPosition(item) {
   return item.surfacePoint ?? item.position;
-}
-
-function isCompatible(candidate, selected) {
-  return (
-    normalDot(candidate.normal, selected.normal) >=
-    FOLIAGE_SHELL_CONSTANTS.minimumCoverageNormalDot
-  );
-}
-
-function coverageRatio(candidate, selected) {
-  if (!isCompatible(candidate, selected)) return Number.POSITIVE_INFINITY;
-  return (
-    distance(coverageTargetPosition(candidate), selected.position) /
-    selected.coverageRadius
-  );
 }
 
 export class FoliageCoverageIndex {
@@ -72,10 +46,13 @@ export class FoliageCoverageIndex {
         coverageTargetPosition(candidate),
         rings,
         (selected) => {
-        if (visited.has(selected)) return false;
-        visited.add(selected);
-        nearest = Math.min(nearest, coverageRatio(candidate, selected));
-        return false;
+          if (visited.has(selected)) return false;
+          visited.add(selected);
+          nearest = Math.min(
+            nearest,
+            foliageCardCoverageRatio(candidate, selected),
+          );
+          return false;
         },
       );
 
@@ -90,7 +67,10 @@ export class FoliageCoverageIndex {
 
     for (const selected of this.selected) {
       if (visited.has(selected)) continue;
-      nearest = Math.min(nearest, coverageRatio(candidate, selected));
+      nearest = Math.min(
+        nearest,
+        foliageCardCoverageRatio(candidate, selected),
+      );
     }
 
     return nearest;
