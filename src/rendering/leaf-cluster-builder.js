@@ -60,78 +60,90 @@ export class LeafClusterBuilder {
 
     const field = new CrownVolumeField(treeData);
     const records = surfaceRecords;
-    const geometry = this.geometryFactory.create(settings);
-    const material = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness:
-        settings.roughness ?? LEAF_DETAIL_RENDERING_CONSTANTS.defaultRoughness,
-      metalness: LEAF_DETAIL_RENDERING_CONSTANTS.materialMetalness,
-      side: THREE.FrontSide,
-    });
-    material.name = 'leaf-detail-material';
+    let geometry = null;
+    let material = null;
 
-    const mesh = new THREE.InstancedMesh(geometry, material, records.length);
-    const matrix = new THREE.Matrix4();
-    const alignment = new THREE.Quaternion();
-    const spin = new THREE.Quaternion();
-    const scale = new THREE.Vector3();
+    try {
+      geometry = this.geometryFactory.create(settings);
+      material = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness:
+          settings.roughness ?? LEAF_DETAIL_RENDERING_CONSTANTS.defaultRoughness,
+        metalness: LEAF_DETAIL_RENDERING_CONSTANTS.materialMetalness,
+        side: THREE.FrontSide,
+      });
+      material.name = 'leaf-detail-material';
 
-    records.forEach((record, index) => {
-      const placement = resolvePlacement(record, field);
-      const instanceScale = calculateInstanceScale(record, settings, treeData);
-      const position = resolvePosition(
-        record,
-        placement,
-        treeData,
-        settings,
-        instanceScale,
-      );
+      const mesh = new THREE.InstancedMesh(geometry, material, records.length);
+      const matrix = new THREE.Matrix4();
+      const alignment = new THREE.Quaternion();
+      const spin = new THREE.Quaternion();
+      const scale = new THREE.Vector3();
 
-      alignment.setFromUnitVectors(UP, placement.normal);
-      spin.setFromAxisAngle(
-        UP,
-        record.sample.rotation + record.layer * GOLDEN_ANGLE,
-      );
-      alignment.multiply(spin);
-      scale.setScalar(instanceScale);
-      matrix.compose(position, alignment, scale);
-      mesh.setMatrixAt(index, matrix);
+      records.forEach((record, index) => {
+        const placement = resolvePlacement(record, field);
+        const instanceScale = calculateInstanceScale(record, settings, treeData);
+        const position = resolvePosition(
+          record,
+          placement,
+          treeData,
+          settings,
+          instanceScale,
+        );
 
-      const jitter =
-        (hashUnit(
-          treeData.seed,
-          record.sample.id + record.layer * 6151,
-          0x85ebca6b,
-        ) *
-          2 -
-          1) *
-        settings.colorJitter;
-      mesh.setColorAt(
-        index,
-        samplePaletteColor(
-          treeData.palette.palette,
-          record.sample.colorMix + settings.colorLift + jitter,
-        ),
-      );
-    });
+        alignment.setFromUnitVectors(UP, placement.normal);
+        spin.setFromAxisAngle(
+          UP,
+          record.sample.rotation + record.layer * GOLDEN_ANGLE,
+        );
+        alignment.multiply(spin);
+        scale.setScalar(instanceScale);
+        matrix.compose(position, alignment, scale);
+        mesh.setMatrixAt(index, matrix);
 
-    mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-    mesh.name = 'hero-leaf-shell';
-    mesh.castShadow = false;
-    mesh.receiveShadow = true;
+        const jitter =
+          (hashUnit(
+            treeData.seed,
+            record.sample.id + record.layer * 6151,
+            0x85ebca6b,
+          ) *
+            2 -
+            1) *
+          settings.colorJitter;
+        mesh.setColorAt(
+          index,
+          samplePaletteColor(
+            treeData.palette.palette,
+            record.sample.colorMix + settings.colorLift + jitter,
+          ),
+        );
+      });
 
-    mesh.userData.heroLeaves = {
-      clusterCount: records.length,
-      surfaceClusterCount: surfaceRecords.length,
-      sourceSampleCount: selected.length,
-      layerCount: settings.layerCount,
-      leafCount: records.length * settings.leavesPerCluster,
-      innerInsetRatio: getInnerInsetRatio(settings),
-      outerOffsetRatio: getOuterOffsetRatio(settings),
-      tangentialJitterRatio: getTangentialJitterRatio(settings),
-    };
-    return mesh;
+      mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      mesh.name = 'hero-leaf-shell';
+      mesh.castShadow = false;
+      mesh.receiveShadow = true;
+
+      mesh.userData.heroLeaves = {
+        clusterCount: records.length,
+        surfaceClusterCount: surfaceRecords.length,
+        sourceSampleCount: selected.length,
+        layerCount: settings.layerCount,
+        leafCount: records.length * settings.leavesPerCluster,
+        innerInsetRatio: getInnerInsetRatio(settings),
+        outerOffsetRatio: getOuterOffsetRatio(settings),
+        tangentialJitterRatio: getTangentialJitterRatio(settings),
+      };
+
+      geometry = null;
+      material = null;
+      return mesh;
+    } catch (error) {
+      geometry?.dispose();
+      material?.dispose();
+      throw error;
+    }
   }
 }
