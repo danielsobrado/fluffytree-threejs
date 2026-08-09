@@ -1,4 +1,5 @@
 import { CrownEnvelope } from '../generation/crown-envelope.js';
+import { lobeAxisAlignedExtents } from '../generation/lobe-geometry.js';
 import { analyzeFoliageShell } from './foliage-shell-analyzer.js';
 import { analyzeSilhouette } from './silhouette-analyzer.js';
 import { analyzeTopology } from './tree-topology-analyzer.js';
@@ -9,12 +10,13 @@ function calculateBounds(lobes) {
   const maximum = { x: -Infinity, y: -Infinity, z: -Infinity };
 
   for (const lobe of lobes) {
-    minimum.x = Math.min(minimum.x, lobe.position.x - lobe.scale.x);
-    minimum.y = Math.min(minimum.y, lobe.position.y - lobe.scale.y);
-    minimum.z = Math.min(minimum.z, lobe.position.z - lobe.scale.z);
-    maximum.x = Math.max(maximum.x, lobe.position.x + lobe.scale.x);
-    maximum.y = Math.max(maximum.y, lobe.position.y + lobe.scale.y);
-    maximum.z = Math.max(maximum.z, lobe.position.z + lobe.scale.z);
+    const extent = lobeAxisAlignedExtents(lobe);
+    minimum.x = Math.min(minimum.x, lobe.position.x - extent.x);
+    minimum.y = Math.min(minimum.y, lobe.position.y - extent.y);
+    minimum.z = Math.min(minimum.z, lobe.position.z - extent.z);
+    maximum.x = Math.max(maximum.x, lobe.position.x + extent.x);
+    maximum.y = Math.max(maximum.y, lobe.position.y + extent.y);
+    maximum.z = Math.max(maximum.z, lobe.position.z + extent.z);
   }
 
   return {
