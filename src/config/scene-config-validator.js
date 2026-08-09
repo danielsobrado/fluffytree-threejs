@@ -1,3 +1,5 @@
+import { SCENE_RUNTIME_CONSTANTS } from './scene-runtime-constants.js';
+
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 const MAXIMUM_SEED = 0xffffffff;
 
@@ -97,7 +99,9 @@ function validateCamera(config) {
     throw new Error("Scene configuration 'camera.position' must differ from 'camera.target'.");
   }
   if (camera.controlsMaxDistance !== undefined) {
-    requirePositive(camera, 'controlsMaxDistance', 'camera');
+    requireFinite(camera, 'controlsMaxDistance', 'camera', {
+      minimum: SCENE_RUNTIME_CONSTANTS.minimumOrbitDistance,
+    });
   }
 }
 
