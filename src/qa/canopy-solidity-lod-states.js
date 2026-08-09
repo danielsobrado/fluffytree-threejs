@@ -24,10 +24,11 @@ function createLevelState(index) {
   });
 }
 
-function createTransitionState(nearIndex, farIndex) {
+function createTransitionState(nearIndex, farIndex, projectedPixelsKey) {
   return Object.freeze({
     id: `lod${nearIndex}-lod${farIndex}`,
     kind: 'transition',
+    projectedPixelsKey,
     assignments: createAssignments(
       new Map([
         [nearIndex, { fade: TRANSITION_FADE, invert: false }],
@@ -42,7 +43,7 @@ export const CANOPY_SOLIDITY_LOD_STATES = Object.freeze([
   createLevelState(1),
   createLevelState(2),
   createLevelState(3),
-  createTransitionState(0, 1),
-  createTransitionState(1, 2),
-  createTransitionState(2, 3),
+  createTransitionState(0, 1, 'nearPixels'),
+  createTransitionState(1, 2, 'mediumPixels'),
+  createTransitionState(2, 3, 'farPixels'),
 ]);
