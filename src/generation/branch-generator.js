@@ -168,36 +168,57 @@ function createBranch({ id, parentId, order, start, target, random, preset, expo
   };
 }
 
+function compareParentCandidates(left, right, target) {
+  const leftMacro = left.macroClumpId === target.macroClumpId ? 0 : 1;
+  const rightMacro = right.macroClumpId === target.macroClumpId ? 0 : 1;
+  if (leftMacro !== rightMacro) return leftMacro - rightMacro;
+
+  const orderDifference = left.order - right.order;
+  if (orderDifference !== 0) return orderDifference;
+
+  return (
+    distanceSquared(left.points.at(-1), target.position) -
+    distanceSquared(right.points.at(-1), target.position)
+  );
+}
+
 function selectParent(branches, target, depth, childCounts, maximumChildren) {
-  return branches
-    .filter(
-      (branch) =>
-        branch.order < depth &&
-        (childCounts.get(branch.id) ?? 0) < maximumChildren,
-    )
-    .sort((left, right) => {
-      const leftMacro = left.macroClumpId === target.macroClumpId ? 0 : 1;
-      const rightMacro = right.macroClumpId === target.macroClumpId ? 0 : 1;
-      if (leftMacro !== rightMacro) return leftMacro - rightMacro;
-      const orderDifference = left.order - right.order;
-      if (orderDifference !== 0) return orderDifference;
-      return (
-        distanceSquared(left.points.at(-1), target.position) -
-        distanceSquared(right.points.at(-1), target.position)
-      );
-    })[0];
+  let best = null;
+
+  for (const branch of branches) {
+    if (
+      branch.order >= depth ||
+      (childCounts.get(branch.id) ?? 0) >= maximumChildren
+    ) {
+      continue;
+    }
+
+    if (!best || compareParentCandidates(branch, best, target) < 0) {
+      best = branch;
+    }
+  }
+
+  return best;
 }
 
 function attachLobes(lobes, branches) {
+  const exactByLobeId = new Map();
+  for (const branch of branches) exactByLobeId.set(branch.targetLobeId, branch);
+
   return lobes.map((lobe) => {
-    const exact = branches.findLast((branch) => branch.targetLobeId === lobe.id);
-    const nearest =
-      exact ??
-      [...branches].sort(
-        (left, right) =>
-          distanceSquared(left.points.at(-1), lobe.position) -
-          distanceSquared(right.points.at(-1), lobe.position),
-      )[0];
+    const exact = exactByLobeId.get(lobe.id);
+    if (exact) return { ...lobe, branchId: exact.id };
+
+    let nearest = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    for (const branch of branches) {
+      const distance = distanceSquared(branch.points.at(-1), lobe.position);
+      if (distance < nearestDistance) {
+        nearest = branch;
+        nearestDistance = distance;
+      }
+    }
+
     return { ...lobe, branchId: nearest?.id ?? null };
   });
 }
@@ -232,7 +253,9 @@ export class BranchGenerator {
     const primaryIds = new Set(primaryTargets.map((lobe) => lobe.id));
     const childCounts = new Map();
     const maximumChildren = Math.round(settings.childCount[1]);
-    for (const target of sourceLobes.filter((lobe) => !primaryIds.has(lobe.id))) {
+    for (const target of sourceLobes) {
+      if (primaryIds.has(target.id)) continue;
+
       const parent = selectParent(
         branches,
         target,
@@ -256,11 +279,15 @@ export class BranchGenerator {
       if (parent) childCounts.set(parent.id, (childCounts.get(parent.id) ?? 0) + 1);
     }
 
+    const lobesById = new Map(sourceLobes.map((lobe) => [lobe.id, lobe]));
     for (const parent of [...branches]) {
       if (parent.order >= settings.depth || random.next() > settings.exposedTipRatio) {
         continue;
       }
-      const target = sourceLobes[parent.targetLobeId];
+      const target = lobesById.get(parent.targetLobeId);
+      if (!target) {
+        throw new Error(`Branch ${parent.id} references unknown lobe '${parent.targetLobeId}'.`);
+      }
       branches.push(
         createBranch({
           id: branches.length,
