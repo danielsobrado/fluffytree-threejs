@@ -6,6 +6,11 @@ import { GENERATION_CONSTANTS } from './generation-constants.js';
 const PAD_SHOULDER = 0.18;
 const PAD_NORMALIZATION = 1 / Math.pow(1 - PAD_SHOULDER, 0.38);
 
+export const CROWN_ENVELOPE_CONSTANTS = Object.freeze({
+  asymmetryX: 0.42,
+  asymmetryZ: 0.18,
+});
+
 const PROFILE_FUNCTIONS = Object.freeze({
   round(t) {
     const centered = t * 2 - 1;
@@ -70,9 +75,15 @@ export class CrownEnvelope {
     const bend = Math.sin(t * Math.PI * 0.82);
 
     return {
-      x: this.crown.lean[0] * t + this.crown.asymmetry * bend * 0.42 + this.anchor.x,
+      x:
+        this.crown.lean[0] * t +
+        this.crown.asymmetry * bend * CROWN_ENVELOPE_CONSTANTS.asymmetryX +
+        this.anchor.x,
       y: this.crown.baseHeight + this.crown.height * t,
-      z: this.crown.lean[1] * t - this.crown.asymmetry * bend * 0.18 + this.anchor.z,
+      z:
+        this.crown.lean[1] * t -
+        this.crown.asymmetry * bend * CROWN_ENVELOPE_CONSTANTS.asymmetryZ +
+        this.anchor.z,
     };
   }
 
