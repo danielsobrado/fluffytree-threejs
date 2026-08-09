@@ -7,9 +7,10 @@ import {
 } from './tree-lod-math.js';
 
 export class TreeLodController {
-  constructor(settings, generationQueue = null) {
+  constructor(settings, generationQueue = null, onGenerationError = null) {
     this.settings = settings;
     this.generationQueue = generationQueue;
+    this.onGenerationError = onGenerationError;
     this.entries = [];
     this.worldPosition = new THREE.Vector3();
   }
@@ -20,6 +21,27 @@ export class TreeLodController {
 
   clear() {
     this.entries.length = 0;
+  }
+
+  queueHeroBuild(entry, lodState) {
+    const task = () => {
+      try {
+        lodState.buildHero?.();
+      } catch (error) {
+        lodState.heroBuildFailed = true;
+        if (this.onGenerationError) {
+          this.onGenerationError(error, entry.tree);
+          return;
+        }
+        throw error;
+      }
+    };
+
+    if (this.generationQueue) {
+      this.generationQueue.enqueue(`${entry.tree.uuid}:hero`, task);
+    } else {
+      task();
+    }
   }
 
   update(camera, viewportHeight, renderer) {
@@ -47,14 +69,10 @@ export class TreeLodController {
       if (
         minimumLevel === 0 &&
         !lodState.heroReady &&
+        !lodState.heroBuildFailed &&
         projectedPixels >= prewarmPixels
       ) {
-        const task = () => lodState.buildHero?.();
-        if (this.generationQueue) {
-          this.generationQueue.enqueue(`${entry.tree.uuid}:hero`, task);
-        } else {
-          task();
-        }
+        this.queueHeroBuild(entry, lodState);
       }
 
       const weights = remapUnavailableLodWeights(
