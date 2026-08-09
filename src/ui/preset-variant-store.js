@@ -13,6 +13,7 @@ function createMemoryStorage() {
   const entries = new Map();
 
   return {
+    persistent: false,
     getItem: (key) => entries.get(key) ?? null,
     setItem: (key, value) => entries.set(key, value),
   };
@@ -46,6 +47,7 @@ function normalizeSavedAt(value) {
 export class PresetVariantStore {
   constructor(storage = resolveStorage()) {
     this.storage = storage;
+    this.persistent = storage?.persistent !== false;
   }
 
   read() {
@@ -58,10 +60,22 @@ export class PresetVariantStore {
   }
 
   write(variants) {
+    let serialized;
+
     try {
-      this.storage.setItem(STORAGE_KEY, JSON.stringify(variants));
-      return true;
+      serialized = JSON.stringify(variants);
     } catch {
+      return false;
+    }
+
+    try {
+      this.storage.setItem(STORAGE_KEY, serialized);
+      return this.persistent;
+    } catch {
+      const memory = createMemoryStorage();
+      memory.setItem(STORAGE_KEY, serialized);
+      this.storage = memory;
+      this.persistent = false;
       return false;
     }
   }
