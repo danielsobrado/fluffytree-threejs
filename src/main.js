@@ -44,6 +44,8 @@ async function bootstrap() {
     throw new Error("Required application container '#app' was not found.");
   }
 
+  let demo = null;
+
   try {
     const loader = new YamlConfigLoader();
 
@@ -64,7 +66,7 @@ async function bootstrap() {
     const overlayTitle = formatOverlayTitle(releaseConfig);
     applyDocumentTitle(releaseConfig);
     const library = PresetLibrary.fromConfig(treeConfig, continuityConfig);
-    const demo = new TreeDemo();
+    demo = new TreeDemo();
     demo.start(
       container,
       sceneConfig,
@@ -79,6 +81,7 @@ async function bootstrap() {
       createTuningPanel(container, demo, library);
     }
   } catch (error) {
+    demo?.destroy();
     logger.error('Application bootstrap failed.', error);
     markRenderSmokeBootstrapFailure(error);
     markStemManifoldBootstrapFailure(error);
