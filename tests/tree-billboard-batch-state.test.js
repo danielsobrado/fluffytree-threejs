@@ -14,6 +14,7 @@ test('billboard batch state migrates instances with bounded complementary fades'
   assert.ok(Math.abs(batch.fades[second] - 0.65) < 0.000001);
   assert.equal(batch.inverted[second], 1);
   assert.equal(batch.activeCount, 1);
+  assert.equal(batch.setFade(second, 0.65, true), false);
 
   batch.setFade(second, 0);
   assert.equal(batch.activeCount, 0);
