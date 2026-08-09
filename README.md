@@ -117,7 +117,7 @@ npm run qa:crown:quick
 npm run qa:stress:render
 ```
 
-The full control-shape run generates 2,048 seeded trees for each preset: 6,144 trees in total. Every tree is generated twice to verify exact replay determinism.
+The full control-shape run generates 2,048 seeded trees for every configured preset. Every tree is generated twice to verify exact replay determinism.
 
 The crown-volume battery extracts 16 proxy meshes per preset and repeats each extraction.
 
@@ -129,7 +129,7 @@ The leaf coverage gate measures how far the exposed crown surface ever gets from
 
 The LOD budget gate measures the demo layout plus the same seed sweep, for the same reason.
 
-The canopy solidity gate renders every demo tree alone at LOD0 against a transparent background from eight crown angles and three trunk angles. Background pixels that cannot reach the image border are counted as see-through openings, and only openings wide enough to contain a three-pixel radius are scored, so the stipple between leaf cards is ignored while a real window is not. Trunk views hide the foliage so a trunk defect is measured against the trunk. Limits live in `config/canopy-solidity-qa.yaml`, and a failing run writes the worst view of each preset to `qa-results/canopy-solidity/` with every counted opening flooded in magenta.
+The canopy solidity gate renders every demo tree alone against a transparent background. Crown views measure LOD0, LOD1, LOD2, LOD3 and all three complementary transition midpoints from eight angles; trunk views measure LOD0 with foliage hidden from three angles. Background pixels that cannot reach the image border are counted as see-through openings. Transition renders keep the same high-resolution frame for strict coverage comparison, while minimum visible-hole size is scaled to the projected-pixel threshold where that transition actually runs in `config/scene.yaml`. This keeps the gate sensitive to gaps that are visible in production without magnifying a 35-pixel far tree into a false failure. Limits live in `config/canopy-solidity-qa.yaml`, and a failing run writes the worst view of each preset to `qa-results/canopy-solidity/` with every counted opening flooded in magenta.
 
 The automated gates cover:
 
