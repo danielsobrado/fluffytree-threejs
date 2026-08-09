@@ -32,7 +32,13 @@ export class TreeWindController {
     });
 
     const lodState = tree.userData?.lod;
-    if (!lodState?.buildHero || this.wrappedTrees.has(tree)) return;
+    if (
+      !lodState?.buildHero ||
+      Number(lodState.minimumLevel ?? 0) > 0 ||
+      this.wrappedTrees.has(tree)
+    ) {
+      return;
+    }
     const buildHero = lodState.buildHero;
     lodState.buildHero = () => {
       const result = buildHero();
