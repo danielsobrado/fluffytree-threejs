@@ -1,18 +1,25 @@
-function normalizeSeed(seed) {
-  const numericSeed = Number(seed);
+const MAXIMUM_SEED = 0xffffffff;
 
-  if (!Number.isFinite(numericSeed)) {
-    throw new Error(`Invalid random seed '${seed}'.`);
+function normalizeSeed(seed) {
+  if (
+    typeof seed !== 'number' ||
+    !Number.isSafeInteger(seed) ||
+    seed < 0 ||
+    seed > MAXIMUM_SEED
+  ) {
+    throw new RangeError(
+      `Random seed must be an unsigned 32-bit integer; received '${seed}'.`,
+    );
   }
 
-  return numericSeed >>> 0;
+  return seed >>> 0;
 }
 
 export class SeededRandom {
   #state;
 
   constructor(seed) {
-    this.#state = normalizeSeed(seed) || 0x6d2b79f5;
+    this.#state = normalizeSeed(seed);
   }
 
   next() {
