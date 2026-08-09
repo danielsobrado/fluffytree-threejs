@@ -1,114 +1,12 @@
-const REQUIRED_NUMBER_PATHS = Object.freeze([
-  'height',
-  'crown.baseHeight',
-  'crown.height',
-  'crown.radius',
-  'crown.radialBias',
-  'crown.asymmetry',
-  'crown.surfaceTension',
-  'crown.lobeScaleMultiplier',
-  'crown.scaleVariation',
-  'crown.clumps.separation',
-  'crown.clumps.anchoring',
-  'crown.clumps.silhouetteBreakup',
-  'trunk.baseRadius',
-  'trunk.topRadius',
-  'trunk.bend',
-  'trunk.flare',
-  'trunk.branching.lengthDecay',
-  'trunk.branching.radiusDecay',
-  'trunk.branching.upwardBias',
-  'trunk.branching.gnarl',
-  'trunk.branching.twist',
-  'trunk.branching.exposedTipRatio',
-  'foliage.variation',
-  'foliage.paletteBase',
-  'foliage.heightPaletteShift',
-  'foliage.exposurePaletteShift',
-  'foliage.radialNormalStrength',
-  'foliage.crownNormalBlend',
-  'foliage.wrapLight',
-  'foliage.skyLightStrength',
-  'foliage.cavityStrength',
-  'foliage.heightLightStrength',
-  'foliage.volume.smoothing',
-  'foliage.volume.padding',
-  'foliage.volume.noiseAmplitude',
-  'foliage.volume.noiseFrequency',
-  'foliage.volume.normalEpsilon',
-  'foliage.volume.colorPatchScale',
-  'foliage.volume.colorPatchStrength',
-  'foliage.core.scale',
-  'foliage.core.brightness',
-  'foliage.heroLeaves.density',
-  'foliage.heroLeaves.scale',
-  'foliage.heroLeaves.embedRatio',
-  'foliage.heroLeaves.protrusionRatio',
-  'foliage.heroLeaves.colorLift',
-  'foliage.heroLeaves.colorJitter',
-  'foliage.heroLeaves.roughness',
-  'foliage.heroLeaves.layerOffsetRatio',
-  'foliage.shell.coverageCardRatio',
-  'foliage.shell.radialOffsetRatio',
-  'foliage.shell.exposureThreshold',
-  'foliage.shell.colorJitter',
-  'foliage.shell.paletteLift',
-  'foliage.shell.cavityScale',
-  'foliage.shell.normalBlend',
-  'foliage.shell.alphaTest',
-  'foliage.shell.shadowProxyScale',
-]);
-
-const OPTIONAL_NUMBER_PATHS = Object.freeze([
-  'trunk.movement',
-  'trunk.curveCount',
-  'trunk.sweep',
-  'trunk.taperPower',
-  'trunk.nebari',
-]);
-
-const POSITIVE_NUMBER_PATHS = Object.freeze([
-  'height',
-  'crown.height',
-  'crown.radius',
-  'trunk.baseRadius',
-  'trunk.topRadius',
-]);
-
-const NON_NEGATIVE_NUMBER_PATHS = Object.freeze([
-  'crown.baseHeight',
-  'trunk.bend',
-]);
-
-const UNIT_INTERVAL_PATHS = Object.freeze([
-  'crown.radialBias',
-  'crown.asymmetry',
-]);
-
-const INTEGER_RULES = Object.freeze([
-  Object.freeze({ path: 'crown.lobeCount', minimum: 1 }),
-  Object.freeze({ path: 'crown.clumps.macroCount', minimum: 1 }),
-  Object.freeze({ path: 'trunk.segments', minimum: 2 }),
-  Object.freeze({ path: 'trunk.branchCount', minimum: 0 }),
-  Object.freeze({ path: 'trunk.branching.depth', minimum: 1 }),
-  Object.freeze({ path: 'trunk.branching.primaryCount', minimum: 1 }),
-  Object.freeze({ path: 'foliage.volume.resolution', minimum: 1 }),
-  Object.freeze({ path: 'foliage.heroLeaves.leavesPerCluster', minimum: 1 }),
-  Object.freeze({ path: 'foliage.heroLeaves.layerCount', minimum: 1 }),
-  Object.freeze({ path: 'foliage.shell.candidatesPerLobe', minimum: 1 }),
-  Object.freeze({ path: 'foliage.shell.planesPerCluster', minimum: 1 }),
-]);
-
-const PAIR_RULES = Object.freeze([
-  Object.freeze({ path: 'crown.lobeScale', positive: true }),
-  Object.freeze({ path: 'crown.verticalScale', positive: true }),
-  Object.freeze({ path: 'crown.lean' }),
-  Object.freeze({ path: 'crown.clumps.subClumpCount', positive: true, integer: true }),
-  Object.freeze({ path: 'trunk.branching.childCount', positive: true, integer: true }),
-  Object.freeze({ path: 'foliage.shell.sizeRatio', positive: true }),
-  Object.freeze({ path: 'foliage.shell.widthRatio', positive: true }),
-  Object.freeze({ path: 'foliage.shell.outwardRatio', positive: true }),
-]);
+import {
+  INTEGER_RULES,
+  NON_NEGATIVE_NUMBER_PATHS,
+  OPTIONAL_NUMBER_PATHS,
+  PAIR_RULES,
+  POSITIVE_NUMBER_PATHS,
+  REQUIRED_NUMBER_PATHS,
+  UNIT_INTERVAL_PATHS,
+} from './tree-preset-validation-rules.js';
 
 function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -179,15 +77,13 @@ function validateNumericTypes(id, value) {
 
 function validatePhysicalDimensions(id, value) {
   for (const path of POSITIVE_NUMBER_PATHS) {
-    const candidate = readPath(value, path);
-    if (candidate <= 0) {
+    if (readPath(value, path) <= 0) {
       throw new Error(`Configuration '${configurationPath(id, path)}' must be > 0.`);
     }
   }
 
   for (const path of NON_NEGATIVE_NUMBER_PATHS) {
-    const candidate = readPath(value, path);
-    if (candidate < 0) {
+    if (readPath(value, path) < 0) {
       throw new Error(`Configuration '${configurationPath(id, path)}' must be >= 0.`);
     }
   }
