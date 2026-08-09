@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 const SOURCE_DIRECTORIES = Object.freeze(['src', 'tests', 'tools']);
 const JAVASCRIPT_EXTENSION = '.js';
 const GITHUB_WORKFLOW_DIRECTORY = '.github/workflows';
+const GITHUB_WORKFLOW_PLACEHOLDER = '.gitkeep';
 
 function collectJavaScriptFiles(directory) {
   const files = [];
@@ -27,7 +28,7 @@ function assertNoGitHubActions() {
 
   const entries = readdirSync(GITHUB_WORKFLOW_DIRECTORY, {
     withFileTypes: true,
-  }).filter((entry) => !entry.name.startsWith('.'));
+  }).filter((entry) => entry.name !== GITHUB_WORKFLOW_PLACEHOLDER);
   if (entries.length === 0) return;
 
   throw new Error(
