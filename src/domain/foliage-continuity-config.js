@@ -56,12 +56,27 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
   }),
 });
 
-function requireRange(value, minimum, maximum, path) {
-  const number = Number(value);
-  if (!Number.isFinite(number) || number < minimum || number > maximum) {
-    throw new RangeError(`${path} must be within [${minimum}, ${maximum}].`);
+function isObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function requireObject(value, path) {
+  if (!isObject(value)) {
+    throw new TypeError(`${path} must be an object.`);
   }
-  return number;
+  return value;
+}
+
+function requireRange(value, minimum, maximum, path) {
+  if (
+    typeof value !== 'number' ||
+    !Number.isFinite(value) ||
+    value < minimum ||
+    value > maximum
+  ) {
+    throw new RangeError(`${path} must be a finite number within [${minimum}, ${maximum}].`);
+  }
+  return value;
 }
 
 function requireBoolean(value, path) {
@@ -81,6 +96,7 @@ function createLodConfig(source, fallback, path) {
     values.map((value, index) => {
       const fallbackValue = fallback[index];
       const current = value ?? fallbackValue;
+      requireObject(current, `${path}[${index}]`);
       return Object.freeze({
         coreScale: requireRange(
           current.coreScale ?? fallbackValue.coreScale,
@@ -98,9 +114,15 @@ function createLodConfig(source, fallback, path) {
 }
 
 function sourceForProfile(config, profile) {
-  if (!config) return {};
-  if (config.profiles) return config.profiles[profile] ?? {};
-  return config;
+  if (config === null || config === undefined) return {};
+  requireObject(config, 'foliageContinuity');
+
+  if (config.profiles === undefined) return config;
+
+  const profiles = requireObject(config.profiles, 'foliageContinuity.profiles');
+  const source = profiles[profile];
+  if (source === undefined || source === null) return {};
+  return requireObject(source, `foliageContinuity.profiles.${profile}`);
 }
 
 export function resolveFoliageContinuityProfile(config, profile) {
