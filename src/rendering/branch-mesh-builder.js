@@ -36,24 +36,31 @@ export class BranchMeshBuilder {
       name = 'tree-structure',
     } = {},
   ) {
-    const trunkGeometry = this.trunkGeometryFactory.create(treeData, {
-      radialSegments,
-      trunkCurveSamples,
-    });
-    const trunkPath = trunkGeometry.userData.trunkPath;
-    const trunkManifold = analyzeBufferGeometryManifold(trunkGeometry);
-    const rootBaseMaximumHeight =
-      trunkGeometry.userData.sweptTube.startRingMaximumHeight;
-    addStylizedBarkColors(
-      trunkGeometry,
-      treeData.barkPalette,
-      treeData.seed,
-      0,
-      treeData.height,
-    );
-    const branchGeometries = treeData.branches
-      .filter((branch) => branch.order <= maxBranchOrder)
-      .map((branch) => {
+    let trunkGeometry = null;
+    const branchGeometries = [];
+    let merged = null;
+    let material = null;
+
+    try {
+      trunkGeometry = this.trunkGeometryFactory.create(treeData, {
+        radialSegments,
+        trunkCurveSamples,
+      });
+      const trunkPath = trunkGeometry.userData.trunkPath;
+      const trunkManifold = analyzeBufferGeometryManifold(trunkGeometry);
+      const rootBaseMaximumHeight =
+        trunkGeometry.userData.sweptTube.startRingMaximumHeight;
+      addStylizedBarkColors(
+        trunkGeometry,
+        treeData.barkPalette,
+        treeData.seed,
+        0,
+        treeData.height,
+      );
+
+      for (const branch of treeData.branches) {
+        if (branch.order > maxBranchOrder) continue;
+
         const geometry = this.geometryFactory.create({
           path: branch.points,
           startRadius: branch.startRadius,
@@ -62,6 +69,7 @@ export class BranchMeshBuilder {
           radialSegments,
           capEnd: branch.exposed,
         });
+        branchGeometries.push(geometry);
         addStylizedBarkColors(
           geometry,
           treeData.barkPalette,
@@ -69,49 +77,57 @@ export class BranchMeshBuilder {
           branch.order,
           treeData.height,
         );
-        return geometry;
-      });
-    const geometries = [trunkGeometry, ...branchGeometries];
-    const merged = mergeGeometries(geometries, false);
-    geometries.forEach((geometry) => geometry.dispose());
+      }
 
-    if (!merged) {
-      throw new Error('Failed to merge the generated tree structure.');
+      merged = mergeGeometries([trunkGeometry, ...branchGeometries], false);
+      if (!merged) {
+        throw new Error('Failed to merge the generated tree structure.');
+      }
+
+      material = this.materialFactory.create({ height: treeData.height });
+      const mesh = new THREE.Mesh(merged, material);
+      mesh.name = name;
+      mesh.castShadow = castShadow;
+      mesh.receiveShadow = receiveShadow;
+      mesh.userData.structure = {
+        trunkClosed: trunkManifold.closedTwoManifold,
+        trunkBoundaryEdges: trunkManifold.boundaryEdgeCount,
+        trunkNonManifoldEdges: trunkManifold.nonManifoldEdgeCount,
+        trunkOrientationConflicts: trunkManifold.orientationConflictCount,
+        trunkDegenerateTriangles: trunkManifold.degenerateTriangleCount,
+        trunkConnectedComponents: trunkManifold.componentCount,
+        trunkEulerCharacteristic: trunkManifold.eulerCharacteristic,
+        trunkOutwardFacing: trunkManifold.outwardFacing,
+        trunkSignedVolume: trunkManifold.signedVolume,
+        rootEmbedDepth: TREE_STRUCTURE_RENDERING_CONSTANTS.rootEmbedDepth,
+        rootBaseMaximumHeight,
+        rootBase: {
+          x: trunkPath[0].x,
+          y: trunkPath[0].y,
+          z: trunkPath[0].z,
+          radius:
+            treeData.trunk.startRadius *
+            calculateRootFlareScale(treeData.trunk.flare, trunkPath[0].y),
+        },
+        rootFlareHeight: getRootFlareTopHeight(),
+        lowestBranchHeight: treeData.branches.reduce(
+          (lowest, branch) => Math.min(lowest, branch.points[0].y),
+          Number.POSITIVE_INFINITY,
+        ),
+        branchCount: branchGeometries.length,
+        maximumBranchOrder: maxBranchOrder,
+      };
+
+      merged = null;
+      material = null;
+      return mesh;
+    } catch (error) {
+      merged?.dispose();
+      material?.dispose();
+      throw error;
+    } finally {
+      trunkGeometry?.dispose();
+      for (const geometry of branchGeometries) geometry.dispose();
     }
-
-    const material = this.materialFactory.create({ height: treeData.height });
-    const mesh = new THREE.Mesh(merged, material);
-    mesh.name = name;
-    mesh.castShadow = castShadow;
-    mesh.receiveShadow = receiveShadow;
-    mesh.userData.structure = {
-      trunkClosed: trunkManifold.closedTwoManifold,
-      trunkBoundaryEdges: trunkManifold.boundaryEdgeCount,
-      trunkNonManifoldEdges: trunkManifold.nonManifoldEdgeCount,
-      trunkOrientationConflicts: trunkManifold.orientationConflictCount,
-      trunkDegenerateTriangles: trunkManifold.degenerateTriangleCount,
-      trunkConnectedComponents: trunkManifold.componentCount,
-      trunkEulerCharacteristic: trunkManifold.eulerCharacteristic,
-      trunkOutwardFacing: trunkManifold.outwardFacing,
-      trunkSignedVolume: trunkManifold.signedVolume,
-      rootEmbedDepth: TREE_STRUCTURE_RENDERING_CONSTANTS.rootEmbedDepth,
-      rootBaseMaximumHeight,
-      rootBase: {
-        x: trunkPath[0].x,
-        y: trunkPath[0].y,
-        z: trunkPath[0].z,
-        radius:
-          treeData.trunk.startRadius *
-          calculateRootFlareScale(treeData.trunk.flare, trunkPath[0].y),
-      },
-      rootFlareHeight: getRootFlareTopHeight(),
-      lowestBranchHeight: treeData.branches.reduce(
-        (lowest, branch) => Math.min(lowest, branch.points[0].y),
-        Number.POSITIVE_INFINITY,
-      ),
-      branchCount: branchGeometries.length,
-      maximumBranchOrder: maxBranchOrder,
-    };
-    return mesh;
   }
 }
