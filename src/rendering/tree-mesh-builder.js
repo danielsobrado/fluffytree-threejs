@@ -316,25 +316,27 @@ export class TreeMeshBuilder {
         const currentRotation = impostor.userData.impostor?.rotationY ?? 0;
         if (Math.abs(currentRotation - rotationY) <= Number.EPSILON) return;
 
+        const previousImpostor = impostor;
         const nextImpostor = this.impostorBuilder.build(treeData, {
           rotationY,
           capture,
         });
 
         try {
+          configureObjectLodFade(nextImpostor);
+          setObjectLodFade(nextImpostor, 0);
           lod3.add(nextImpostor);
-          configureObjectLodFade(lod3);
+          lod3.remove(previousImpostor);
           const nextMetrics = { index: 3, ...collectLevelMetrics(lod3) };
-          setObjectLodFade(lod3, 0);
-          lod3.remove(impostor);
-          disposeImpostor(impostor);
-          impostor = nextImpostor;
           lod3.userData.lod = nextMetrics;
           if (root.userData.tree) {
-            root.userData.tree.lodCosts[3] = lod3.userData.lod;
+            root.userData.tree.lodCosts[3] = nextMetrics;
           }
+          impostor = nextImpostor;
+          disposeImpostor(previousImpostor);
         } catch (error) {
           lod3.remove(nextImpostor);
+          if (!previousImpostor.parent) lod3.add(previousImpostor);
           disposeImpostor(nextImpostor);
           throw error;
         }
@@ -359,7 +361,6 @@ export class TreeMeshBuilder {
         buildHero,
         rebuildImpostor,
       };
-      root.add(shadowProxy);
       if (!deferHero && minimumLod === 0) buildHero();
       return root;
     } catch (error) {
