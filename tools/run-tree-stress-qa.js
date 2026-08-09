@@ -10,7 +10,12 @@ import {
   BILLBOARD_TEXTURE_SIZE,
   createBillboardAtlasLayout,
 } from '../src/rendering/tree-billboard-atlas.js';
+import {
+  calculateLodWeights,
+  remapUnavailableLodWeights,
+} from '../src/rendering/tree-lod-math.js';
 
+const VISIBLE_FADE_THRESHOLD = 0.001;
 const baseScene = validateSceneConfig(
   load(fs.readFileSync('config/scene.yaml', 'utf8')),
 );
@@ -25,32 +30,48 @@ const viewportHeight = 720;
 const focalPixels =
   viewportHeight /
   (2 * Math.tan((scene.camera.fieldOfView * Math.PI) / 360));
-const lodCounts = [0, 0, 0, 0];
-const farPresets = new Set();
+const visibleLodCounts = [0, 0, 0, 0];
+const activeFarBatches = new Set();
 const treeCountsByPreset = new Map();
 let estimatedGpuBytes = 0;
 
+function minimumLod(entry) {
+  return Number(entry.position[2]) <= -160 ? 3 : 2;
+}
+
 for (const entry of scene.layout) {
   const preset = presets.get(entry.preset);
+  if (!preset) {
+    throw new Error(`Stress layout references unknown preset '${entry.preset}'.`);
+  }
+
+  const presetTreeIndex = treeCountsByPreset.get(entry.preset) ?? 0;
+  treeCountsByPreset.set(entry.preset, presetTreeIndex + 1);
   const tree = generator.generate(preset, entry.seed);
-  treeCountsByPreset.set(
-    entry.preset,
-    (treeCountsByPreset.get(entry.preset) ?? 0) + 1,
-  );
   const dx = entry.position[0] - scene.camera.position[0];
   const dy = entry.position[1] - scene.camera.position[1];
   const dz = entry.position[2] - scene.camera.position[2];
-  const distance = Math.hypot(dx, dy, dz);
+  const distance = Math.max(0.001, Math.hypot(dx, dy, dz));
   const pixels = (tree.height / distance) * focalPixels;
-  const level =
-    pixels >= scene.lod.nearPixels ? 0 :
-      pixels >= scene.lod.mediumPixels ? 1 :
-        pixels >= scene.lod.farPixels ? 2 : 3;
-  lodCounts[level] += 1;
-  if (level === 3) farPresets.add(entry.preset);
+  const minimumLevel = minimumLod(entry);
+  const weights = remapUnavailableLodWeights(
+    calculateLodWeights(pixels, scene.lod),
+    { minimumLevel, heroReady: false },
+  );
+
+  for (let level = 0; level < weights.length; level += 1) {
+    if (weights[level] > VISIBLE_FADE_THRESHOLD) visibleLodCounts[level] += 1;
+  }
+  if (weights[3] > VISIBLE_FADE_THRESHOLD) {
+    activeFarBatches.add(
+      `${entry.preset}:${Math.floor(presetTreeIndex / BILLBOARD_BATCH_CAPACITY)}`,
+    );
+  }
+
   const metrics = analyzeTreeLodBudgets(tree);
-  const triangles = level === 3 ? 2 : metrics.lodTriangles[level];
-  estimatedGpuBytes += triangles * 3 * 32;
+  for (let level = minimumLevel; level <= 2; level += 1) {
+    estimatedGpuBytes += metrics.lodTriangles[level] * 3 * 32;
+  }
 }
 
 const atlasLayout = createBillboardAtlasLayout(BILLBOARD_BATCH_CAPACITY);
@@ -64,26 +85,19 @@ const atlasBatchCount = [...treeCountsByPreset.values()].reduce(
   (total, count) => total + Math.ceil(count / BILLBOARD_BATCH_CAPACITY),
   0,
 );
-const farBatchCount = [...farPresets].reduce(
-  (total, presetId) =>
-    total +
-    Math.ceil(
-      (treeCountsByPreset.get(presetId) ?? 0) / BILLBOARD_BATCH_CAPACITY,
-    ),
-  0,
-);
+const farBatchCount = activeFarBatches.size;
 estimatedGpuBytes += atlasBatchCount * atlasBytes;
 
 const colorDrawCalls =
   1 +
-  lodCounts[0] * 4 +
-  lodCounts[1] * 3 +
-  lodCounts[2] * 2 +
+  visibleLodCounts[0] * 4 +
+  visibleLodCounts[1] * 3 +
+  visibleLodCounts[2] * 2 +
   farBatchCount;
 const report = {
   viewport: [1280, 720],
   treeCount: scene.layout.length,
-  lodCounts,
+  visibleLodCounts,
   farPresetBatches: farBatchCount,
   atlasBatchCount,
   estimatedColorDrawCalls: colorDrawCalls,
