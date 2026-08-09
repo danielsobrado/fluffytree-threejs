@@ -526,6 +526,8 @@ export class TuningPanel {
     this.autoFitButton.disabled = true;
 
     try {
+      if (!(await this.settlePendingApply())) return;
+
       for (let attempt = 0; attempt < AUTO_FIT_ATTEMPTS; attempt += 1) {
         const report = this.refreshCoverage();
 
@@ -547,7 +549,10 @@ export class TuningPanel {
 
         if (next >= current) break;
 
-        writePath(this.config, 'foliage.shell.coverageCardRatio', next);
+        const nextConfig = structuredClone(this.config);
+        writePath(nextConfig, 'foliage.shell.coverageCardRatio', next);
+        this.config = nextConfig;
+        this.controlContext.config = nextConfig;
         this.refreshControls();
 
         if (!(await this.apply())) return;
