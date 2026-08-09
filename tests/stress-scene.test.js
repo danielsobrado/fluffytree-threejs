@@ -30,3 +30,21 @@ test('stress scene creates a deterministic 75-tree 720p-oriented layout', () => 
   assert.equal(source.layout.length, 3);
   assert.equal(isStressSceneRequested('?qa=stress'), true);
 });
+
+test('stress scene keeps derived seeds inside the uint32 contract', () => {
+  const source = {
+    scene: {},
+    camera: {},
+    renderer: {},
+    lod: {},
+    layout: [{ preset: 'a', seed: 0xffffffff }],
+  };
+  const stress = createStressSceneConfig(source);
+
+  assert.equal(stress.layout[0].seed, 0xffffffff);
+  assert.ok(
+    stress.layout.every(
+      (entry) => Number.isSafeInteger(entry.seed) && entry.seed >= 0 && entry.seed <= 0xffffffff,
+    ),
+  );
+});
