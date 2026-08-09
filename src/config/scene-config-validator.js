@@ -15,9 +15,9 @@ function requireString(parent, key, path) {
 }
 
 function requireFinite(parent, key, path, { minimum = null, maximum = null } = {}) {
-  const value = Number(parent[key]);
-  if (!Number.isFinite(value)) {
-    throw new Error(`Scene configuration '${path}.${key}' must be finite.`);
+  const value = parent[key];
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`Scene configuration '${path}.${key}' must be a finite number.`);
   }
   if (minimum !== null && value < minimum) {
     throw new Error(`Scene configuration '${path}.${key}' must be >= ${minimum}.`);
@@ -38,7 +38,11 @@ function requirePositive(parent, key, path) {
 
 function requireVector(parent, key, path, size = 3) {
   const value = parent[key];
-  if (!Array.isArray(value) || value.length !== size || value.some((item) => !Number.isFinite(Number(item)))) {
+  if (
+    !Array.isArray(value) ||
+    value.length !== size ||
+    value.some((item) => typeof item !== 'number' || !Number.isFinite(item))
+  ) {
     throw new Error(`Scene configuration '${path}.${key}' must contain ${size} finite numbers.`);
   }
   return value;
@@ -95,10 +99,14 @@ function validateLod(config) {
       "Scene configuration LOD thresholds must satisfy nearPixels > mediumPixels > farPixels > cullPixels.",
     );
   }
-  requireFinite(lod, 'hysteresis', 'lod', { minimum: 0, maximum: 0.5 });
+
+  const hysteresis = requireFinite(lod, 'hysteresis', 'lod', { minimum: 0 });
+  if (hysteresis >= 1) {
+    throw new Error("Scene configuration 'lod.hysteresis' must be < 1.");
+  }
   requireFinite(lod, 'fadeBand', 'lod', { minimum: 0, maximum: 1 });
   requirePositive(lod, 'shadowPixels', 'lod');
-  requireFinite(lod, 'generationBudgetMs', 'lod', { minimum: 0 });
+  requirePositive(lod, 'generationBudgetMs', 'lod');
 }
 
 function validateLighting(config) {
@@ -122,7 +130,10 @@ function validateLayout(config) {
       throw new Error(`Scene configuration '${path}' must be an object.`);
     }
     requireString(entry, 'preset', path);
-    requireFinite(entry, 'seed', path);
+    const seed = requireFinite(entry, 'seed', path);
+    if (!Number.isInteger(seed)) {
+      throw new Error(`Scene configuration '${path}.seed' must be an integer.`);
+    }
     requireVector(entry, 'position', path);
     if (entry.rotationY !== undefined) requireFinite(entry, 'rotationY', path);
   });
