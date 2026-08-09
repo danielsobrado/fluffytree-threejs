@@ -1,17 +1,36 @@
 import { load } from 'js-yaml';
 
 export class YamlConfigLoader {
+  constructor({ fetchImpl = globalThis.fetch } = {}) {
+    if (typeof fetchImpl !== 'function') {
+      throw new Error('YamlConfigLoader requires a fetch implementation.');
+    }
+    this.fetchImpl = fetchImpl;
+  }
+
   async load(url) {
-    const response = await fetch(url, { cache: 'no-cache' });
+    let response;
+    try {
+      response = await this.fetchImpl(url, { cache: 'no-cache' });
+    } catch (error) {
+      throw new Error(`Failed to fetch configuration '${url}'.`, { cause: error });
+    }
 
     if (!response.ok) {
-      throw new Error(`Failed to load configuration '${url}': ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Failed to load configuration '${url}': ${response.status} ${response.statusText}`,
+      );
     }
 
     const text = await response.text();
-    const config = load(text);
+    let config;
+    try {
+      config = load(text);
+    } catch (error) {
+      throw new Error(`Failed to parse configuration '${url}'.`, { cause: error });
+    }
 
-    if (!config || typeof config !== 'object') {
+    if (!config || typeof config !== 'object' || Array.isArray(config)) {
       throw new Error(`Configuration '${url}' did not contain an object.`);
     }
 
