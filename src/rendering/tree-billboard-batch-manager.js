@@ -20,31 +20,37 @@ const DITHER_FRAGMENT = `
 
 function createGeometry(capacity) {
   const geometry = new THREE.PlaneGeometry(1, 1);
-  geometry.setAttribute(
-    'treeBillboardScale',
-    new THREE.InstancedBufferAttribute(new Float32Array(capacity * 2), 2),
-  );
-  geometry.setAttribute(
-    'treeBillboardFade',
-    new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1),
-  );
-  geometry.setAttribute(
-    'treeBillboardInvert',
-    new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1),
-  );
-  geometry.setAttribute(
-    'treeBillboardUvTransform',
-    new THREE.InstancedBufferAttribute(new Float32Array(capacity * 4), 4),
-  );
-  for (const name of [
-    'treeBillboardScale',
-    'treeBillboardFade',
-    'treeBillboardInvert',
-    'treeBillboardUvTransform',
-  ]) {
-    geometry.getAttribute(name).setUsage(THREE.DynamicDrawUsage);
+
+  try {
+    geometry.setAttribute(
+      'treeBillboardScale',
+      new THREE.InstancedBufferAttribute(new Float32Array(capacity * 2), 2),
+    );
+    geometry.setAttribute(
+      'treeBillboardFade',
+      new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1),
+    );
+    geometry.setAttribute(
+      'treeBillboardInvert',
+      new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1),
+    );
+    geometry.setAttribute(
+      'treeBillboardUvTransform',
+      new THREE.InstancedBufferAttribute(new Float32Array(capacity * 4), 4),
+    );
+    for (const name of [
+      'treeBillboardScale',
+      'treeBillboardFade',
+      'treeBillboardInvert',
+      'treeBillboardUvTransform',
+    ]) {
+      geometry.getAttribute(name).setUsage(THREE.DynamicDrawUsage);
+    }
+    return geometry;
+  } catch (error) {
+    geometry.dispose();
+    throw error;
   }
-  return geometry;
 }
 
 function createMaterial(texture) {
@@ -131,6 +137,13 @@ function createAtlas(capacity, sourceTexture) {
   };
 }
 
+function disposeBatch(scene, batch) {
+  scene.remove(batch.mesh);
+  batch.mesh.geometry.dispose();
+  batch.mesh.material.dispose();
+  batch.atlas.texture.dispose();
+}
+
 function findImpostor(tree) {
   let impostor = null;
   tree.traverse((object) => {
@@ -157,27 +170,50 @@ export class TreeBillboardBatchManager {
   }
 
   createBatch(presetId, sourceTexture) {
-    const atlas = createAtlas(this.capacity, sourceTexture);
-    const mesh = new THREE.InstancedMesh(
-      createGeometry(this.capacity),
-      createMaterial(atlas.texture),
-      this.capacity,
-    );
-    const presetBatches = this.batches.get(presetId) ?? [];
-    mesh.name = `tree-impostor-batch-${presetId}-${presetBatches.length}`;
-    mesh.count = 0;
-    mesh.visible = false;
-    mesh.frustumCulled = false;
-    mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
-    const batch = {
-      mesh,
-      atlas,
-      state: new TreeBillboardBatchState(this.capacity),
-    };
-    presetBatches.push(batch);
-    this.batches.set(presetId, presetBatches);
-    this.scene.add(mesh);
-    return batch;
+    let atlas = null;
+    let geometry = null;
+    let material = null;
+    let mesh = null;
+
+    try {
+      atlas = createAtlas(this.capacity, sourceTexture);
+      geometry = createGeometry(this.capacity);
+      material = createMaterial(atlas.texture);
+      mesh = new THREE.InstancedMesh(geometry, material, this.capacity);
+      const presetBatches = this.batches.get(presetId) ?? [];
+      mesh.name = `tree-impostor-batch-${presetId}-${presetBatches.length}`;
+      mesh.count = 0;
+      mesh.visible = false;
+      mesh.frustumCulled = false;
+      mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+      const batch = {
+        mesh,
+        atlas,
+        state: new TreeBillboardBatchState(this.capacity),
+      };
+      presetBatches.push(batch);
+      this.batches.set(presetId, presetBatches);
+      this.scene.add(mesh);
+      return batch;
+    } catch (error) {
+      if (mesh) this.scene.remove(mesh);
+      geometry?.dispose();
+      material?.dispose();
+      atlas?.texture?.dispose();
+      throw error;
+    }
+  }
+
+  removeEmptyBatch(presetId, batch) {
+    if (batch.state.entries.length !== 0) return;
+    const presetBatches = this.batches.get(presetId);
+    if (!presetBatches) return;
+    const index = presetBatches.indexOf(batch);
+    if (index < 0) return;
+
+    presetBatches.splice(index, 1);
+    if (presetBatches.length === 0) this.batches.delete(presetId);
+    disposeBatch(this.scene, batch);
   }
 
   register(tree) {
@@ -190,58 +226,67 @@ export class TreeBillboardBatchManager {
 
     const presetBatches = this.batches.get(presetId) ?? [];
     let batch = presetBatches.at(-1);
+    let createdBatch = false;
     if (!batch || batch.state.entries.length >= batch.state.capacity) {
       batch = this.createBatch(presetId, sourceTexture);
+      createdBatch = true;
     }
 
-    impostor.getWorldPosition(this.worldPosition);
-    const index = batch.state.add(tree);
-    this.matrix.makeTranslation(
-      this.worldPosition.x,
-      this.worldPosition.y,
-      this.worldPosition.z,
-    );
-    batch.mesh.setMatrixAt(index, this.matrix);
+    try {
+      const index = batch.state.entries.length;
+      impostor.getWorldPosition(this.worldPosition);
+      this.matrix.makeTranslation(
+        this.worldPosition.x,
+        this.worldPosition.y,
+        this.worldPosition.z,
+      );
+      batch.mesh.setMatrixAt(index, this.matrix);
 
-    const scale = batch.mesh.geometry.getAttribute('treeBillboardScale');
-    scale.setXY(index, impostor.scale.x, impostor.scale.y);
-    const slot = calculateBillboardAtlasSlot(index, batch.atlas.layout);
-    batch.atlas.context.drawImage(
-      sourceTexture.image,
-      slot.column * batch.atlas.cellWidth,
-      slot.row * batch.atlas.cellHeight,
-      batch.atlas.cellWidth,
-      batch.atlas.cellHeight,
-    );
-    batch.atlas.texture.needsUpdate = true;
+      const scale = batch.mesh.geometry.getAttribute('treeBillboardScale');
+      scale.setXY(index, impostor.scale.x, impostor.scale.y);
+      const slot = calculateBillboardAtlasSlot(index, batch.atlas.layout);
+      batch.atlas.context.drawImage(
+        sourceTexture.image,
+        slot.column * batch.atlas.cellWidth,
+        slot.row * batch.atlas.cellHeight,
+        batch.atlas.cellWidth,
+        batch.atlas.cellHeight,
+      );
+      batch.atlas.texture.needsUpdate = true;
 
-    const uv = calculateBillboardAtlasUvTransform(
-      slot,
-      batch.atlas.canvas.width,
-      batch.atlas.canvas.height,
-    );
-    const uvTransform = batch.mesh.geometry.getAttribute(
-      'treeBillboardUvTransform',
-    );
-    uvTransform.setXYZW(
-      index,
-      uv.offsetX,
-      uv.offsetY,
-      uv.scaleX,
-      uv.scaleY,
-    );
-    batch.mesh.geometry.getAttribute('treeBillboardFade').setX(index, 0);
-    batch.mesh.geometry.getAttribute('treeBillboardInvert').setX(index, 0);
-    batch.mesh.count = batch.state.entries.length;
-    batch.mesh.instanceMatrix.needsUpdate = true;
-    scale.needsUpdate = true;
-    uvTransform.needsUpdate = true;
-    impostor.visible = false;
-    releaseSourceTexture(impostor, sourceTexture);
+      const uv = calculateBillboardAtlasUvTransform(
+        slot,
+        batch.atlas.canvas.width,
+        batch.atlas.canvas.height,
+      );
+      const uvTransform = batch.mesh.geometry.getAttribute(
+        'treeBillboardUvTransform',
+      );
+      uvTransform.setXYZW(
+        index,
+        uv.offsetX,
+        uv.offsetY,
+        uv.scaleX,
+        uv.scaleY,
+      );
+      batch.mesh.geometry.getAttribute('treeBillboardFade').setX(index, 0);
+      batch.mesh.geometry.getAttribute('treeBillboardInvert').setX(index, 0);
 
-    const handle = { batch, index };
-    tree.userData.lod.billboardBatch = handle;
-    return handle;
+      batch.state.add(tree);
+      batch.mesh.count = batch.state.entries.length;
+      batch.mesh.instanceMatrix.needsUpdate = true;
+      scale.needsUpdate = true;
+      uvTransform.needsUpdate = true;
+      impostor.visible = false;
+      releaseSourceTexture(impostor, sourceTexture);
+
+      const handle = { batch, index };
+      tree.userData.lod.billboardBatch = handle;
+      return handle;
+    } catch (error) {
+      if (createdBatch) this.removeEmptyBatch(presetId, batch);
+      throw error;
+    }
   }
 
   setFade(handle, value, invert = false) {
@@ -249,7 +294,7 @@ export class TreeBillboardBatchManager {
     if (!handle.batch.state.setFade(handle.index, value, invert)) return;
 
     const fade = handle.batch.mesh.geometry.getAttribute('treeBillboardFade');
-    const inverted = handle.batch.mesh.geometry.getAttribute('treeBillboardInvert');
+    const inverted = batch.mesh.geometry.getAttribute('treeBillboardInvert');
     fade.setX(handle.index, handle.batch.state.fades[handle.index]);
     inverted.setX(handle.index, handle.batch.state.inverted[handle.index]);
     fade.needsUpdate = true;
@@ -259,12 +304,7 @@ export class TreeBillboardBatchManager {
 
   clear() {
     for (const presetBatches of this.batches.values()) {
-      for (const { mesh, atlas } of presetBatches) {
-        this.scene.remove(mesh);
-        mesh.geometry.dispose();
-        mesh.material.dispose();
-        atlas.texture.dispose();
-      }
+      for (const batch of presetBatches) disposeBatch(this.scene, batch);
     }
     this.batches.clear();
   }
