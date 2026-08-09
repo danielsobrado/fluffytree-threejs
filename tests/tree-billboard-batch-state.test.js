@@ -20,3 +20,28 @@ test('billboard batch state migrates instances with bounded complementary fades'
   assert.throws(() => batch.add('overflow'), /exceeded/);
   assert.throws(() => batch.setFade(3, 1), /Unknown/);
 });
+
+test('billboard batch state reports only real changes', () => {
+  const batch = new TreeBillboardBatchState(1);
+  const index = batch.add('tree');
+
+  assert.equal(batch.setFade(index, 0, false), false);
+  assert.equal(batch.setFade(index, 0.5, false), true);
+  assert.equal(batch.activeCount, 1);
+  assert.equal(batch.setFade(index, 0.5, false), false);
+  assert.equal(batch.setFade(index, 0.5, true), true);
+  assert.equal(batch.activeCount, 1);
+  assert.equal(batch.setFade(index, 0, true), true);
+  assert.equal(batch.activeCount, 0);
+});
+
+test('billboard batch state clamps before change detection', () => {
+  const batch = new TreeBillboardBatchState(1);
+  const index = batch.add('tree');
+
+  assert.equal(batch.setFade(index, 2), true);
+  assert.equal(batch.fades[index], 1);
+  assert.equal(batch.setFade(index, 3), false);
+  assert.equal(batch.setFade(index, -1), true);
+  assert.equal(batch.fades[index], 0);
+});
