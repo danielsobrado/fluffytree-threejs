@@ -61,6 +61,22 @@ test('an apply already yielding to paint cannot rebuild a stale preset', async (
   assert.deepEqual(rebuilds, []);
 });
 
+test('a failed rebuild restores the previous library and editor configuration', async () => {
+  const { panel, library } = createPanel();
+  const previousBend = library.rawValue('first').trunk.bend;
+  panel.config.trunk.bend = 0.77;
+  panel.demo.rebuildPreset = () => {
+    throw new Error('render failed');
+  };
+
+  assert.equal(await panel.apply(), false);
+  assert.equal(library.rawValue('first').trunk.bend, previousBend);
+  assert.equal(panel.config.trunk.bend, previousBend);
+  assert.equal(panel.controlContext.config, panel.config);
+  assert.equal(panel.status.textContent, 'render failed');
+  assert.equal(panel.status.dataset.tone, 'error');
+});
+
 test('the studio labels reference height as metadata rather than geometry', () => {
   const controls = TUNING_GROUPS.flatMap((group) => group.controls);
   const referenceHeight = controls.find((control) => control.path === 'height');
