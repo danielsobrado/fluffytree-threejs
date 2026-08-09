@@ -9,6 +9,8 @@ import {
   UNIT_INTERVAL_PATHS,
 } from './tree-preset-validation-rules.js';
 
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+
 function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
@@ -36,14 +38,21 @@ function requireNonEmptyString(value, path) {
   }
 }
 
-function requireStringArray(value, path, minimumLength) {
+function requireHexColor(value, path) {
+  requireNonEmptyString(value, path);
+  if (!HEX_COLOR_PATTERN.test(value)) {
+    throw new Error(`Configuration '${path}' must be a #RRGGBB color.`);
+  }
+}
+
+function requireColorArray(value, path, minimumLength) {
   if (!Array.isArray(value) || value.length < minimumLength) {
     throw new Error(
-      `Configuration '${path}' must contain at least ${minimumLength} strings.`,
+      `Configuration '${path}' must contain at least ${minimumLength} colors.`,
     );
   }
 
-  for (const item of value) requireNonEmptyString(item, path);
+  for (const item of value) requireHexColor(item, path);
 }
 
 function requireInteger(value, path, minimum) {
@@ -142,10 +151,10 @@ function validatePairs(id, value) {
   }
 }
 
-function validateStrings(id, value) {
-  requireNonEmptyString(value.trunk?.color, `${id}.trunk.color`);
+function validateColors(id, value) {
+  requireHexColor(value.trunk?.color, `${id}.trunk.color`);
   for (const { path, minimumLength } of STRING_ARRAY_RULES) {
-    requireStringArray(
+    requireColorArray(
       readPath(value, path),
       configurationPath(id, path),
       minimumLength,
@@ -168,7 +177,7 @@ export function validateTreePresetConfig(id, value) {
   validateCounts(id, value);
   validateStructureRelationships(id, value);
   validatePairs(id, value);
-  validateStrings(id, value);
+  validateColors(id, value);
 
   return value;
 }
