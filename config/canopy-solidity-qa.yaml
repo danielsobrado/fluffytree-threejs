@@ -7,6 +7,13 @@
 # the configured hole radius are counted, so single-pixel dither stipple is
 # ignored while a visible window is not.
 #
+# Transition representations are still rendered in the same high-resolution
+# frame so coverage retention remains directly comparable. Hole visibility is
+# scaled to the projected-pixel threshold where that transition actually runs
+# in config/scene.yaml. This prevents a far impostor transition from failing on
+# a gap that is several pixels only because the QA probe magnified a 35 px tree
+# to hundreds of pixels.
+#
 #   holeRatio          counted enclosed background / filled silhouette
 #   largestHoleRatio   largest counted opening / filled silhouette
 #   coverageRatio      rendered pixels / framed image
