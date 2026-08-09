@@ -41,6 +41,44 @@ function clamp01(value) {
   return Math.min(1, Math.max(0, value));
 }
 
+export function calculateCrownEnvelopeBounds(envelope, radiusMargin = 1) {
+  if (!Number.isFinite(radiusMargin) || radiusMargin < 1) {
+    throw new RangeError('Crown envelope radius margin must be at least 1.');
+  }
+
+  const { crown, anchor } = envelope;
+  const radialExtent = crown.radius * radiusMargin;
+  const xMinimumCenter =
+    anchor.x +
+    Math.min(0, crown.lean[0]) -
+    crown.asymmetry * CROWN_ENVELOPE_CONSTANTS.asymmetryX;
+  const xMaximumCenter =
+    anchor.x +
+    Math.max(0, crown.lean[0]) +
+    crown.asymmetry * CROWN_ENVELOPE_CONSTANTS.asymmetryX;
+  const zMinimumCenter =
+    anchor.z +
+    Math.min(0, crown.lean[1]) -
+    crown.asymmetry * CROWN_ENVELOPE_CONSTANTS.asymmetryZ;
+  const zMaximumCenter =
+    anchor.z +
+    Math.max(0, crown.lean[1]) +
+    crown.asymmetry * CROWN_ENVELOPE_CONSTANTS.asymmetryZ;
+
+  return {
+    minimum: {
+      x: xMinimumCenter - radialExtent,
+      y: crown.baseHeight,
+      z: zMinimumCenter - radialExtent,
+    },
+    maximum: {
+      x: xMaximumCenter + radialExtent,
+      y: crown.baseHeight + crown.height,
+      z: zMaximumCenter + radialExtent,
+    },
+  };
+}
+
 export class CrownEnvelope {
   constructor(crown) {
     const profile = PROFILE_FUNCTIONS[crown.profile];
