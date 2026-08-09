@@ -62,6 +62,11 @@ test('structurally invalid storage cannot crash listing or loading', () => {
     [STORAGE_KEY]: JSON.stringify({
       missing: null,
       text: 'old-format',
+      invalidValue: {
+        basePresetId: 'roundOrchard',
+        savedAt: 10,
+        value: 'not-a-preset',
+      },
       valid: {
         basePresetId: 'roundOrchard',
         savedAt: 'bad-date',
@@ -76,7 +81,9 @@ test('structurally invalid storage cannot crash listing or loading', () => {
   ]);
   assert.equal(store.load('missing'), null);
   assert.equal(store.load('text'), null);
+  assert.equal(store.load('invalidValue'), null);
   assert.equal(store.load('valid').value.trunk.bend, 0.2);
+  assert.deepEqual(Object.keys(store.toPresetConfig().presets), ['valid']);
 });
 
 test('array storage roots are rejected instead of behaving like variant maps', () => {
@@ -88,6 +95,16 @@ test('array storage roots are rejected instead of behaving like variant maps', (
   assert.deepEqual(store.list(), []);
   assert.equal(store.save('Pine', 'test', { trunk: {} }), true);
   assert.equal(store.list().length, 1);
+});
+
+test('special object-property names save and remove safely', () => {
+  const store = new PresetVariantStore(createStorage());
+
+  assert.equal(store.remove('toString'), false);
+  assert.equal(store.save('__proto__', 'test', { marker: true }), true);
+  assert.equal(store.load('__proto__').value.marker, true);
+  assert.equal(store.remove('__proto__'), true);
+  assert.equal(store.load('__proto__'), null);
 });
 
 test('a storage that refuses writes still reports the failure without throwing', () => {
