@@ -544,6 +544,13 @@ export class TuningPanel {
       return;
     }
 
+    try {
+      this.library.validate(this.presetId, this.config);
+    } catch (error) {
+      this.setStatus(error.message, 'error');
+      return;
+    }
+
     const saved = this.store.save(name, this.presetId, this.config);
     this.refreshVariants(name);
     this.setStatus(
