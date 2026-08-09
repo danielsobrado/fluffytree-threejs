@@ -99,6 +99,7 @@ function createShadowProxy(treeData, branchMeshBuilder, crownShadowProxyBuilder)
       branchCurveSamples: 4,
       castShadow: true,
       receiveShadow: false,
+      analyzeManifold: false,
       name: 'tree-structure-shadow-proxy',
     });
     structure.material.colorWrite = false;
@@ -194,6 +195,7 @@ export class TreeMeshBuilder {
                   trunkCurveSamples: 14,
                   branchCurveSamples: 7,
                   castShadow: false,
+                  analyzeManifold: false,
                   name: 'tree-structure-lod1',
                 }),
               () =>
@@ -226,6 +228,7 @@ export class TreeMeshBuilder {
                   trunkCurveSamples: 8,
                   branchCurveSamples: 4,
                   castShadow: false,
+                  analyzeManifold: false,
                   name: 'tree-structure-lod2',
                 }),
               () =>
@@ -283,6 +286,7 @@ export class TreeMeshBuilder {
                 maxBranchOrder: 3,
                 radialSegments: 10,
                 castShadow: false,
+                analyzeManifold: false,
                 name: 'tree-structure',
               }),
             () =>
