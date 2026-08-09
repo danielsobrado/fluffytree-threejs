@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {
   BILLBOARD_BATCH_CAPACITY,
   calculateBillboardAtlasSlot,
+  calculateBillboardAtlasUvTransform,
   createBillboardAtlasLayout,
 } from './tree-billboard-atlas.js';
 import { TreeBillboardBatchState } from './tree-billboard-batch-state.js';
@@ -214,15 +215,20 @@ export class TreeBillboardBatchManager {
     );
     batch.atlas.texture.needsUpdate = true;
 
+    const uv = calculateBillboardAtlasUvTransform(
+      slot,
+      batch.atlas.canvas.width,
+      batch.atlas.canvas.height,
+    );
     const uvTransform = batch.mesh.geometry.getAttribute(
       'treeBillboardUvTransform',
     );
     uvTransform.setXYZW(
       index,
-      slot.offsetX,
-      slot.offsetY,
-      slot.scaleX,
-      slot.scaleY,
+      uv.offsetX,
+      uv.offsetY,
+      uv.scaleX,
+      uv.scaleY,
     );
     batch.mesh.geometry.getAttribute('treeBillboardFade').setX(index, 0);
     batch.mesh.geometry.getAttribute('treeBillboardInvert').setX(index, 0);
