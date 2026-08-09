@@ -22,30 +22,35 @@ function createEmptySurfaceSamples(lobes) {
 }
 
 function createClumpRecords(lobes, branches) {
+  const terminalBranchIds = new Map();
+  for (const branch of branches) {
+    if (!terminalBranchIds.has(branch.macroClumpId)) {
+      terminalBranchIds.set(branch.macroClumpId, []);
+    }
+    terminalBranchIds.get(branch.macroClumpId).push(branch.id);
+  }
+
   const records = new Map();
   for (const lobe of lobes) {
     if (!records.has(lobe.macroClumpId)) {
       records.set(lobe.macroClumpId, {
         id: lobe.macroClumpId,
         lobeIds: [],
-        branchIds: [],
+        branchIds: new Set(),
       });
     }
     const record = records.get(lobe.macroClumpId);
     record.lobeIds.push(lobe.id);
-    if (!record.branchIds.includes(lobe.branchId)) record.branchIds.push(lobe.branchId);
+    record.branchIds.add(lobe.branchId);
   }
+
   return Object.freeze(
     [...records.values()].map((record) =>
       Object.freeze({
-        ...record,
+        id: record.id,
         lobeIds: Object.freeze(record.lobeIds),
-        branchIds: Object.freeze(record.branchIds),
-        terminalBranchIds: Object.freeze(
-          branches
-            .filter((branch) => branch.macroClumpId === record.id)
-            .map((branch) => branch.id),
-        ),
+        branchIds: Object.freeze([...record.branchIds]),
+        terminalBranchIds: Object.freeze(terminalBranchIds.get(record.id) ?? []),
       }),
     ),
   );
