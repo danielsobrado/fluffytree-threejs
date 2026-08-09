@@ -76,6 +76,17 @@ test('tree preset validation rejects a trunk that grows toward its tip', () => {
   );
 });
 
+test('tree preset validation rejects empty palette colors', () => {
+  const config = mutateRoundOrchard((preset) => {
+    preset.foliage.palette[1] = '   ';
+  });
+
+  assert.throws(
+    () => PresetLibrary.fromConfig(config),
+    /roundOrchard\.foliage\.palette.*non-empty string/,
+  );
+});
+
 test('preset library rejects non-object and empty preset collections', () => {
   assert.throws(
     () => PresetLibrary.fromConfig({ presets: [] }),
