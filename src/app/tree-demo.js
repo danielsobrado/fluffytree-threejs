@@ -57,6 +57,7 @@ export class TreeDemo {
     this.render = this.render.bind(this);
     this.stressSamples = [];
     this.stressReported = false;
+    this.viewportHeight = 1;
     this.destroyed = true;
   }
 
@@ -70,6 +71,7 @@ export class TreeDemo {
     this.presetMap = library.presets;
     const presetMap = this.presetMap;
     this.context = this.sceneFactory.create(container, this.sceneConfig);
+    this.viewportHeight = measureViewport(container).height;
     this.destroyed = false;
     // Impostors are captured from the level they replace, which needs the live
     // renderer and the same lights the scene is drawn with.
@@ -122,9 +124,14 @@ export class TreeDemo {
 
   buildTreeEntry(entry, billboardBatchManager) {
     const preset = this.presetMap.get(entry.preset);
+    if (!preset) {
+      throw new Error(`Layout references unknown tree preset '${entry.preset}'.`);
+    }
+
     const seed = Number(entry.seed) + this.seedOffset * 1009;
     const treeData = this.treeGenerator.generate(preset, seed, {
       includeSurfaceSamples: !this.stressMode,
+      includeLodCostSummaries: false,
     });
     let tree = null;
 
@@ -338,6 +345,7 @@ export class TreeDemo {
     if (this.destroyed || !this.context) return;
     const { camera, renderer } = this.context;
     const { width, height } = measureViewport(this.container);
+    this.viewportHeight = height;
 
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
@@ -359,13 +367,12 @@ export class TreeDemo {
   render() {
     if (this.destroyed || !this.context) return;
     const elapsed = this.clock.getElapsedTime();
-    const { height } = measureViewport(this.container);
     this.generationQueue.process(this.sceneConfig.lod.generationBudgetMs);
     this.windController.update(elapsed);
     this.context.controls.update();
     this.lodController.update(
       this.context.camera,
-      height,
+      this.viewportHeight,
       this.context.renderer,
     );
     this.context.renderer.render(this.context.scene, this.context.camera);
@@ -470,5 +477,6 @@ export class TreeDemo {
     this.sceneConfig = null;
     this.studioLayout = null;
     this.studioPresetId = null;
+    this.viewportHeight = 1;
   }
 }
