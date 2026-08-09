@@ -9,6 +9,8 @@ const DITHER_SHADER = `
   }
 `;
 
+const LOD_FADE_STATES_KEY = 'lodFadeStates';
+
 function visitMaterials(root, visitor) {
   root.traverse((object) => {
     const materials = Array.isArray(object.material)
@@ -18,6 +20,25 @@ function visitMaterials(root, visitor) {
         : [];
     for (const material of materials) visitor(material);
   });
+}
+
+function collectLodFadeStates(root) {
+  const states = [];
+  const seen = new Set();
+
+  visitMaterials(root, (material) => {
+    const state = material.userData.lodFade;
+    if (!state || seen.has(state)) return;
+    seen.add(state);
+    states.push(state);
+  });
+  root.userData ??= {};
+  root.userData[LOD_FADE_STATES_KEY] = states;
+  return states;
+}
+
+function getLodFadeStates(root) {
+  return root.userData?.[LOD_FADE_STATES_KEY] ?? collectLodFadeStates(root);
 }
 
 export function configureLodDitherFade(material) {
@@ -48,19 +69,16 @@ export function configureLodDitherFade(material) {
 
 export function configureObjectLodFade(root) {
   visitMaterials(root, configureLodDitherFade);
+  collectLodFadeStates(root);
   return root;
 }
 
 export function snapshotObjectLodFade(root) {
-  const states = [];
-  const seen = new Set();
-
-  visitMaterials(root, (material) => {
-    const state = material.userData.lodFade;
-    if (!state || seen.has(state)) return;
-    seen.add(state);
-    states.push({ state, value: state.value, invert: state.invert });
-  });
+  const states = getLodFadeStates(root).map((state) => ({
+    state,
+    value: state.value,
+    invert: state.invert,
+  }));
 
   return {
     visible: root.visible,
@@ -79,10 +97,9 @@ export function restoreObjectLodFade(root, snapshot) {
 export function setObjectLodFade(root, value, invert = false) {
   const fade = Math.min(1, Math.max(0, value));
   root.visible = fade > 0.001;
-  visitMaterials(root, (material) => {
-    if (material.userData.lodFade) {
-      material.userData.lodFade.value = fade;
-      material.userData.lodFade.invert = invert ? 1 : 0;
-    }
-  });
+  const inverted = invert ? 1 : 0;
+  for (const state of getLodFadeStates(root)) {
+    state.value = fade;
+    state.invert = inverted;
+  }
 }
