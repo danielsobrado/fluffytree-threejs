@@ -1,3 +1,4 @@
+import { logger } from '../core/logger.js';
 import { StemManifoldQaRunner } from '../qa/stem-manifold-qa-runner.js';
 import {
   postQaReport,
@@ -56,8 +57,15 @@ export function markStemManifoldBootstrapFailure(
 ) {
   if (!isRequested()) return;
   const message = serializeQaError(error);
+  if (
+    root.dataset[STATUS_ATTRIBUTE] === 'error' &&
+    root.dataset[ERROR_ATTRIBUTE] === message
+  ) {
+    return;
+  }
+
   root.dataset[STATUS_ATTRIBUTE] = 'error';
   root.dataset[ERROR_ATTRIBUTE] = message;
   reportQaStatus('error', message);
-  console.error('Stem manifold QA failed.', error);
+  logger.error('Stem manifold QA failed.', error);
 }
