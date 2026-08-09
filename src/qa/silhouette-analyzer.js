@@ -1,3 +1,4 @@
+import { calculateCrownEnvelopeBounds } from '../generation/crown-envelope.js';
 import { correlation, mean, rootMeanSquareError } from './qa-math.js';
 import { calculateHoleRatio, countComponents } from './mask-analyzer.js';
 import {
@@ -17,23 +18,28 @@ function createProjections(lobes, horizontalAxis) {
   return lobes.map((lobe) => createLobeProjection(lobe, horizontalAxis));
 }
 
-function getProjectionBounds(projections) {
+function getProjectionBounds(projections, envelope, horizontalAxis) {
+  const envelopeBounds = calculateCrownEnvelopeBounds(envelope);
   const horizontalMinimum = Math.min(
+    envelopeBounds.minimum[horizontalAxis],
     ...projections.map(
       (projection) => projection.centerX - projection.horizontalExtent,
     ),
   );
   const horizontalMaximum = Math.max(
+    envelopeBounds.maximum[horizontalAxis],
     ...projections.map(
       (projection) => projection.centerX + projection.horizontalExtent,
     ),
   );
   const verticalMinimum = Math.min(
+    envelopeBounds.minimum.y,
     ...projections.map(
       (projection) => projection.centerY - projection.verticalExtent,
     ),
   );
   const verticalMaximum = Math.max(
+    envelopeBounds.maximum.y,
     ...projections.map(
       (projection) => projection.centerY + projection.verticalExtent,
     ),
@@ -271,7 +277,7 @@ export function analyzeSilhouette(
   profileSampleCount,
 ) {
   const projections = createProjections(lobes, horizontalAxis);
-  const bounds = getProjectionBounds(projections);
+  const bounds = getProjectionBounds(projections, envelope, horizontalAxis);
   const lobeMask = rasterizeLobes(projections, bounds, resolution);
   const envelopeMask = rasterizeEnvelope(
     envelope,
