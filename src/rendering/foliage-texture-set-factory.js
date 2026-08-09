@@ -10,10 +10,10 @@ export class FoliageTextureSetFactory {
     this.alphaTextureFactory = alphaTextureFactory;
   }
 
-  create(foliage) {
+  create(foliage, { palette = true, alpha = true } = {}) {
     return Object.freeze({
-      palette: this.paletteTextureFactory.create(foliage.palette),
-      alpha: this.alphaTextureFactory.create(foliage.leafShape),
+      palette: palette ? this.paletteTextureFactory.create(foliage.palette) : null,
+      alpha: alpha ? this.alphaTextureFactory.create(foliage.leafShape) : null,
     });
   }
 }
