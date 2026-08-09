@@ -3,6 +3,7 @@ import { CrownEnvelope } from './crown-envelope.js';
 import { createCrownSummary } from './crown-summary.js';
 import { FoliageShellGenerator } from './foliage-shell-generator.js';
 import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
+import { lobeAxisAlignedExtents } from './lobe-geometry.js';
 import { LobeConnectionAnalyzer } from './lobe-connection-analyzer.js';
 import { LobeConnectivityEnforcer } from './lobe-connectivity-enforcer.js';
 import { LobeGenerator } from './lobe-generator.js';
@@ -59,12 +60,13 @@ function createBounds(height, lobes) {
   const minimum = { x: 0, y: 0, z: 0 };
   const maximum = { x: 0, y: height, z: 0 };
   for (const lobe of lobes) {
-    minimum.x = Math.min(minimum.x, lobe.position.x - lobe.scale.x);
-    minimum.y = Math.min(minimum.y, lobe.position.y - lobe.scale.y);
-    minimum.z = Math.min(minimum.z, lobe.position.z - lobe.scale.z);
-    maximum.x = Math.max(maximum.x, lobe.position.x + lobe.scale.x);
-    maximum.y = Math.max(maximum.y, lobe.position.y + lobe.scale.y);
-    maximum.z = Math.max(maximum.z, lobe.position.z + lobe.scale.z);
+    const extent = lobeAxisAlignedExtents(lobe);
+    minimum.x = Math.min(minimum.x, lobe.position.x - extent.x);
+    minimum.y = Math.min(minimum.y, lobe.position.y - extent.y);
+    minimum.z = Math.min(minimum.z, lobe.position.z - extent.z);
+    maximum.x = Math.max(maximum.x, lobe.position.x + extent.x);
+    maximum.y = Math.max(maximum.y, lobe.position.y + extent.y);
+    maximum.z = Math.max(maximum.z, lobe.position.z + extent.z);
   }
   return Object.freeze({
     minimum: Object.freeze(minimum),
