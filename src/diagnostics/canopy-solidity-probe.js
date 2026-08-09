@@ -10,6 +10,7 @@ import {
   summarizeViewMetrics,
 } from '../qa/canopy-solidity-gate.js';
 import { CANOPY_SOLIDITY_LOD_STATES } from '../qa/canopy-solidity-lod-states.js';
+import { calculateTransitionHoleThresholds } from '../qa/canopy-solidity-scale.js';
 import {
   analyzeSilhouetteHoles,
   createAlphaMask,
@@ -20,6 +21,7 @@ import { setObjectLodFade } from '../rendering/lod-dither-fade.js';
 
 const STATUS_ATTRIBUTE = 'solidityStatus';
 const THRESHOLD_URL = './config/canopy-solidity-qa.yaml';
+const SCENE_CONFIG_URL = './config/scene.yaml';
 const BASELINE_LOD_STATE = 'lod0';
 
 function isSolidityRequested() {
@@ -116,13 +118,19 @@ export class CanopySolidityProbe {
     if (!this.enabled) return null;
 
     try {
-      const { thresholds } = await this.configLoader.load(THRESHOLD_URL);
+      const [{ thresholds }, { lod: lodSettings }] = await Promise.all([
+        this.configLoader.load(THRESHOLD_URL),
+        this.configLoader.load(SCENE_CONFIG_URL),
+      ]);
 
       if (!thresholds) {
         throw new Error('The canopy solidity configuration has no thresholds.');
       }
+      if (!lodSettings) {
+        throw new Error('The scene configuration has no LOD settings.');
+      }
 
-      const report = this.measure({ renderer, scene, trees });
+      const report = this.measure({ renderer, scene, trees, lodSettings });
       const failures = evaluateSolidityReport(report.trees, thresholds);
       const passed = failures.length === 0;
       report.passed = passed;
@@ -149,7 +157,7 @@ export class CanopySolidityProbe {
     }
   }
 
-  measure({ renderer, scene, trees }) {
+  measure({ renderer, scene, trees, lodSettings }) {
     const resolution = CANOPY_SOLIDITY_CONSTANTS.resolution;
     const target = new THREE.WebGLRenderTarget(resolution, resolution);
     const pixels = new Uint8Array(resolution * resolution * 4);
@@ -159,7 +167,15 @@ export class CanopySolidityProbe {
     try {
       for (const tree of trees) {
         results.push(
-          this.measureTree({ renderer, scene, tree, target, pixels, resolution }),
+          this.measureTree({
+            renderer,
+            scene,
+            tree,
+            target,
+            pixels,
+            resolution,
+            lodSettings,
+          }),
         );
       }
     } finally {
@@ -204,7 +220,7 @@ export class CanopySolidityProbe {
     };
   }
 
-  measureTree({ renderer, scene, tree, target, pixels, resolution }) {
+  measureTree({ renderer, scene, tree, target, pixels, resolution, lodSettings }) {
     const lodState = tree.userData.lod;
     lodState.buildHero?.();
     const heroLevel = lodState.levels[0];
@@ -230,11 +246,14 @@ export class CanopySolidityProbe {
     const views = [];
     const baselineCoverage = new Map();
     const holeMask = new Uint8Array(resolution * resolution);
+    const focalPixels =
+      resolution /
+      (2 * Math.tan(THREE.MathUtils.degToRad(CANOPY_SOLIDITY_CONSTANTS.fieldOfView) * 0.5));
     let worst = null;
     let windMovedRatio = 0;
 
     const captureView = (view, state) => {
-      this.placeCamera(camera, frames[view.group], view);
+      const distance = this.placeCamera(camera, frames[view.group], view);
       renderer.setRenderTarget(target);
       renderer.clear();
       renderer.render(scene, camera);
@@ -245,10 +264,21 @@ export class CanopySolidityProbe {
         resolution,
         CANOPY_SOLIDITY_CONSTANTS.alphaThreshold,
       );
-      holeMask.fill(0);
-      const metrics = analyzeSilhouetteHoles(mask, resolution, resolution, {
+      const probeProjectedPixels =
+        (tree.userData.tree.height / Math.max(0.001, distance)) * focalPixels;
+      const targetProjectedPixels = state.projectedPixelsKey
+        ? lodSettings[state.projectedPixelsKey]
+        : probeProjectedPixels;
+      const holeThresholds = calculateTransitionHoleThresholds({
         minimumHolePixels: CANOPY_SOLIDITY_CONSTANTS.minimumHolePixels,
         minimumHoleRadius: CANOPY_SOLIDITY_CONSTANTS.minimumHoleRadius,
+        probeProjectedPixels,
+        targetProjectedPixels,
+      });
+      holeMask.fill(0);
+      const metrics = analyzeSilhouetteHoles(mask, resolution, resolution, {
+        minimumHolePixels: holeThresholds.minimumHolePixels,
+        minimumHoleRadius: holeThresholds.minimumHoleRadius,
         holeMask,
       });
       if (state.id === BASELINE_LOD_STATE && view.group === 'crown') {
@@ -262,6 +292,11 @@ export class CanopySolidityProbe {
         lodState: state.id,
         lodKind: state.kind,
         coverageRetention,
+        probeProjectedPixels,
+        targetProjectedPixels,
+        holeVisibilityScale: holeThresholds.scale,
+        effectiveMinimumHolePixels: holeThresholds.minimumHolePixels,
+        effectiveMinimumHoleRadius: holeThresholds.minimumHoleRadius,
         ...metrics,
       };
       views.push(record);
@@ -487,5 +522,6 @@ export class CanopySolidityProbe {
     camera.near = Math.max(0.05, distance - frame.radius * 2);
     camera.far = distance + frame.radius * 4;
     camera.updateProjectionMatrix();
+    return distance;
   }
 }
