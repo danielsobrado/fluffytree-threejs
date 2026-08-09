@@ -4,6 +4,7 @@ import {
   createStressSceneConfig,
   isStressSceneRequested,
 } from './stress-scene.js';
+import { buildTreeReplacement } from './tree-rebuild-transaction.js';
 import { logger } from '../core/logger.js';
 import { CanopySolidityProbe } from '../diagnostics/canopy-solidity-probe.js';
 import { RenderSmokeProbe } from '../diagnostics/render-smoke-probe.js';
@@ -119,28 +120,16 @@ export class TreeDemo {
     return this.studioLayout ?? this.sceneConfig.layout;
   }
 
-  rebuildTrees() {
-    this.generationQueue.clear();
-    this.billboardBatchManager.clear();
-    for (const root of this.treeRoots) {
-      this.context.scene.remove(root);
-      disposeObject(root);
-    }
+  buildTreeEntry(entry, billboardBatchManager) {
+    const preset = this.presetMap.get(entry.preset);
+    const seed = Number(entry.seed) + this.seedOffset * 1009;
+    const treeData = this.treeGenerator.generate(preset, seed, {
+      includeSurfaceSamples: !this.stressMode,
+    });
+    let tree = null;
 
-    this.treeRoots.length = 0;
-    this.treeDataByPreset.clear();
-    this.lodController.clear();
-    this.windController.clear();
-
-    const seedOffset = this.seedOffset;
-    const buildEntry = (entry) => {
-      const preset = this.presetMap.get(entry.preset);
-      const seed = Number(entry.seed) + seedOffset * 1009;
-      const treeData = this.treeGenerator.generate(preset, seed, {
-        includeSurfaceSamples: !this.stressMode,
-      });
-      this.treeDataByPreset.set(entry.preset, treeData);
-      const tree = this.treeMeshBuilder.build(treeData, {
+    try {
+      tree = this.treeMeshBuilder.build(treeData, {
         sunDirection: this.context.sun.position.clone().normalize(),
         impostorRenderer: this.impostorRenderer,
         deferHero: !this.renderSmokeProbe.enabled,
@@ -150,27 +139,97 @@ export class TreeDemo {
       });
       tree.position.fromArray(entry.position);
       tree.rotation.y = Number(entry.rotationY ?? 0);
-      this.context.scene.add(tree);
-      this.treeRoots.push(tree);
       tree.updateMatrixWorld(true);
-      tree.userData.lod.billboardBatchManager = this.billboardBatchManager;
-      this.billboardBatchManager.register(tree);
-      this.lodController.register(tree);
-      this.windController.register(tree, seed);
-      this.context.renderer.shadowMap.needsUpdate = true;
-    };
+      tree.userData.lod.billboardBatchManager = billboardBatchManager;
+      billboardBatchManager.register(tree);
+      return { root: tree, treeData };
+    } catch (error) {
+      if (tree) disposeObject(tree);
+      throw error;
+    }
+  }
 
-    for (const [index, entry] of this.activeLayout.entries()) {
-      if (this.stressMode) {
-        this.generationQueue.enqueue(`tree:${seedOffset}:${index}`, () =>
-          buildEntry(entry),
-        );
-      } else {
-        buildEntry(entry);
-      }
+  clearLiveTrees() {
+    this.lodController.clear();
+    this.windController.clear();
+    this.billboardBatchManager.clear();
+
+    for (const root of this.treeRoots) {
+      this.context.scene.remove(root);
+      disposeObject(root);
+    }
+
+    this.treeRoots.length = 0;
+    this.treeDataByPreset.clear();
+  }
+
+  installTreeReplacement(replacement) {
+    this.lodController.clear();
+    this.windController.clear();
+
+    const previousBatchManager = this.billboardBatchManager;
+    for (const root of this.treeRoots) {
+      this.context.scene.remove(root);
+      disposeObject(root);
+    }
+    previousBatchManager.clear();
+
+    this.billboardBatchManager = replacement.billboardBatchManager;
+    this.treeRoots.length = 0;
+    this.treeRoots.push(...replacement.roots);
+    this.treeDataByPreset.clear();
+
+    for (const [presetId, treeData] of replacement.treeDataByPreset) {
+      this.treeDataByPreset.set(presetId, treeData);
+    }
+
+    for (const root of this.treeRoots) {
+      this.context.scene.add(root);
+      this.lodController.register(root);
+      this.windController.register(root, root.userData.tree.seed);
     }
 
     this.context.renderer.shadowMap.needsUpdate = true;
+  }
+
+  rebuildStressTrees() {
+    this.clearLiveTrees();
+    const seedOffset = this.seedOffset;
+
+    for (const [index, entry] of this.activeLayout.entries()) {
+      this.generationQueue.enqueue(`tree:${seedOffset}:${index}`, () => {
+        const { root, treeData } = this.buildTreeEntry(
+          entry,
+          this.billboardBatchManager,
+        );
+        this.context.scene.add(root);
+        this.treeRoots.push(root);
+        this.treeDataByPreset.set(entry.preset, treeData);
+        this.lodController.register(root);
+        this.windController.register(root, treeData.seed);
+        this.context.renderer.shadowMap.needsUpdate = true;
+      });
+    }
+  }
+
+  rebuildTrees() {
+    this.generationQueue.clear();
+
+    if (this.stressMode) {
+      this.rebuildStressTrees();
+      this.context.renderer.shadowMap.needsUpdate = true;
+      return;
+    }
+
+    const replacement = buildTreeReplacement(this.activeLayout, {
+      createBatchManager: () =>
+        new TreeBillboardBatchManager(this.context.scene),
+      buildEntry: (entry, billboardBatchManager) =>
+        this.buildTreeEntry(entry, billboardBatchManager),
+      disposeRoot: (root) => disposeObject(root),
+    });
+
+    this.installTreeReplacement(replacement);
   }
 
   /** A fresh set of trees from the same presets. */
