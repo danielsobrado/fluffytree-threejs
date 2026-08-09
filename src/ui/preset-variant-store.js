@@ -70,13 +70,13 @@ export class PresetVariantStore {
 
     try {
       this.storage.setItem(STORAGE_KEY, serialized);
-      return this.persistent;
+      return true;
     } catch {
       const memory = createMemoryStorage();
       memory.setItem(STORAGE_KEY, serialized);
       this.storage = memory;
       this.persistent = false;
-      return false;
+      return true;
     }
   }
 
@@ -107,7 +107,7 @@ export class PresetVariantStore {
         value: structuredClone(value),
       },
     };
-    return this.write(variants);
+    return this.write(variants) && this.persistent;
   }
 
   remove(name) {
