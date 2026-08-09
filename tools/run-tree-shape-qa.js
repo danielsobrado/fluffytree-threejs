@@ -1,12 +1,13 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { load } from 'js-yaml';
-import { createValidatedTreePresetMap } from '../src/domain/validated-tree-preset-map.js';
+import { PresetLibrary } from '../src/domain/preset-library.js';
 import { renderQaMarkdown } from '../src/qa/qa-report-renderer.js';
 import { TreeShapeQaRunner } from '../src/qa/tree-shape-qa-runner.js';
 
 const FILES = Object.freeze({
   presets: new URL('../config/tree-presets.yaml', import.meta.url),
+  continuity: new URL('../config/foliage-continuity.yaml', import.meta.url),
   qa: new URL('../config/tree-shape-qa.yaml', import.meta.url),
 });
 
@@ -55,20 +56,23 @@ function printSummary(report) {
 
 async function main() {
   const options = readOptions();
-  const [presetConfiguration, sourceQaConfiguration] = await Promise.all([
-    loadYaml(FILES.presets),
-    loadYaml(FILES.qa),
-  ]);
+  const [presetConfiguration, continuityConfiguration, sourceQaConfiguration] =
+    await Promise.all([
+      loadYaml(FILES.presets),
+      loadYaml(FILES.continuity),
+      loadYaml(FILES.qa),
+    ]);
   const qaConfiguration = structuredClone(sourceQaConfiguration);
 
   if (options.seedCount !== undefined) {
     qaConfiguration.run.seedCount = options.seedCount;
   }
 
-  const report = new TreeShapeQaRunner().run(
-    createValidatedTreePresetMap(presetConfiguration),
-    qaConfiguration,
-  );
+  const presets = PresetLibrary.fromConfig(
+    presetConfiguration,
+    continuityConfiguration,
+  ).presets;
+  const report = new TreeShapeQaRunner().run(presets, qaConfiguration);
   const outputDirectory = options.output;
   await mkdir(outputDirectory, { recursive: true });
   await Promise.all([
