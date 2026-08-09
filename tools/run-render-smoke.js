@@ -3,7 +3,9 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import process from 'node:process';
+import { validateQaReportName } from '../src/qa/qa-report-name.js';
 
+const MAX_QA_REPORT_BYTES = 16 * 1024 * 1024;
 const port = Number(process.env.RENDER_SMOKE_PORT ?? 4173);
 const outputDirectory = path.resolve(
   process.env.RENDER_SMOKE_OUTPUT ?? 'qa-results/render-smoke',
@@ -47,10 +49,40 @@ function findBrowser() {
 }
 
 function collectReport(request, response, requestUrl) {
-  const name = requestUrl.searchParams.get('name') ?? 'qa-report';
+  if (request.method !== 'POST') {
+    response.writeHead(405, { Allow: 'POST' }).end('Method Not Allowed');
+    return;
+  }
+
+  let name;
+  try {
+    name = validateQaReportName(
+      requestUrl.searchParams.get('name') ?? 'qa-report',
+    );
+  } catch (error) {
+    response.writeHead(400).end(error.message);
+    return;
+  }
+
   const chunks = [];
-  request.on('data', (chunk) => chunks.push(chunk));
+  let size = 0;
+  let tooLarge = false;
+  request.on('data', (chunk) => {
+    if (tooLarge) return;
+    size += chunk.length;
+    if (size > MAX_QA_REPORT_BYTES) {
+      tooLarge = true;
+      chunks.length = 0;
+      return;
+    }
+    chunks.push(chunk);
+  });
   request.on('end', () => {
+    if (tooLarge) {
+      response.writeHead(413).end('QA report is too large.');
+      return;
+    }
+
     fs.writeFileSync(
       path.join(outputDirectory, `${name}.json`),
       Buffer.concat(chunks),
