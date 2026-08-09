@@ -65,15 +65,19 @@ export class PresetLibrary {
     return clone(value);
   }
 
-  /** Validates before storing, so a rejected edit leaves the library untouched. */
-  set(id, value) {
+  validate(id, value) {
     validateTreePresetConfig(id, value);
     const basePreset = createTreePreset(id, value);
     const continuity = resolveFoliageContinuityProfile(
       this.continuityConfig,
       basePreset.crown.profile,
     );
-    const preset = Object.freeze({ ...basePreset, continuity });
+    return Object.freeze({ ...basePreset, continuity });
+  }
+
+  /** Validates before storing, so a rejected edit leaves the library untouched. */
+  set(id, value) {
+    const preset = this.validate(id, value);
     this.values.set(id, clone(value));
     this.presets.set(id, preset);
     return preset;
