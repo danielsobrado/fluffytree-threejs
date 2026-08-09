@@ -92,73 +92,85 @@ export class FoliageShellBuilder {
       interiorScaleRatio,
     );
     const instances = [...outerInstances, ...interiorInstances];
-    const geometry = this.geometryFactory.create(planesPerCluster);
-    addFoliageInstanceAttributes(geometry, instances, {
-      getExposure: (instance) => instance.exposure,
-      getCrownDirection: (instance) =>
-        crownDirection(instance.position, treeData.crownCenter),
-    });
+    let geometry = null;
+    let material = null;
 
-    const material = this.materialFactory.create({
-      foliage: treeData.palette,
-      paletteTexture,
-      alphaTexture,
-      sunDirection,
-    });
-    const shell = new THREE.InstancedMesh(
-      geometry,
-      material,
-      instances.length,
-    );
-    const matrix = new THREE.Matrix4();
-    const position = new THREE.Vector3();
-    const normal = new THREE.Vector3();
-    const quaternion = new THREE.Quaternion();
-    const twist = new THREE.Quaternion();
-    const scale = new THREE.Vector3();
-    const compensatedScaleMultiplier =
-      scaleMultiplier * outerSelection.scaleCompensation;
+    try {
+      geometry = this.geometryFactory.create(planesPerCluster);
+      addFoliageInstanceAttributes(geometry, instances, {
+        getExposure: (instance) => instance.exposure,
+        getCrownDirection: (instance) =>
+          crownDirection(instance.position, treeData.crownCenter),
+      });
 
-    instances.forEach((instance, index) => {
-      position.set(
-        instance.position.x,
-        instance.position.y,
-        instance.position.z,
+      material = this.materialFactory.create({
+        foliage: treeData.palette,
+        paletteTexture,
+        alphaTexture,
+        sunDirection,
+      });
+      const shell = new THREE.InstancedMesh(
+        geometry,
+        material,
+        instances.length,
       );
-      normal
-        .set(instance.normal.x, instance.normal.y, instance.normal.z)
-        .normalize();
-      quaternion.setFromUnitVectors(LOCAL_OUTWARD, normal);
-      twist.setFromAxisAngle(LOCAL_OUTWARD, instance.rotation);
-      quaternion.multiply(twist);
-      const shellScale = instance.shellScale ?? instance.scale;
-      scale.set(
-        shellScale * instance.widthRatio * compensatedScaleMultiplier,
-        shellScale * instance.widthRatio * compensatedScaleMultiplier,
-        shellScale * instance.outwardRatio * compensatedScaleMultiplier,
-      );
-      matrix.compose(position, quaternion, scale);
-      shell.setMatrixAt(index, matrix);
-    });
+      const matrix = new THREE.Matrix4();
+      const position = new THREE.Vector3();
+      const normal = new THREE.Vector3();
+      const quaternion = new THREE.Quaternion();
+      const twist = new THREE.Quaternion();
+      const scale = new THREE.Vector3();
+      const compensatedScaleMultiplier =
+        scaleMultiplier * outerSelection.scaleCompensation;
 
-    shell.instanceMatrix.setUsage(THREE.StaticDrawUsage);
-    shell.instanceMatrix.needsUpdate = true;
-    shell.name = name;
-    shell.castShadow = false;
-    shell.receiveShadow = true;
-    shell.renderOrder = 1;
-    shell.computeBoundingBox();
-    shell.computeBoundingSphere();
-    shell.userData.foliageShell = {
-      instanceCount: instances.length,
-      exteriorInstanceCount: outerInstances.length,
-      interiorInstanceCount: interiorInstances.length,
-      planesPerCluster,
-      density,
-      actualDensity: outerSelection.actualDensity,
-      scaleCompensation: outerSelection.scaleCompensation,
-      maximumCoverageRatio: outerSelection.maximumCoverageRatio,
-    };
-    return shell;
+      instances.forEach((instance, index) => {
+        position.set(
+          instance.position.x,
+          instance.position.y,
+          instance.position.z,
+        );
+        normal
+          .set(instance.normal.x, instance.normal.y, instance.normal.z)
+          .normalize();
+        quaternion.setFromUnitVectors(LOCAL_OUTWARD, normal);
+        twist.setFromAxisAngle(LOCAL_OUTWARD, instance.rotation);
+        quaternion.multiply(twist);
+        const shellScale = instance.shellScale ?? instance.scale;
+        scale.set(
+          shellScale * instance.widthRatio * compensatedScaleMultiplier,
+          shellScale * instance.widthRatio * compensatedScaleMultiplier,
+          shellScale * instance.outwardRatio * compensatedScaleMultiplier,
+        );
+        matrix.compose(position, quaternion, scale);
+        shell.setMatrixAt(index, matrix);
+      });
+
+      shell.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+      shell.instanceMatrix.needsUpdate = true;
+      shell.name = name;
+      shell.castShadow = false;
+      shell.receiveShadow = true;
+      shell.renderOrder = 1;
+      shell.computeBoundingBox();
+      shell.computeBoundingSphere();
+      shell.userData.foliageShell = {
+        instanceCount: instances.length,
+        exteriorInstanceCount: outerInstances.length,
+        interiorInstanceCount: interiorInstances.length,
+        planesPerCluster,
+        density,
+        actualDensity: outerSelection.actualDensity,
+        scaleCompensation: outerSelection.scaleCompensation,
+        maximumCoverageRatio: outerSelection.maximumCoverageRatio,
+      };
+
+      geometry = null;
+      material = null;
+      return shell;
+    } catch (error) {
+      geometry?.dispose();
+      material?.dispose();
+      throw error;
+    }
   }
 }
