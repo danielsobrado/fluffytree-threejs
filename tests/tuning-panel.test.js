@@ -104,6 +104,31 @@ test('a failed open-studio preset switch restores the previous editor selection'
   assert.equal(panel.presetSelect.value, 'first');
 });
 
+test('loading a cross-preset variant cannot bypass a failed studio switch', () => {
+  const { panel } = createPanel();
+  const previousConfig = panel.config;
+  panel.root = { classList: { contains: () => false } };
+  panel.soloInput = { checked: true };
+  panel.variantSelect = { value: 'saved' };
+  panel.nameInput = { value: '' };
+  panel.store = {
+    load: () => ({
+      basePresetId: 'second',
+      value: createValue('Saved'),
+    }),
+  };
+  panel.demo.setStudioPreset = () => {
+    throw new Error('studio failed');
+  };
+
+  panel.loadVariant();
+
+  assert.equal(panel.presetId, 'first');
+  assert.equal(panel.config, previousConfig);
+  assert.equal(panel.controlContext.config, previousConfig);
+  assert.equal(panel.presetSelect.value, 'first');
+});
+
 test('a failed reseed is contained and reported', () => {
   const { panel } = createPanel();
   panel.demo.reseed = () => {
