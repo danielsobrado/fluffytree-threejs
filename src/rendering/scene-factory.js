@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { measureViewport } from './viewport-size.js';
 
 function createRenderer(container, config) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  const { width, height } = measureViewport(container);
   renderer.setPixelRatio(
     Math.min(window.devicePixelRatio, config.renderer.maxPixelRatio),
   );
-  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setSize(width, height);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -19,9 +21,10 @@ function createRenderer(container, config) {
 }
 
 function createCamera(container, config) {
+  const { width, height } = measureViewport(container);
   const camera = new THREE.PerspectiveCamera(
     config.camera.fieldOfView,
-    container.clientWidth / container.clientHeight,
+    width / height,
     config.camera.near,
     config.camera.far,
   );
@@ -96,8 +99,9 @@ export class SceneFactory {
     controls.update();
 
     const { hemisphere, sun } = createLights(config);
-    scene.add(hemisphere, sun, createGround(config));
+    const ground = createGround(config);
+    scene.add(hemisphere, sun, ground);
 
-    return { scene, renderer, camera, controls, sun };
+    return { scene, renderer, camera, controls, sun, ground };
   }
 }
