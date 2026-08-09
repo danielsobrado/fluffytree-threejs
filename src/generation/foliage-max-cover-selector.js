@@ -88,6 +88,12 @@ function coverageRatio(candidate, selected) {
   return foliageCardCoverageRatio(candidate, selected);
 }
 
+function maximumCoverageRadius(items) {
+  let maximum = 0;
+  for (const item of items) maximum = Math.max(maximum, item.coverageRadius);
+  return maximum;
+}
+
 function findNearbyCoverageRatio(grid, candidate) {
   let nearest = Number.POSITIVE_INFINITY;
 
@@ -100,12 +106,9 @@ function findNearbyCoverageRatio(grid, candidate) {
 }
 
 function selectCompleteCoverage(items, stopCoverageRatio) {
-  const maximumCoverageRadius = Math.max(
-    ...items.map((item) => item.coverageRadius),
-  );
   const grid = new SpatialHashGrid(
     Math.max(
-      maximumCoverageRadius * Math.max(1, stopCoverageRatio),
+      maximumCoverageRadius(items) * Math.max(1, stopCoverageRatio),
       FOLIAGE_SHELL_CONSTANTS.minimumCellSize,
     ),
   );
@@ -165,10 +168,7 @@ function bestItem(items) {
 }
 
 function createCoverageIndex(items, selected) {
-  const maximumCoverageRadius = Math.max(
-    ...items.map((item) => item.coverageRadius),
-  );
-  const index = new FoliageCoverageIndex(maximumCoverageRadius);
+  const index = new FoliageCoverageIndex(maximumCoverageRadius(items));
   for (const item of selected) index.add(item);
   return index;
 }
