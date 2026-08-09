@@ -11,9 +11,23 @@ export class FoliageTextureSetFactory {
   }
 
   create(foliage, { palette = true, alpha = true } = {}) {
-    return Object.freeze({
-      palette: palette ? this.paletteTextureFactory.create(foliage.palette) : null,
-      alpha: alpha ? this.alphaTextureFactory.create(foliage.leafShape) : null,
-    });
+    let paletteTexture = null;
+
+    try {
+      paletteTexture = palette
+        ? this.paletteTextureFactory.create(foliage.palette)
+        : null;
+      const alphaTexture = alpha
+        ? this.alphaTextureFactory.create(foliage.leafShape)
+        : null;
+
+      return Object.freeze({
+        palette: paletteTexture,
+        alpha: alphaTexture,
+      });
+    } catch (error) {
+      paletteTexture?.dispose();
+      throw error;
+    }
   }
 }
