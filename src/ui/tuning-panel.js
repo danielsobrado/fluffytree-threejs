@@ -65,6 +65,8 @@ export class TuningPanel {
     this.config = library.rawValue(this.presetId);
     this.controls = [];
     this.commitTimer = null;
+    this.activeApply = null;
+    this.activeApplyConfig = null;
   }
 
   mount(container) {
@@ -233,7 +235,7 @@ export class TuningPanel {
     const save = createButton('Save');
     save.addEventListener('click', () => this.saveVariant());
     const load = createButton('Load');
-    load.addEventListener('click', () => this.loadVariant());
+    load.addEventListener('click', () => void this.loadVariant());
     const remove = createButton('Delete');
     remove.addEventListener('click', () => this.deleteVariant());
     const exportButton = createButton('Export YAML');
@@ -293,16 +295,17 @@ export class TuningPanel {
   }
 
   commit(path, value) {
-    writePath(this.config, path, value);
+    const next = structuredClone(this.config);
+    writePath(next, path, value);
 
     // Taper is part of what a style is. Picking a new one adopts its taper
     // rather than keeping a number tuned for the shape you just left; the
     // slider moves to show it.
-    if (path === 'trunk.style') {
-      delete this.config.trunk.taperPower;
-      this.refreshControls();
-    }
+    if (path === 'trunk.style') delete next.trunk.taperPower;
 
+    this.config = next;
+    this.controlContext.config = next;
+    if (path === 'trunk.style') this.refreshControls();
     this.scheduleApply();
   }
 
@@ -320,6 +323,20 @@ export class TuningPanel {
     clearTimeout(this.commitTimer);
     this.commitTimer = null;
     return this.storeConfiguration(this.presetId, this.config);
+  }
+
+  settlePendingApply() {
+    const scheduled = this.commitTimer !== null;
+    if (scheduled) {
+      clearTimeout(this.commitTimer);
+      this.commitTimer = null;
+    }
+
+    if (this.activeApply && this.activeApplyConfig === this.config) {
+      return this.activeApply;
+    }
+    if (!scheduled && !this.activeApply) return Promise.resolve(true);
+    return this.apply();
   }
 
   storeConfiguration(presetId, config) {
@@ -371,11 +388,11 @@ export class TuningPanel {
     // generate-and-build blocks the main thread. A timer rather than a frame
     // callback, because a backgrounded tab never runs frame callbacks and the
     // edit would sit unapplied until the tab came forward.
-    return new Promise((resolve) => {
+    const operation = new Promise((resolve) => {
       setTimeout(() => {
-        // The user may switch presets while this paint-yield is pending. The
-        // edit is already stored, but rebuilding it now would pull the studio
-        // away from the newly selected tree.
+        // The user may switch presets or make another edit while this paint-yield
+        // is pending. The stored snapshot is valid, but rebuilding it now would
+        // replace the newer state the studio is already describing.
         if (this.presetId !== presetId || this.config !== config) {
           resolve(true);
           return;
@@ -397,6 +414,15 @@ export class TuningPanel {
         }
       }, 0);
     });
+
+    this.activeApply = operation;
+    this.activeApplyConfig = config;
+    void operation.finally(() => {
+      if (this.activeApply !== operation) return;
+      this.activeApply = null;
+      this.activeApplyConfig = null;
+    });
+    return operation;
   }
 
   applySolo() {
@@ -559,16 +585,16 @@ export class TuningPanel {
     );
   }
 
-  loadVariant() {
+  async loadVariant() {
     const name = this.variantSelect.value;
     const variant = name ? this.store.load(name) : null;
 
     if (!variant) {
       this.setStatus('Select a saved setting first.', 'warn');
-      return;
+      return false;
     }
 
-    if (!this.flushScheduledApply()) return;
+    if (!(await this.settlePendingApply())) return false;
 
     // A variant saved from a preset that has since been removed still loads
     // onto whichever preset is being edited now. Existing bases switch through
@@ -580,14 +606,14 @@ export class TuningPanel {
       variant.basePresetId !== this.presetId &&
       !this.selectPreset(variant.basePresetId)
     ) {
-      return;
+      return false;
     }
 
     this.config = variant.value;
     this.controlContext.config = this.config;
     this.refreshControls();
     this.nameInput.value = name;
-    void this.apply();
+    return this.apply();
   }
 
   deleteVariant() {
