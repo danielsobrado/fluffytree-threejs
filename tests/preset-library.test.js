@@ -37,6 +37,31 @@ test('raw values are detached, so an editor cannot mutate the live preset', () =
   assert.notEqual(library.rawValue('test').crown.lean[0], 5);
 });
 
+test('non-mutating validation builds a candidate without committing it', () => {
+  const library = PresetLibrary.fromConfig({ presets: { test: createValue() } });
+  const before = library.get('test');
+  const candidate = library.rawValue('test');
+  candidate.trunk.style = 'slant';
+  candidate.trunk.movement = 1.4;
+  candidate.trunk.sweep = 0.2;
+
+  const validated = library.validate('test', candidate);
+
+  assert.equal(validated.trunk.style, 'slant');
+  assert.equal(library.get('test'), before);
+  assert.notEqual(library.get('test').trunk.style, 'slant');
+});
+
+test('non-mutating validation rejects invalid candidates without changing storage', () => {
+  const library = PresetLibrary.fromConfig({ presets: { test: createValue() } });
+  const before = library.rawValue('test');
+  const broken = library.rawValue('test');
+  broken.trunk.branching.gnarl = 4;
+
+  assert.throws(() => library.validate('test', broken), /trunk\.branching\.gnarl/);
+  assert.deepEqual(library.rawValue('test'), before);
+});
+
 test('an invalid edit is rejected and leaves the library on the previous preset', () => {
   const library = PresetLibrary.fromConfig({ presets: { test: createValue() } });
   const before = library.get('test');
