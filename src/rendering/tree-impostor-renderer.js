@@ -1,5 +1,21 @@
 import * as THREE from 'three';
-import { setObjectLodFade } from './lod-dither-fade.js';
+import {
+  restoreObjectLodFade,
+  setObjectLodFade,
+  snapshotObjectLodFade,
+} from './lod-dither-fade.js';
+
+function restoreChild(parent, child, index) {
+  if (!parent) return;
+
+  parent.add(child);
+  if (index < 0 || index >= parent.children.length - 1) return;
+
+  const currentIndex = parent.children.indexOf(child);
+  if (currentIndex === index) return;
+  parent.children.splice(currentIndex, 1);
+  parent.children.splice(index, 0, child);
+}
 
 /**
  * Captures a level of detail into an impostor texture by rendering it.
@@ -53,64 +69,66 @@ export class TreeImpostorRenderer {
    */
   capture(level, layout, rotationY) {
     const previousParent = level.parent;
+    const previousIndex = previousParent?.children.indexOf(level) ?? -1;
     const previousRotation = level.rotation.y;
-    const previousFade = level.visible;
-
-    this.holder.add(level);
-    this.holder.rotation.y = 0;
-    level.rotation.y = 0;
-    // The level normally renders faded out; the capture needs it whole.
-    setObjectLodFade(level, 1);
-
-    const half = layout.worldSize * 0.5;
-    this.camera.left = -half;
-    this.camera.right = half;
-    this.camera.top = half;
-    this.camera.bottom = -half;
-    this.camera.near = 0.01;
-    this.camera.far = layout.worldSize * 4 + 100;
-    this.camera.updateProjectionMatrix();
-
-    // The layout projects the tree after rotating it about Y, so the camera sits
-    // on the matching side and looks back along that direction.
-    const distance = layout.worldSize * 2 + 10;
-    const anchor = new THREE.Vector3(
-      layout.anchor.x,
-      layout.anchor.y,
-      layout.anchor.z,
-    );
-    this.camera.position
-      .set(Math.sin(-rotationY), 0, Math.cos(-rotationY))
-      .multiplyScalar(distance)
-      .add(anchor);
-    this.camera.up.set(0, 1, 0);
-    this.camera.lookAt(anchor);
-    this.camera.updateMatrixWorld(true);
-
+    const previousFade = snapshotObjectLodFade(level);
     const previousTarget = this.renderer.getRenderTarget();
     const previousClear = this.renderer.getClearColor(new THREE.Color());
     const previousAlpha = this.renderer.getClearAlpha();
-    this.renderer.setRenderTarget(this.target);
-    this.renderer.setClearColor(0x000000, 0);
-    this.renderer.clear();
-    this.renderer.render(this.scene, this.camera);
-    this.renderer.readRenderTargetPixels(
-      this.target,
-      0,
-      0,
-      this.textureSize,
-      this.textureSize,
-      this.pixels,
-    );
-    this.renderer.setRenderTarget(previousTarget);
-    this.renderer.setClearColor(previousClear, previousAlpha);
 
-    this.holder.remove(level);
-    level.rotation.y = previousRotation;
-    level.visible = previousFade;
-    if (previousParent) previousParent.add(level);
+    try {
+      this.holder.add(level);
+      this.holder.rotation.y = 0;
+      level.rotation.y = 0;
+      setObjectLodFade(level, 1);
 
-    return this.createCanvas();
+      const half = layout.worldSize * 0.5;
+      this.camera.left = -half;
+      this.camera.right = half;
+      this.camera.top = half;
+      this.camera.bottom = -half;
+      this.camera.near = 0.01;
+      this.camera.far = layout.worldSize * 4 + 100;
+      this.camera.updateProjectionMatrix();
+
+      const distance = layout.worldSize * 2 + 10;
+      const anchor = new THREE.Vector3(
+        layout.anchor.x,
+        layout.anchor.y,
+        layout.anchor.z,
+      );
+      this.camera.position
+        .set(Math.sin(-rotationY), 0, Math.cos(-rotationY))
+        .multiplyScalar(distance)
+        .add(anchor);
+      this.camera.up.set(0, 1, 0);
+      this.camera.lookAt(anchor);
+      this.camera.updateMatrixWorld(true);
+
+      this.renderer.setRenderTarget(this.target);
+      this.renderer.setClearColor(0x000000, 0);
+      this.renderer.clear();
+      this.renderer.render(this.scene, this.camera);
+      this.renderer.readRenderTargetPixels(
+        this.target,
+        0,
+        0,
+        this.textureSize,
+        this.textureSize,
+        this.pixels,
+      );
+      return this.createCanvas();
+    } finally {
+      try {
+        this.renderer.setRenderTarget(previousTarget);
+        this.renderer.setClearColor(previousClear, previousAlpha);
+      } finally {
+        this.holder.remove(level);
+        level.rotation.y = previousRotation;
+        restoreObjectLodFade(level, previousFade);
+        restoreChild(previousParent, level, previousIndex);
+      }
+    }
   }
 
   /** Read-back rows run bottom-up, so the copy flips them. */
