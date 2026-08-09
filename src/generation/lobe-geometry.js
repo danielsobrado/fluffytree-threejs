@@ -70,6 +70,27 @@ export function inverseRotateVectorEuler(
   };
 }
 
+export function lobeAxisAlignedExtents(lobe) {
+  const basisX = rotateVectorEuler(
+    { x: lobe.scale.x, y: 0, z: 0 },
+    lobe.rotation,
+  );
+  const basisY = rotateVectorEuler(
+    { x: 0, y: lobe.scale.y, z: 0 },
+    lobe.rotation,
+  );
+  const basisZ = rotateVectorEuler(
+    { x: 0, y: 0, z: lobe.scale.z },
+    lobe.rotation,
+  );
+
+  return {
+    x: Math.hypot(basisX.x, basisY.x, basisZ.x),
+    y: Math.hypot(basisX.y, basisY.y, basisZ.y),
+    z: Math.hypot(basisX.z, basisY.z, basisZ.z),
+  };
+}
+
 export function pointOnLobeSurface(lobe, direction) {
   const unit = normalizeVector(direction);
   const localPoint = {
