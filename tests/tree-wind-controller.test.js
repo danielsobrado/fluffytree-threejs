@@ -30,6 +30,17 @@ test('wind controller discovers materials created by deferred hero LOD', () => {
   assert.equal(controller.states[0].time, 6);
 });
 
+test('minimum LOD trees do not wrap an unreachable hero builder', () => {
+  const controller = new TreeWindController();
+  const tree = createTree();
+  tree.userData.lod.minimumLevel = 2;
+  const buildHero = tree.userData.lod.buildHero;
+
+  controller.register(tree, 37);
+
+  assert.equal(tree.userData.lod.buildHero, buildHero);
+});
+
 test('wind controller registers a shared material state only once', () => {
   const sharedState = { time: 0, phase: 0, strength: 0 };
   const tree = {
