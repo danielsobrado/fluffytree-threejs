@@ -1,3 +1,3 @@
 version: '2.0.0'
-build: '20260809.2'
-label: strict preset validation and production hardening
+build: '20260809.3'
+label: production hardening and runtime performance
