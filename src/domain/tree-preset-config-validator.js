@@ -5,6 +5,7 @@ import {
   PAIR_RULES,
   POSITIVE_NUMBER_PATHS,
   REQUIRED_NUMBER_PATHS,
+  STRING_ARRAY_RULES,
   UNIT_INTERVAL_PATHS,
 } from './tree-preset-validation-rules.js';
 
@@ -33,6 +34,16 @@ function requireNonEmptyString(value, path) {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(`Configuration '${path}' must be a non-empty string.`);
   }
+}
+
+function requireStringArray(value, path, minimumLength) {
+  if (!Array.isArray(value) || value.length < minimumLength) {
+    throw new Error(
+      `Configuration '${path}' must contain at least ${minimumLength} strings.`,
+    );
+  }
+
+  for (const item of value) requireNonEmptyString(item, path);
 }
 
 function requireInteger(value, path, minimum) {
@@ -117,6 +128,17 @@ function validatePairs(id, value) {
   }
 }
 
+function validateStrings(id, value) {
+  requireNonEmptyString(value.trunk?.color, `${id}.trunk.color`);
+  for (const { path, minimumLength } of STRING_ARRAY_RULES) {
+    requireStringArray(
+      readPath(value, path),
+      configurationPath(id, path),
+      minimumLength,
+    );
+  }
+}
+
 export function validateTreePresetConfig(id, value) {
   requireNonEmptyString(id, 'tree preset id');
   if (!isObject(value)) {
@@ -131,7 +153,7 @@ export function validateTreePresetConfig(id, value) {
   validatePhysicalDimensions(id, value);
   validateCounts(id, value);
   validatePairs(id, value);
-  requireNonEmptyString(value.trunk?.color, `${id}.trunk.color`);
+  validateStrings(id, value);
 
   return value;
 }
