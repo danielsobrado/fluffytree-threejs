@@ -98,19 +98,34 @@ export class TuningPanel {
     return header;
   }
 
-  toggleCollapsed() {
-    const collapsed = this.root.classList.toggle('is-collapsed');
+  setCollapsedVisual(collapsed) {
+    this.root.classList.toggle('is-collapsed', collapsed);
     this.collapseButton.textContent = collapsed ? '+' : '–';
     this.collapseButton.title = collapsed
       ? 'Open the studio'
       : 'Close the studio and restore the scene';
+  }
 
-    if (collapsed) {
-      this.demo.setStudioPreset(null);
-      return;
+  tryStudioPreset(presetId) {
+    try {
+      this.demo.setStudioPreset(presetId);
+      return true;
+    } catch (error) {
+      logger.error('Failed to change the studio scene.', error);
+      this.setStatus(error.message, 'error');
+      return false;
     }
+  }
 
-    this.applySolo();
+  toggleCollapsed() {
+    const collapsed = !this.root.classList.contains('is-collapsed');
+    const presetId = collapsed || !this.soloInput.checked ? null : this.presetId;
+
+    if (!this.tryStudioPreset(presetId)) return false;
+
+    this.setCollapsedVisual(collapsed);
+    this.refreshCoverage();
+    return true;
   }
 
   createPresetRow() {
@@ -132,16 +147,16 @@ export class TuningPanel {
     this.soloInput = createElement('input');
     this.soloInput.type = 'checkbox';
     this.soloInput.checked = true;
-    this.soloInput.addEventListener('change', () => this.applySolo());
+    this.soloInput.addEventListener('change', () => {
+      const requested = this.soloInput.checked;
+      if (!this.applySolo()) this.soloInput.checked = !requested;
+    });
 
     const soloLabel = createElement('label', 'tuning-checkbox');
     soloLabel.append(this.soloInput, createElement('span', null, 'Solo'));
 
     const reseed = createButton('New seed');
-    reseed.addEventListener('click', () => {
-      this.demo.reseed();
-      this.refreshCoverage();
-    });
+    reseed.addEventListener('click', () => this.reseedScene());
 
     const frame = createButton('Frame');
     frame.title = 'Point the camera at the edited tree';
@@ -250,13 +265,27 @@ export class TuningPanel {
     // would silently discard the last edit.
     this.flushScheduledApply();
 
+    const previousPresetId = this.presetId;
+    const previousConfig = this.config;
     this.presetId = presetId;
     this.config = this.library.rawValue(presetId);
     this.controlContext.config = this.config;
     this.presetSelect.value = presetId;
     this.refreshControls();
 
-    if (!this.root.classList.contains('is-collapsed')) this.applySolo();
+    if (
+      !this.root.classList.contains('is-collapsed') &&
+      !this.applySolo()
+    ) {
+      this.presetId = previousPresetId;
+      this.config = previousConfig;
+      this.controlContext.config = this.config;
+      this.presetSelect.value = previousPresetId;
+      this.refreshControls();
+      return false;
+    }
+
+    return true;
   }
 
   refreshControls() {
@@ -371,8 +400,24 @@ export class TuningPanel {
   }
 
   applySolo() {
-    this.demo.setStudioPreset(this.soloInput.checked ? this.presetId : null);
+    if (!this.tryStudioPreset(this.soloInput.checked ? this.presetId : null)) {
+      return false;
+    }
+
     this.refreshCoverage();
+    return true;
+  }
+
+  reseedScene() {
+    try {
+      this.demo.reseed();
+      this.refreshCoverage();
+      return true;
+    } catch (error) {
+      logger.error('Failed to generate a new tree seed.', error);
+      this.setStatus(error.message, 'error');
+      return false;
+    }
   }
 
   refreshCoverage() {
