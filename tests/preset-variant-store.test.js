@@ -124,9 +124,11 @@ test('a storage that refuses writes falls back to session memory', () => {
     store.list().map((variant) => variant.name).sort(),
     ['Maple', 'Pine'],
   );
+  assert.equal(store.remove('Pine'), true);
+  assert.equal(store.load('Pine'), null);
 });
 
-test('explicit memory storage reports session-only writes', () => {
+test('explicit memory storage reports session-only writes but successful deletes', () => {
   const entries = new Map();
   const storage = {
     persistent: false,
@@ -137,6 +139,8 @@ test('explicit memory storage reports session-only writes', () => {
 
   assert.equal(store.save('Pine', 'test', { marker: true }), false);
   assert.equal(store.load('Pine').value.marker, true);
+  assert.equal(store.remove('Pine'), true);
+  assert.equal(store.load('Pine'), null);
 });
 
 test('exported settings are shaped like the preset configuration file', () => {
