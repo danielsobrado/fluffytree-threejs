@@ -7,9 +7,18 @@ import {
   resolveStableLod,
 } from './tree-lod-math.js';
 
+const VISIBLE_FADE_THRESHOLD = 0.001;
+
 function logGenerationError(error, tree) {
   const presetId = tree.userData?.tree?.presetId ?? 'unknown';
   logger.error(`Deferred hero generation failed for '${presetId}'.`, error);
+}
+
+function findFirstVisibleLevel(weights) {
+  for (let index = 0; index < weights.length; index += 1) {
+    if (weights[index] > VISIBLE_FADE_THRESHOLD) return index;
+  }
+  return -1;
 }
 
 export class TreeLodController {
@@ -26,7 +35,12 @@ export class TreeLodController {
   }
 
   register(tree) {
-    this.entries.push({ tree, stableLevel: tree.userData.lod.currentLevel ?? 1 });
+    this.entries.push({
+      tree,
+      stableLevel: tree.userData.lod.currentLevel ?? 1,
+      appliedFades: new Array(tree.userData.lod.levels.length).fill(Number.NaN),
+      appliedInverts: new Array(tree.userData.lod.levels.length).fill(null),
+    });
   }
 
   clear() {
@@ -52,6 +66,35 @@ export class TreeLodController {
     } else {
       task();
     }
+  }
+
+  applyLevelFade(entry, lodState, index, fade, invert) {
+    const level = lodState.levels[index];
+
+    if (index === 3 && lodState.billboardBatch) {
+      if (entry.appliedFades[index] !== 0 || entry.appliedInverts[index] !== false) {
+        setObjectLodFade(level, 0);
+        entry.appliedFades[index] = 0;
+        entry.appliedInverts[index] = false;
+      }
+      lodState.billboardBatchManager.setFade(
+        lodState.billboardBatch,
+        fade,
+        invert,
+      );
+      return;
+    }
+
+    if (
+      entry.appliedFades[index] === fade &&
+      entry.appliedInverts[index] === invert
+    ) {
+      return;
+    }
+
+    setObjectLodFade(level, fade, invert);
+    entry.appliedFades[index] = fade;
+    entry.appliedInverts[index] = invert;
   }
 
   update(camera, viewportHeight, renderer) {
@@ -89,24 +132,15 @@ export class TreeLodController {
         calculateLodWeights(projectedPixels, this.settings),
         { minimumLevel, heroReady: lodState.heroReady },
       );
-      const visibleLevels = weights
-        .map((weight, index) => ({ weight, index }))
-        .filter(({ weight }) => weight > 0.001);
-      lodState.levels.forEach((level, index) => {
-        const visibleIndex = visibleLevels.findIndex(
-          (visible) => visible.index === index,
-        );
-        if (index === 3 && lodState.billboardBatch) {
-          setObjectLodFade(level, 0);
-          lodState.billboardBatchManager.setFade(
-            lodState.billboardBatch,
-            weights[index],
-            visibleIndex === 1,
-          );
-        } else {
-          setObjectLodFade(level, weights[index], visibleIndex === 1);
-        }
-      });
+      const firstVisibleLevel = findFirstVisibleLevel(weights);
+
+      for (let index = 0; index < lodState.levels.length; index += 1) {
+        const invert =
+          weights[index] > VISIBLE_FADE_THRESHOLD &&
+          firstVisibleLevel >= 0 &&
+          index !== firstVisibleLevel;
+        this.applyLevelFade(entry, lodState, index, weights[index], invert);
+      }
 
       const castsShadow =
         projectedPixels >= this.settings.shadowPixels && entry.stableLevel <= 1;
