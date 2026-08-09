@@ -1,4 +1,5 @@
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+const MAXIMUM_SEED = 0xffffffff;
 
 function requireObject(parent, key) {
   const value = parent?.[key];
@@ -58,6 +59,14 @@ function requireVector(parent, key, path, size = 3) {
   return value;
 }
 
+function vectorLengthSquared(vector) {
+  return vector.reduce((total, value) => total + value * value, 0);
+}
+
+function vectorsEqual(left, right) {
+  return left.every((value, index) => value === right[index]);
+}
+
 function validateSceneSection(config) {
   const scene = requireObject(config, 'scene');
   requireColor(scene, 'backgroundColor', 'scene');
@@ -82,8 +91,11 @@ function validateCamera(config) {
   if (far <= near) {
     throw new Error("Scene configuration 'camera.far' must be greater than 'camera.near'.");
   }
-  requireVector(camera, 'position', 'camera');
-  requireVector(camera, 'target', 'camera');
+  const position = requireVector(camera, 'position', 'camera');
+  const target = requireVector(camera, 'target', 'camera');
+  if (vectorsEqual(position, target)) {
+    throw new Error("Scene configuration 'camera.position' must differ from 'camera.target'.");
+  }
   if (camera.controlsMaxDistance !== undefined) {
     requirePositive(camera, 'controlsMaxDistance', 'camera');
   }
@@ -126,7 +138,10 @@ function validateLighting(config) {
   requireFinite(lighting, 'hemisphereIntensity', 'lighting', { minimum: 0 });
   requireColor(lighting, 'sunColor', 'lighting');
   requireFinite(lighting, 'sunIntensity', 'lighting', { minimum: 0 });
-  requireVector(lighting, 'sunPosition', 'lighting');
+  const sunPosition = requireVector(lighting, 'sunPosition', 'lighting');
+  if (vectorLengthSquared(sunPosition) <= Number.EPSILON) {
+    throw new Error("Scene configuration 'lighting.sunPosition' must not be the zero vector.");
+  }
 }
 
 function validateLayout(config) {
@@ -140,9 +155,12 @@ function validateLayout(config) {
       throw new Error(`Scene configuration '${path}' must be an object.`);
     }
     requireString(entry, 'preset', path);
-    const seed = requireFinite(entry, 'seed', path);
-    if (!Number.isInteger(seed)) {
-      throw new Error(`Scene configuration '${path}.seed' must be an integer.`);
+    const seed = requireFinite(entry, 'seed', path, {
+      minimum: 0,
+      maximum: MAXIMUM_SEED,
+    });
+    if (!Number.isSafeInteger(seed)) {
+      throw new Error(`Scene configuration '${path}.seed' must be an unsigned 32-bit integer.`);
     }
     requireVector(entry, 'position', path);
     if (entry.rotationY !== undefined) requireFinite(entry, 'rotationY', path);
