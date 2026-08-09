@@ -13,6 +13,22 @@ import {
   StylizedBarkMaterialFactory,
 } from './stylized-bark-material-factory.js';
 
+function manifoldMetadata(metrics) {
+  if (!metrics) return { manifoldAnalyzed: false };
+  return {
+    manifoldAnalyzed: true,
+    trunkClosed: metrics.closedTwoManifold,
+    trunkBoundaryEdges: metrics.boundaryEdgeCount,
+    trunkNonManifoldEdges: metrics.nonManifoldEdgeCount,
+    trunkOrientationConflicts: metrics.orientationConflictCount,
+    trunkDegenerateTriangles: metrics.degenerateTriangleCount,
+    trunkConnectedComponents: metrics.componentCount,
+    trunkEulerCharacteristic: metrics.eulerCharacteristic,
+    trunkOutwardFacing: metrics.outwardFacing,
+    trunkSignedVolume: metrics.signedVolume,
+  };
+}
+
 export class BranchMeshBuilder {
   constructor(options = {}) {
     this.geometryFactory =
@@ -33,6 +49,7 @@ export class BranchMeshBuilder {
       branchCurveSamples = TREE_STRUCTURE_RENDERING_CONSTANTS.branchCurveSamples,
       castShadow = true,
       receiveShadow = true,
+      analyzeManifold = true,
       name = 'tree-structure',
     } = {},
   ) {
@@ -47,7 +64,9 @@ export class BranchMeshBuilder {
         trunkCurveSamples,
       });
       const trunkPath = trunkGeometry.userData.trunkPath;
-      const trunkManifold = analyzeBufferGeometryManifold(trunkGeometry);
+      const trunkManifold = analyzeManifold
+        ? analyzeBufferGeometryManifold(trunkGeometry)
+        : null;
       const rootBaseMaximumHeight =
         trunkGeometry.userData.sweptTube.startRingMaximumHeight;
       addStylizedBarkColors(
@@ -90,15 +109,7 @@ export class BranchMeshBuilder {
       mesh.castShadow = castShadow;
       mesh.receiveShadow = receiveShadow;
       mesh.userData.structure = {
-        trunkClosed: trunkManifold.closedTwoManifold,
-        trunkBoundaryEdges: trunkManifold.boundaryEdgeCount,
-        trunkNonManifoldEdges: trunkManifold.nonManifoldEdgeCount,
-        trunkOrientationConflicts: trunkManifold.orientationConflictCount,
-        trunkDegenerateTriangles: trunkManifold.degenerateTriangleCount,
-        trunkConnectedComponents: trunkManifold.componentCount,
-        trunkEulerCharacteristic: trunkManifold.eulerCharacteristic,
-        trunkOutwardFacing: trunkManifold.outwardFacing,
-        trunkSignedVolume: trunkManifold.signedVolume,
+        ...manifoldMetadata(trunkManifold),
         rootEmbedDepth: TREE_STRUCTURE_RENDERING_CONSTANTS.rootEmbedDepth,
         rootBaseMaximumHeight,
         rootBase: {
