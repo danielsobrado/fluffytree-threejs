@@ -83,7 +83,11 @@ export class TreeGenerator {
     this.foliageShellGenerator = foliageShellGenerator;
   }
 
-  generate(preset, seed, { includeSurfaceSamples = true } = {}) {
+  generate(
+    preset,
+    seed,
+    { includeSurfaceSamples = true, includeLodCostSummaries = true } = {},
+  ) {
     const random = new SeededRandom(seed);
     const envelope = new CrownEnvelope(preset.crown);
     const generatedLobes = this.lobeGenerator.generate(preset, envelope, random);
@@ -125,7 +129,11 @@ export class TreeGenerator {
       trunkColor: preset.trunk.color,
       barkPalette: preset.trunk.barkPalette,
     };
-    tree.lodCostSummaries = analyzeTreeLodBudgets(tree);
+
+    if (includeLodCostSummaries) {
+      tree.lodCostSummaries = analyzeTreeLodBudgets(tree);
+    }
+
     return Object.freeze(tree);
   }
 }
