@@ -117,6 +117,20 @@ function createShadowProxy(treeData, branchMeshBuilder, crownShadowProxyBuilder)
   }
 }
 
+function createEmptyShadowProxy() {
+  const group = new THREE.Group();
+  group.name = 'tree-shadow-proxy';
+  group.visible = false;
+  group.userData.shadowProxy = { skipped: true };
+  return group;
+}
+
+function validateMinimumLod(minimumLod) {
+  if (!Number.isSafeInteger(minimumLod) || minimumLod < 0 || minimumLod > 3) {
+    throw new RangeError('Tree minimumLod must be an integer within [0, 3].');
+  }
+}
+
 export class TreeMeshBuilder {
   constructor({
     branchMeshBuilder = new BranchMeshBuilder(),
@@ -147,6 +161,7 @@ export class TreeMeshBuilder {
       impostorRenderer = null,
     } = {},
   ) {
+    validateMinimumLod(minimumLod);
     const root = new THREE.Group();
     root.name = `tree-${treeData.presetId}`;
     const textures = this.textureSetFactory.create(treeData.palette, {
@@ -238,11 +253,14 @@ export class TreeMeshBuilder {
       lod3.add(impostor);
       configureObjectLodFade(lod3);
 
-      const shadowProxy = createShadowProxy(
-        treeData,
-        this.branchMeshBuilder,
-        this.shadowProxyBuilder,
-      );
+      const shadowProxy =
+        minimumLod <= 1
+          ? createShadowProxy(
+              treeData,
+              this.branchMeshBuilder,
+              this.shadowProxyBuilder,
+            )
+          : createEmptyShadowProxy();
       root.add(shadowProxy);
       configureObjectLodFade(lod0);
 
