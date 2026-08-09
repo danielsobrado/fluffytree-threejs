@@ -7,6 +7,10 @@ import {
 import { buildTreeReplacement } from './tree-rebuild-transaction.js';
 import { logger } from '../core/logger.js';
 import { CanopySolidityProbe } from '../diagnostics/canopy-solidity-probe.js';
+import {
+  reportQaStatus,
+  serializeQaError,
+} from '../diagnostics/qa-status-reporter.js';
 import { RenderSmokeProbe } from '../diagnostics/render-smoke-probe.js';
 import { FrameBudgetQueue } from '../generation/frame-budget-queue.js';
 import { TreeGenerator } from '../generation/tree-generator.js';
@@ -18,7 +22,7 @@ import { TreeMeshBuilder } from '../rendering/tree-mesh-builder.js';
 import { TreeBillboardBatchManager } from '../rendering/tree-billboard-batch-manager.js';
 import { TreeLodController } from '../rendering/tree-lod-controller.js';
 import { measureViewport } from '../rendering/viewport-size.js';
-import { createDemoOverlay } from '../ui/demo-overlay.js';
+import { createDemoOverlay, showFatalError } from '../ui/demo-overlay.js';
 
 // The live readout has to mean the same thing as `npm run qa:coverage`, so it
 // probes at the density the gate configures rather than a cheaper one.
@@ -364,19 +368,41 @@ export class TreeDemo {
     }
   }
 
+  handleRuntimeError(error) {
+    if (this.destroyed) return;
+
+    const container = this.container;
+    const message = serializeQaError(error);
+    logger.error('Procedural tree render loop failed.', error);
+    reportQaStatus('error', message);
+
+    try {
+      this.destroy();
+    } catch (cleanupError) {
+      logger.error('Failed to clean up after a render loop error.', cleanupError);
+    }
+
+    if (container) showFatalError(container, error);
+  }
+
   render() {
     if (this.destroyed || !this.context) return;
-    const elapsed = this.clock.getElapsedTime();
-    this.generationQueue.process(this.sceneConfig.lod.generationBudgetMs);
-    this.windController.update(elapsed);
-    this.context.controls.update();
-    this.lodController.update(
-      this.context.camera,
-      this.viewportHeight,
-      this.context.renderer,
-    );
-    this.context.renderer.render(this.context.scene, this.context.camera);
-    this.updateStressReport();
+
+    try {
+      const elapsed = this.clock.getElapsedTime();
+      this.generationQueue.process(this.sceneConfig.lod.generationBudgetMs);
+      this.windController.update(elapsed);
+      this.context.controls.update();
+      this.lodController.update(
+        this.context.camera,
+        this.viewportHeight,
+        this.context.renderer,
+      );
+      this.context.renderer.render(this.context.scene, this.context.camera);
+      this.updateStressReport();
+    } catch (error) {
+      this.handleRuntimeError(error);
+    }
   }
 
   applyRequestedView() {
