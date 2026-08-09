@@ -6,6 +6,12 @@ import {
   createBillboardAtlasLayout,
 } from '../src/rendering/tree-billboard-atlas.js';
 
+const EPSILON = 1e-12;
+
+function assertClose(actual, expected) {
+  assert.ok(Math.abs(actual - expected) <= EPSILON, `${actual} != ${expected}`);
+}
+
 test('billboard atlas assigns every tree a unique normalized slot', () => {
   const layout = createBillboardAtlasLayout(32);
   assert.deepEqual(layout, { capacity: 32, columns: 6, rows: 6 });
@@ -37,8 +43,8 @@ test('billboard atlas UVs stay half a texel inside their cell', () => {
   assert.equal(uv.offsetY, 5 / 6 + inset);
   assert.equal(uv.scaleX, 1 / 6 - inset * 2);
   assert.equal(uv.scaleY, 1 / 6 - inset * 2);
-  assert.equal(uv.offsetX + uv.scaleX, 1 / 6 - inset);
-  assert.equal(uv.offsetY + uv.scaleY, 1 - inset);
+  assertClose(uv.offsetX + uv.scaleX, 1 / 6 - inset);
+  assertClose(uv.offsetY + uv.scaleY, 1 - inset);
 });
 
 test('billboard atlas rejects invalid slots and texture sizes', () => {
