@@ -1,20 +1,27 @@
 import * as THREE from 'three';
 
-function createScalarAttribute(values) {
-  const attribute = new THREE.InstancedBufferAttribute(
-    Float32Array.from(values),
-    1,
-  );
+function createScalarAttribute(instances, getValue) {
+  const values = new Float32Array(instances.length);
+  for (let index = 0; index < instances.length; index += 1) {
+    values[index] = getValue(instances[index], index);
+  }
+
+  const attribute = new THREE.InstancedBufferAttribute(values, 1);
   attribute.setUsage(THREE.StaticDrawUsage);
   return attribute;
 }
 
-function createVectorAttribute(values) {
-  const flattened = values.flatMap((value) => [value.x, value.y, value.z]);
-  const attribute = new THREE.InstancedBufferAttribute(
-    Float32Array.from(flattened),
-    3,
-  );
+function createVectorAttribute(instances, getValue) {
+  const values = new Float32Array(instances.length * 3);
+  for (let index = 0; index < instances.length; index += 1) {
+    const value = getValue(instances[index], index);
+    const offset = index * 3;
+    values[offset] = value.x;
+    values[offset + 1] = value.y;
+    values[offset + 2] = value.z;
+  }
+
+  const attribute = new THREE.InstancedBufferAttribute(values, 3);
   attribute.setUsage(THREE.StaticDrawUsage);
   return attribute;
 }
@@ -26,18 +33,14 @@ export function addFoliageInstanceAttributes(
 ) {
   geometry.setAttribute(
     'instanceColorMix',
-    createScalarAttribute(instances.map((instance) => instance.colorMix)),
+    createScalarAttribute(instances, (instance) => instance.colorMix),
   );
   geometry.setAttribute(
     'instanceExposure',
-    createScalarAttribute(
-      instances.map((instance, index) => getExposure(instance, index)),
-    ),
+    createScalarAttribute(instances, getExposure),
   );
   geometry.setAttribute(
     'instanceCrownDirection',
-    createVectorAttribute(
-      instances.map((instance, index) => getCrownDirection(instance, index)),
-    ),
+    createVectorAttribute(instances, getCrownDirection),
   );
 }
