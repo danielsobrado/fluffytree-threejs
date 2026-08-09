@@ -1,11 +1,12 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { load } from 'js-yaml';
-import { createValidatedTreePresetMap } from '../src/domain/validated-tree-preset-map.js';
+import { PresetLibrary } from '../src/domain/preset-library.js';
 import { CrownVolumeQaRunner } from '../src/qa/crown-volume-qa-runner.js';
 
 const FILES = Object.freeze({
   presets: new URL('../config/tree-presets.yaml', import.meta.url),
+  continuity: new URL('../config/foliage-continuity.yaml', import.meta.url),
   qa: new URL('../config/crown-volume-qa.yaml', import.meta.url),
 });
 
@@ -95,20 +96,23 @@ function printSummary(report) {
 
 async function main() {
   const options = readOptions();
-  const [presetConfiguration, sourceQaConfiguration] = await Promise.all([
-    loadYaml(FILES.presets),
-    loadYaml(FILES.qa),
-  ]);
+  const [presetConfiguration, continuityConfiguration, sourceQaConfiguration] =
+    await Promise.all([
+      loadYaml(FILES.presets),
+      loadYaml(FILES.continuity),
+      loadYaml(FILES.qa),
+    ]);
   const qaConfiguration = structuredClone(sourceQaConfiguration);
 
   if (options.seedCount !== undefined) {
     qaConfiguration.run.seedCount = options.seedCount;
   }
 
-  const report = new CrownVolumeQaRunner().run(
-    createValidatedTreePresetMap(presetConfiguration),
-    qaConfiguration,
-  );
+  const presets = PresetLibrary.fromConfig(
+    presetConfiguration,
+    continuityConfiguration,
+  ).presets;
+  const report = new CrownVolumeQaRunner().run(presets, qaConfiguration);
   await mkdir(options.output, { recursive: true });
   await Promise.all([
     writeFile(
