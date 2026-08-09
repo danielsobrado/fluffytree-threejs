@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { load } from 'js-yaml';
-import { createTreePresetMap } from '../src/domain/tree-preset.js';
+import { createValidatedTreePresetMap } from '../src/domain/validated-tree-preset-map.js';
 import { CrownVolumeQaRunner } from '../src/qa/crown-volume-qa-runner.js';
 
 const FILES = Object.freeze({
@@ -106,7 +106,7 @@ async function main() {
   }
 
   const report = new CrownVolumeQaRunner().run(
-    createTreePresetMap(presetConfiguration),
+    createValidatedTreePresetMap(presetConfiguration),
     qaConfiguration,
   );
   await mkdir(options.output, { recursive: true });
