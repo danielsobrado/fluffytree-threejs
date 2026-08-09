@@ -109,6 +109,17 @@ test('tree preset validation rejects empty palette colors', () => {
   );
 });
 
+test('tree preset validation rejects malformed non-empty colors', () => {
+  const config = mutateRoundOrchard((preset) => {
+    preset.trunk.color = 'not-a-color';
+  });
+
+  assert.throws(
+    () => PresetLibrary.fromConfig(config),
+    /roundOrchard\.trunk\.color.*#RRGGBB color/,
+  );
+});
+
 test('preset library rejects non-object and empty preset collections', () => {
   assert.throws(
     () => PresetLibrary.fromConfig({ presets: [] }),
