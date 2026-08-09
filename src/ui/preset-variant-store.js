@@ -34,6 +34,10 @@ function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
+function isStoredVariant(value) {
+  return isRecord(value) && isRecord(value.value);
+}
+
 function normalizeSavedAt(value) {
   const savedAt = Number(value);
   return Number.isFinite(savedAt) ? savedAt : 0;
@@ -65,7 +69,7 @@ export class PresetVariantStore {
   /** Newest first, so the list reads as a history of what was tried. */
   list() {
     return Object.entries(this.read())
-      .filter(([, variant]) => isRecord(variant))
+      .filter(([, variant]) => isStoredVariant(variant))
       .map(([name, variant]) => ({
         name,
         basePresetId:
@@ -77,22 +81,24 @@ export class PresetVariantStore {
 
   load(name) {
     const variant = this.read()[name];
-    return isRecord(variant) && variant.value ? structuredClone(variant) : null;
+    return isStoredVariant(variant) ? structuredClone(variant) : null;
   }
 
   save(name, basePresetId, value) {
-    const variants = this.read();
-    variants[name] = {
-      basePresetId,
-      savedAt: Date.now(),
-      value: structuredClone(value),
+    const variants = {
+      ...this.read(),
+      [name]: {
+        basePresetId,
+        savedAt: Date.now(),
+        value: structuredClone(value),
+      },
     };
     return this.write(variants);
   }
 
   remove(name) {
     const variants = this.read();
-    if (!(name in variants)) return false;
+    if (!Object.hasOwn(variants, name)) return false;
     delete variants[name];
     return this.write(variants);
   }
@@ -103,7 +109,7 @@ export class PresetVariantStore {
     const presets = {};
 
     for (const [name, variant] of Object.entries(variants)) {
-      if (!isRecord(variant) || !variant.value) continue;
+      if (!isStoredVariant(variant)) continue;
       const baseId = toPresetId(name);
       let presetId = baseId;
       let suffix = 2;
