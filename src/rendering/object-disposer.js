@@ -1,32 +1,41 @@
-function disposeMaterial(material, disposedResources) {
-  for (const resource of material.userData.disposables ?? []) {
-    if (!disposedResources.has(resource)) {
-      resource.dispose();
-      disposedResources.add(resource);
-    }
+function disposeResource(resource, disposedResources, preservedResources) {
+  if (
+    !resource ||
+    preservedResources.has(resource) ||
+    disposedResources.has(resource)
+  ) {
+    return;
   }
 
-  if (!disposedResources.has(material)) {
-    material.dispose();
-    disposedResources.add(material);
-  }
+  resource.dispose?.();
+  disposedResources.add(resource);
 }
 
-export function disposeObject(root) {
+function disposeMaterial(material, disposedResources, preservedResources) {
+  for (const resource of material.userData.disposables ?? []) {
+    disposeResource(resource, disposedResources, preservedResources);
+  }
+
+  disposeResource(material, disposedResources, preservedResources);
+}
+
+export function disposeObject(root, { preserveResources = [] } = {}) {
   const disposedResources = new Set();
+  const preservedResources = new Set(preserveResources);
 
   root.traverse((object) => {
-    if (object.geometry && !disposedResources.has(object.geometry)) {
-      object.geometry.dispose();
-      disposedResources.add(object.geometry);
+    for (const resource of object.userData?.disposables ?? []) {
+      disposeResource(resource, disposedResources, preservedResources);
     }
+
+    disposeResource(object.geometry, disposedResources, preservedResources);
 
     if (Array.isArray(object.material)) {
       object.material.forEach((material) =>
-        disposeMaterial(material, disposedResources),
+        disposeMaterial(material, disposedResources, preservedResources),
       );
     } else if (object.material) {
-      disposeMaterial(object.material, disposedResources);
+      disposeMaterial(object.material, disposedResources, preservedResources);
     }
   });
 }
