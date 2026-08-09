@@ -33,6 +33,16 @@ test('scene validation rejects non-finite layout coordinates', () => {
   );
 });
 
+test('scene validation rejects numeric strings instead of silently coercing them', () => {
+  const config = loadSceneConfig();
+  config.lod.farPixels = '35';
+
+  assert.throws(
+    () => validateSceneConfig(config),
+    /lod\.farPixels.*finite number/,
+  );
+});
+
 test('scene validation rejects invalid camera clipping planes', () => {
   const config = loadSceneConfig();
   config.camera.far = config.camera.near;
