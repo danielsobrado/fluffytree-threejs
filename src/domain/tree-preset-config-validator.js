@@ -119,6 +119,20 @@ function validateCounts(id, value) {
   }
 }
 
+function validateStructureRelationships(id, value) {
+  if (value.trunk.branching.primaryCount > value.crown.lobeCount) {
+    throw new Error(
+      `Configuration '${id}.trunk.branching.primaryCount' must not exceed '${id}.crown.lobeCount'.`,
+    );
+  }
+
+  if (value.crown.clumps.macroCount > value.crown.lobeCount) {
+    throw new Error(
+      `Configuration '${id}.crown.clumps.macroCount' must not exceed '${id}.crown.lobeCount'.`,
+    );
+  }
+}
+
 function validatePairs(id, value) {
   for (const { path, positive, integer } of PAIR_RULES) {
     requirePair(readPath(value, path), configurationPath(id, path), {
@@ -152,6 +166,7 @@ export function validateTreePresetConfig(id, value) {
   validateNumericTypes(id, value);
   validatePhysicalDimensions(id, value);
   validateCounts(id, value);
+  validateStructureRelationships(id, value);
   validatePairs(id, value);
   validateStrings(id, value);
 
