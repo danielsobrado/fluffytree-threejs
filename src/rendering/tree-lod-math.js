@@ -16,44 +16,72 @@ function rawLevel(projectedPixels, settings) {
   return 4;
 }
 
+function boundaryAt(level, settings) {
+  if (level === 0) return settings.nearPixels;
+  if (level === 1) return settings.mediumPixels;
+  if (level === 2) return settings.farPixels;
+  if (level === 3) return settings.cullPixels;
+  return 0;
+}
+
+function resetWeights(target) {
+  target[0] = 0;
+  target[1] = 0;
+  target[2] = 0;
+  target[3] = 0;
+  return target;
+}
+
 export function resolveStableLod(projectedPixels, previousLevel, settings) {
   const candidate = rawLevel(projectedPixels, settings);
   if (candidate === previousLevel) return candidate;
-  const boundaries = [
-    settings.nearPixels,
-    settings.mediumPixels,
-    settings.farPixels,
-    settings.cullPixels,
-  ];
-  if (candidate > previousLevel && previousLevel < boundaries.length) {
-    return projectedPixels < boundaries[previousLevel] * (1 - settings.hysteresis)
+
+  if (candidate > previousLevel && previousLevel < 4) {
+    return projectedPixels <
+      boundaryAt(previousLevel, settings) * (1 - settings.hysteresis)
       ? candidate
       : previousLevel;
   }
-  if (candidate < previousLevel && candidate < boundaries.length) {
-    return projectedPixels > boundaries[candidate] * (1 + settings.hysteresis)
+  if (candidate < previousLevel && candidate < 4) {
+    return projectedPixels >
+      boundaryAt(candidate, settings) * (1 + settings.hysteresis)
       ? candidate
       : previousLevel;
   }
   return candidate;
 }
 
-export function calculateLodWeights(projectedPixels, settings) {
-  const weights = [0, 0, 0, 0];
-  const thresholds = [settings.nearPixels, settings.mediumPixels, settings.farPixels];
-  const near = blendAtThreshold(projectedPixels, thresholds[0], settings.fadeBand);
+export function calculateLodWeights(
+  projectedPixels,
+  settings,
+  target = [0, 0, 0, 0],
+) {
+  const weights = resetWeights(target);
+  const near = blendAtThreshold(
+    projectedPixels,
+    settings.nearPixels,
+    settings.fadeBand,
+  );
   if (near > 0) {
     weights[0] = near;
     weights[1] = 1 - near;
     return weights;
   }
-  const medium = blendAtThreshold(projectedPixels, thresholds[1], settings.fadeBand);
+  const medium = blendAtThreshold(
+    projectedPixels,
+    settings.mediumPixels,
+    settings.fadeBand,
+  );
   if (medium > 0) {
     weights[1] = medium;
     weights[2] = 1 - medium;
     return weights;
   }
-  const far = blendAtThreshold(projectedPixels, thresholds[2], settings.fadeBand);
+  const far = blendAtThreshold(
+    projectedPixels,
+    settings.farPixels,
+    settings.fadeBand,
+  );
   if (far > 0) {
     weights[2] = far;
     weights[3] = 1 - far;
@@ -70,8 +98,14 @@ export function calculateLodWeights(projectedPixels, settings) {
 export function remapUnavailableLodWeights(
   sourceWeights,
   { minimumLevel = 0, heroReady = true } = {},
+  target = null,
 ) {
-  const weights = [...sourceWeights];
+  const weights = target ?? new Array(sourceWeights.length);
+  if (weights !== sourceWeights) {
+    for (let index = 0; index < sourceWeights.length; index += 1) {
+      weights[index] = sourceWeights[index];
+    }
+  }
   const firstAvailableLevel = Math.min(
     weights.length - 1,
     Math.max(0, Math.trunc(minimumLevel)),
