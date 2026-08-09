@@ -1,4 +1,4 @@
-import { CROWN_ENVELOPE_CONSTANTS } from '../generation/crown-envelope.js';
+import { calculateCrownEnvelopeBounds } from '../generation/crown-envelope.js';
 import {
   lobeAxisAlignedExtents,
   normalizedRotatedPointDistance,
@@ -10,42 +10,11 @@ function pointInsideLobe(point, lobe) {
   return normalizedRotatedPointDistance(point, lobe) <= 1;
 }
 
-function calculateEnvelopeBounds(envelope) {
-  const { crown, anchor } = envelope;
-  const radialExtent = crown.radius * ENVELOPE_RADIUS_MARGIN;
-  const xMinimumCenter =
-    anchor.x +
-    Math.min(0, crown.lean[0]) -
-    crown.asymmetry * CROWN_ENVELOPE_CONSTANTS.asymmetryX;
-  const xMaximumCenter =
-    anchor.x +
-    Math.max(0, crown.lean[0]) +
-    crown.asymmetry * CROWN_ENVELOPE_CONSTANTS.asymmetryX;
-  const zMinimumCenter =
-    anchor.z +
-    Math.min(0, crown.lean[1]) -
-    crown.asymmetry * CROWN_ENVELOPE_CONSTANTS.asymmetryZ;
-  const zMaximumCenter =
-    anchor.z +
-    Math.max(0, crown.lean[1]) +
-    crown.asymmetry * CROWN_ENVELOPE_CONSTANTS.asymmetryZ;
-
-  return {
-    minimum: {
-      x: xMinimumCenter - radialExtent,
-      y: crown.baseHeight,
-      z: zMinimumCenter - radialExtent,
-    },
-    maximum: {
-      x: xMaximumCenter + radialExtent,
-      y: crown.baseHeight + crown.height,
-      z: zMaximumCenter + radialExtent,
-    },
-  };
-}
-
 function calculateBounds(lobes, envelope) {
-  const envelopeBounds = calculateEnvelopeBounds(envelope);
+  const envelopeBounds = calculateCrownEnvelopeBounds(
+    envelope,
+    ENVELOPE_RADIUS_MARGIN,
+  );
   const extents = lobes.map((lobe) => ({
     lobe,
     extent: lobeAxisAlignedExtents(lobe),
