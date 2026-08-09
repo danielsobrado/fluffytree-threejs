@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { logger } from '../core/logger.js';
 import { setObjectLodFade } from './lod-dither-fade.js';
 import {
   calculateLodWeights,
@@ -6,8 +7,17 @@ import {
   resolveStableLod,
 } from './tree-lod-math.js';
 
+function logGenerationError(error, tree) {
+  const presetId = tree.userData?.tree?.presetId ?? 'unknown';
+  logger.error(`Deferred hero generation failed for '${presetId}'.`, error);
+}
+
 export class TreeLodController {
-  constructor(settings, generationQueue = null, onGenerationError = null) {
+  constructor(
+    settings,
+    generationQueue = null,
+    onGenerationError = logGenerationError,
+  ) {
     this.settings = settings;
     this.generationQueue = generationQueue;
     this.onGenerationError = onGenerationError;
