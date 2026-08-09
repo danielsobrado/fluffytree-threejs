@@ -42,6 +42,12 @@ function createPanel() {
   return { panel, library, rebuilds };
 }
 
+function installCoverageRows(panel) {
+  for (const key of ['gap', 'leafArea', 'bare', 'clusters']) {
+    panel.coverageRows.set(key, { textContent: '', dataset: {} });
+  }
+}
+
 test('switching presets flushes the pending edit before replacing its config', () => {
   const { panel, library } = createPanel();
 
@@ -82,6 +88,39 @@ test('a newer same-preset edit makes an older yielding apply stale', async () =>
   assert.equal(await panel.apply(), true);
   assert.deepEqual(rebuilds, ['first']);
   assert.equal(library.rawValue('first').trunk.bend, 0.72);
+});
+
+test('coverage auto-fit settles pending edits and creates a detached revision', async () => {
+  const { panel, rebuilds } = createPanel();
+  installCoverageRows(panel);
+  panel.autoFitButton = { disabled: false };
+  panel.demo.analyzeCoverage = () =>
+    rebuilds.length >= 2
+      ? {
+          gapCardRatio: 0.7,
+          leafAreaIndex: 7,
+          bareExposedLobes: 0,
+          clusterCount: 20,
+        }
+      : {
+          gapCardRatio: 1,
+          leafAreaIndex: 7,
+          bareExposedLobes: 0,
+          clusterCount: 20,
+        };
+
+  panel.commit('trunk.bend', 0.77);
+  const pendingConfig = panel.config;
+  const pendingPacking = pendingConfig.foliage.shell.coverageCardRatio;
+
+  await panel.autoFitCoverage();
+
+  assert.deepEqual(rebuilds, ['first', 'first']);
+  assert.notEqual(panel.config, pendingConfig);
+  assert.equal(pendingConfig.foliage.shell.coverageCardRatio, pendingPacking);
+  assert.ok(panel.config.foliage.shell.coverageCardRatio < pendingPacking);
+  assert.equal(panel.config.trunk.bend, 0.77);
+  assert.equal(panel.autoFitButton.disabled, false);
 });
 
 test('a failed rebuild restores the previous library and editor configuration', async () => {
