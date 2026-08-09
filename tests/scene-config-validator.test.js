@@ -63,6 +63,16 @@ test('scene validation rejects a camera placed exactly on its target', () => {
   );
 });
 
+test('scene validation rejects max orbit distance below its runtime minimum', () => {
+  const config = loadSceneConfig();
+  config.camera.controlsMaxDistance = 6.99;
+
+  assert.throws(
+    () => validateSceneConfig(config),
+    /camera\.controlsMaxDistance.*>= 7/,
+  );
+});
+
 test('scene validation rejects a zero sun direction', () => {
   const config = loadSceneConfig();
   config.lighting.sunPosition = [0, 0, 0];
