@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "check:source": "node tools/check-source.js",
-    "check": "npm run check:source && npm test",
+    "check:config": "node tools/check-config.js",
+    "check": "npm run check:source && npm run check:config && npm test",
     "qa:render": "node tools/run-render-smoke.js",
     "qa:stress": "node tools/run-tree-stress-qa.js",
     "qa:stress:render": "node tools/run-stress-smoke.js",
