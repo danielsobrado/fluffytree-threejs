@@ -11,7 +11,7 @@ import {
   resolveFoliageContinuityProfile,
 } from '../src/domain/foliage-continuity-config.js';
 import { PresetLibrary } from '../src/domain/preset-library.js';
-import { parseShellCoverageProbeOptions } from '../src/qa/shell-coverage-qa-config.js';
+import { parseShellCoverageQaConfig } from '../src/qa/shell-coverage-qa-config.js';
 import { parseTreeStressQaPolicy } from '../src/qa/tree-stress-qa-policy.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
 import { parsePagesConfig } from './pages-config.js';
@@ -78,7 +78,16 @@ for (const entry of sceneConfig.layout) {
   }
 }
 
-parseShellCoverageProbeOptions(readConfig('config/shell-coverage-qa.yaml'));
+const coverageConfig = parseShellCoverageQaConfig(
+  readConfig('config/shell-coverage-qa.yaml'),
+);
+for (const presetId of library.ids) {
+  if (!coverageConfig.thresholds[presetId]) {
+    throw new Error(
+      `Shell coverage QA is missing thresholds for tree preset '${presetId}'.`,
+    );
+  }
+}
 parseTreeLodQaPolicy(readConfig('config/tree-lod-qa.yaml'));
 parseTreeStressQaPolicy(readConfig('config/tree-stress-qa.yaml'));
 parsePagesConfig(readConfig('pages.config.yml'));
