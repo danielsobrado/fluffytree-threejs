@@ -81,13 +81,22 @@ for (const entry of sceneConfig.layout) {
 const coverageConfig = parseShellCoverageQaConfig(
   readConfig('config/shell-coverage-qa.yaml'),
 );
-for (const presetId of library.ids) {
+const presetIds = new Set(library.ids);
+for (const presetId of presetIds) {
   if (!coverageConfig.thresholds[presetId]) {
     throw new Error(
       `Shell coverage QA is missing thresholds for tree preset '${presetId}'.`,
     );
   }
 }
+for (const presetId of Object.keys(coverageConfig.thresholds)) {
+  if (!presetIds.has(presetId)) {
+    throw new Error(
+      `Shell coverage QA contains thresholds for unknown tree preset '${presetId}'.`,
+    );
+  }
+}
+
 parseTreeLodQaPolicy(readConfig('config/tree-lod-qa.yaml'));
 parseTreeStressQaPolicy(readConfig('config/tree-stress-qa.yaml'));
 parsePagesConfig(readConfig('pages.config.yml'));
