@@ -1,6 +1,7 @@
 import { CROWN_PROFILE_IDS } from '../generation/crown-envelope.js';
 import { createTrunkStyle, isTrunkStyleId } from '../generation/trunk-style.js';
 import { isLeafShapeId } from '../rendering/leaf-shape-library.js';
+import { validateTreePresetConfig } from './tree-preset-config-validator.js';
 
 const REQUIRED_CROWN_FIELDS = [
   'profile',
@@ -454,9 +455,7 @@ function createFoliageConfig(id, foliage) {
 }
 
 export function createTreePreset(id, value) {
-  if (!id || !value || typeof value !== 'object') {
-    throw new Error('A tree preset requires an id and configuration object.');
-  }
+  validateTreePresetConfig(id, value);
 
   requireFields(value.crown, REQUIRED_CROWN_FIELDS, `${id}.crown`);
   requireFields(value.trunk, REQUIRED_TRUNK_FIELDS, `${id}.trunk`);
@@ -512,14 +511,20 @@ export function createTreePreset(id, value) {
 }
 
 export function createTreePresetMap(config) {
-  if (!config?.presets || typeof config.presets !== 'object') {
+  if (
+    !config?.presets ||
+    typeof config.presets !== 'object' ||
+    Array.isArray(config.presets)
+  ) {
     throw new Error("Tree configuration must define a 'presets' object.");
   }
 
+  const entries = Object.entries(config.presets);
+  if (entries.length === 0) {
+    throw new Error("Tree configuration 'presets' must not be empty.");
+  }
+
   return new Map(
-    Object.entries(config.presets).map(([id, value]) => [
-      id,
-      createTreePreset(id, value),
-    ]),
+    entries.map(([id, value]) => [id, createTreePreset(id, value)]),
   );
 }
