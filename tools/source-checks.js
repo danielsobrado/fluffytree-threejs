@@ -11,6 +11,7 @@ import {
 const JAVASCRIPT_EXTENSION = '.js';
 const LOCAL_HTML_ASSET_PATTERN =
   /<(?:script|link|img|source)\b[^>]*\b(?:src|href)=['"](\.\/[^'"?#]+)(?:[?#][^'"]*)?['"][^>]*>/gi;
+const HTML_COMMENT_PATTERN = /<!--[\s\S]*?-->/g;
 
 function modulePath(specifier) {
   const queryIndex = specifier.search(/[?#]/);
@@ -35,11 +36,16 @@ function assertExistingRepositoryFile(target, repositoryRoot, description) {
   }
 }
 
+function withoutHtmlComments(source) {
+  return source.replace(HTML_COMMENT_PATTERN, (comment) => ' '.repeat(comment.length));
+}
+
 export function collectLocalHtmlAssets(source) {
   const assets = [];
+  const activeSource = withoutHtmlComments(source);
   LOCAL_HTML_ASSET_PATTERN.lastIndex = 0;
 
-  for (const match of source.matchAll(LOCAL_HTML_ASSET_PATTERN)) {
+  for (const match of activeSource.matchAll(LOCAL_HTML_ASSET_PATTERN)) {
     assets.push(match[1]);
   }
 
