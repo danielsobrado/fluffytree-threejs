@@ -1,12 +1,14 @@
-import { existsSync, readdirSync } from 'node:fs';
-import { dirname, extname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertNoRelativeDynamicImports } from './module-versioning.js';
 import { assertLocalHtmlAssets } from './source-checks.js';
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_DIRECTORIES = Object.freeze(['src', 'tests', 'tools']);
 const IMPORT_DIRECTORIES = Object.freeze(['src', 'tools']);
+const BROWSER_SOURCE_DIRECTORY = 'src';
 const JAVASCRIPT_EXTENSION = '.js';
 const GITHUB_WORKFLOW_DIRECTORY = '.github/workflows';
 const GITHUB_WORKFLOW_PLACEHOLDER = '.gitkeep';
@@ -67,6 +69,9 @@ const files = SOURCE_DIRECTORIES.flatMap((directory) =>
 const importFiles = IMPORT_DIRECTORIES.flatMap((directory) =>
   collectJavaScriptFiles(join(REPOSITORY_ROOT, directory)),
 ).sort();
+const browserFiles = collectJavaScriptFiles(
+  join(REPOSITORY_ROOT, BROWSER_SOURCE_DIRECTORY),
+).sort();
 
 for (const file of files) {
   const result = spawnSync(process.execPath, ['--check', file], {
@@ -80,6 +85,9 @@ for (const file of files) {
 }
 
 assertParsedModuleImports(importFiles);
+for (const file of browserFiles) {
+  assertNoRelativeDynamicImports(readFileSync(file, 'utf8'), file);
+}
 assertLocalHtmlAssets(join(REPOSITORY_ROOT, ENTRY_HTML), REPOSITORY_ROOT);
 console.log(
   `Syntax checked ${files.length} JavaScript files, parsed ${importFiles.length} source module imports, and checked local HTML assets.`,
