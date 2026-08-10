@@ -3,5 +3,15 @@ sourceBranch: main
 publishBranch: gh-pages
 requiredFiles:
   - index.html
+  - styles/main.css
+  - src/bootstrap-fallback.js
+  - src/main.js
   - config/release.yaml
+  - config/scene.yaml
+  - config/tree-presets.yaml
+  - config/foliage-continuity.yaml
+  - config/shell-coverage-qa.yaml
+  - config/tree-stress-qa.yaml
+  - config/canopy-solidity-qa.yaml
+  - config/stem-manifold-qa.yaml
   - .nojekyll
