@@ -24,13 +24,14 @@ import { TreeLodController } from '../rendering/tree-lod-controller.js';
 import { measureViewport } from '../rendering/viewport-size.js';
 import { createDemoOverlay, showFatalError } from '../ui/demo-overlay.js';
 
-// The live readout has to mean the same thing as `npm run qa:coverage`, so it
-// probes at the density the gate configures rather than a cheaper one.
-const COVERAGE_PROBE_OPTIONS = Object.freeze({
+const DEFAULT_COVERAGE_PROBE_OPTIONS = Object.freeze({
   probeDensityMultiplier: 2,
   probeExposureMargin: 0.05,
 });
-
+const DEFAULT_STRESS_POLICY = Object.freeze({
+  expectedTreeCount: 75,
+  maximumColorDrawCalls: 100,
+});
 const STUDIO_SEED = 411287;
 const RESEED_STEP = 1009;
 
@@ -66,7 +67,14 @@ export class TreeDemo {
     this.destroyed = true;
   }
 
-  start(container, sceneConfig, library, releaseVersion, overlayTitle) {
+  start(
+    container,
+    sceneConfig,
+    library,
+    releaseVersion,
+    overlayTitle,
+    qaSettings = {},
+  ) {
     this.container = container;
     this.stressMode = isStressSceneRequested();
     this.sceneConfig = this.stressMode
@@ -74,6 +82,9 @@ export class TreeDemo {
       : sceneConfig;
     this.library = library;
     this.presetMap = library.presets;
+    this.coverageProbeOptions =
+      qaSettings.coverageProbeOptions ?? DEFAULT_COVERAGE_PROBE_OPTIONS;
+    this.stressPolicy = qaSettings.stressPolicy ?? DEFAULT_STRESS_POLICY;
     const presetMap = this.presetMap;
     this.viewportHeight = measureViewport(container).height;
     this.context = this.sceneFactory.create(container, this.sceneConfig);
@@ -307,7 +318,7 @@ export class TreeDemo {
 
     if (!preset || !treeData || treeData.shell.length === 0) return null;
 
-    return analyzeShellCoverage(treeData, preset, COVERAGE_PROBE_OPTIONS);
+    return analyzeShellCoverage(treeData, preset, this.coverageProbeOptions);
   }
 
   /** Points the camera at a tree of the given preset, or at the studio tree. */
@@ -444,8 +455,13 @@ export class TreeDemo {
     const maximumTriangles = Math.max(
       ...this.stressSamples.map((sample) => sample.triangles),
     );
+    const expectedTreeCount = this.stressPolicy.expectedTreeCount;
+    const maximumColorDrawCalls = this.stressPolicy.maximumColorDrawCalls;
+    const treeCountMatches = this.treeRoots.length === expectedTreeCount;
+    const drawCallsPass = maximumDrawCalls <= maximumColorDrawCalls;
+    const passed = treeCountMatches && drawCallsPass;
     const root = document.documentElement;
-    root.dataset.stressStatus = maximumDrawCalls <= 100 ? 'ready' : 'error';
+    root.dataset.stressStatus = passed ? 'ready' : 'error';
     root.dataset.stressTreeCount = String(this.treeRoots.length);
     root.dataset.stressFps = fps.toFixed(1);
     root.dataset.stressDrawCalls = String(maximumDrawCalls);
@@ -455,10 +471,11 @@ export class TreeDemo {
     this.stressReported = true;
     const query = new URLSearchParams({
       status: root.dataset.stressStatus,
-      error:
-        maximumDrawCalls <= 100
-          ? ''
-          : `Stress draw calls ${maximumDrawCalls} exceeded 100.`,
+      error: passed
+        ? ''
+        : !treeCountMatches
+          ? `Stress tree count ${this.treeRoots.length} did not match ${expectedTreeCount}.`
+          : `Stress draw calls ${maximumDrawCalls} exceeded ${maximumColorDrawCalls}.`,
     });
     void fetch(`/__render-smoke-status?${query}`, {
       cache: 'no-store',
@@ -506,6 +523,8 @@ export class TreeDemo {
     this.library = null;
     this.presetMap = null;
     this.sceneConfig = null;
+    this.coverageProbeOptions = null;
+    this.stressPolicy = null;
     this.studioLayout = null;
     this.studioPresetId = null;
     this.viewportHeight = 1;
