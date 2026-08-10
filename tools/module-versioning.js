@@ -11,6 +11,8 @@ const STATIC_RELATIVE_MODULE_PATTERN =
   /(\b(?:from|import)\s*['"])(\.{1,2}\/[^'"\s]+\.js(?:[?#][^'"]*)?)(['"])/g;
 const DYNAMIC_RELATIVE_MODULE_PATTERN =
   /\bimport\s*\(\s*(['"])(\.{1,2}\/[^'"\s]+\.js(?:[?#][^'"]*)?)\1\s*\)/g;
+const DYNAMIC_RELATIVE_TEMPLATE_PATTERN =
+  /\bimport\s*\(\s*`(\.{1,2}\/)/g;
 const HTML_ASSET_PATTERN =
   /(<(?:script|link)\b[^>]*\b(?:src|href)=["']\.\/(?:src\/[^"'?]+\.js|styles\/[^"'?]+\.css))(?:\?[^"']*)?(["'][^>]*>)/gi;
 
@@ -41,16 +43,31 @@ function relativeDependencyCounts(specifiers) {
   return counts;
 }
 
+function rejectDynamicMatches(source, mask, pattern, describe) {
+  pattern.lastIndex = 0;
+
+  for (const match of source.matchAll(pattern)) {
+    if (!isJavaScriptCodeOffset(mask, match.index)) continue;
+    throw new Error(describe(match));
+  }
+}
+
 export function assertNoRelativeDynamicImports(source, file = 'browser source') {
   const mask = createJavaScriptCodeMask(source);
-  DYNAMIC_RELATIVE_MODULE_PATTERN.lastIndex = 0;
-
-  for (const match of source.matchAll(DYNAMIC_RELATIVE_MODULE_PATTERN)) {
-    if (!isJavaScriptCodeOffset(mask, match.index)) continue;
-    throw new Error(
+  rejectDynamicMatches(
+    source,
+    mask,
+    DYNAMIC_RELATIVE_MODULE_PATTERN,
+    (match) =>
       `Relative dynamic import '${match[2]}' in '${file}' cannot be cache-versioned safely. Use a static import.`,
-    );
-  }
+  );
+  rejectDynamicMatches(
+    source,
+    mask,
+    DYNAMIC_RELATIVE_TEMPLATE_PATTERN,
+    () =>
+      `Relative dynamic template import in '${file}' cannot be cache-versioned safely. Use a static import.`,
+  );
 }
 
 export function versionJavaScriptSource(
