@@ -6,6 +6,7 @@ import { PresetLibrary } from '../src/domain/preset-library.js';
 import { FOLIAGE_SHELL_CONSTANTS } from '../src/generation/foliage-shell-constants.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
 import { analyzeShellCoverage } from '../src/qa/shell-coverage-analyzer.js';
+import { parseShellCoverageQaConfig } from '../src/qa/shell-coverage-qa-config.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
 
 const { values } = parseArgs({
@@ -15,7 +16,9 @@ const { values } = parseArgs({
   },
 });
 
-const configuration = readYamlConfigSync('config/shell-coverage-qa.yaml');
+const configuration = parseShellCoverageQaConfig(
+  readYamlConfigSync('config/shell-coverage-qa.yaml'),
+);
 const treeConfig = readYamlConfigSync('config/tree-presets.yaml');
 const continuityConfig = readYamlConfigSync('config/foliage-continuity.yaml');
 const presets = PresetLibrary.fromConfig(
@@ -24,7 +27,9 @@ const presets = PresetLibrary.fromConfig(
 ).presets;
 const seedCount = Number(values.seeds ?? configuration.run.seedCount);
 if (!Number.isSafeInteger(seedCount) || seedCount <= 0) {
-  throw new Error(`Invalid shell coverage seed count '${values.seeds ?? configuration.run.seedCount}'.`);
+  throw new Error(
+    `Invalid shell coverage seed count '${values.seeds ?? configuration.run.seedCount}'.`,
+  );
 }
 const outputDirectory = path.resolve(
   values.output ?? 'qa-results/shell-coverage',
@@ -65,8 +70,8 @@ for (const [presetId, preset] of presets) {
 
   for (let index = 0; index < seedCount; index += 1) {
     const seed =
-      (Number(configuration.run.firstSeed) +
-        Math.imul(index, Number(configuration.run.seedStep))) >>>
+      (configuration.run.firstSeed +
+        Math.imul(index, configuration.run.seedStep)) >>>
       0;
     const tree = generator.generate(preset, seed);
     const metrics = analyzeShellCoverage(tree, preset, configuration.probe);
