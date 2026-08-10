@@ -46,3 +46,19 @@ test('billboard batch state clamps before change detection', () => {
   assert.equal(batch.setFade(index, -1), true);
   assert.equal(batch.fades[index], 0);
 });
+
+test('billboard batch state rejects invalid capacities and shader inputs', () => {
+  for (const capacity of [0, -1, 1.5, Number.POSITIVE_INFINITY]) {
+    assert.throws(
+      () => new TreeBillboardBatchState(capacity),
+      /capacity.*positive integer/i,
+      String(capacity),
+    );
+  }
+
+  const batch = new TreeBillboardBatchState(1);
+  const index = batch.add('tree');
+  assert.throws(() => batch.setFade(index, Number.NaN), /fade.*finite number/i);
+  assert.throws(() => batch.setFade(index, Number.POSITIVE_INFINITY), /fade.*finite number/i);
+  assert.throws(() => batch.setFade(index, 0.5, 1), /inversion.*boolean/i);
+});
