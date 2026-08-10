@@ -1,28 +1,15 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
-import { load } from 'js-yaml';
 import { PresetLibrary } from '../src/domain/preset-library.js';
 import { renderQaMarkdown } from '../src/qa/qa-report-renderer.js';
 import { TreeShapeQaRunner } from '../src/qa/tree-shape-qa-runner.js';
+import { readYamlConfig } from './node-yaml-config.js';
 
 const FILES = Object.freeze({
   presets: new URL('../config/tree-presets.yaml', import.meta.url),
   continuity: new URL('../config/foliage-continuity.yaml', import.meta.url),
   qa: new URL('../config/tree-shape-qa.yaml', import.meta.url),
 });
-
-async function loadYaml(url) {
-  const content = await readFile(url, 'utf8');
-  const value = load(content);
-
-  if (!value || typeof value !== 'object') {
-    throw new Error(
-      `Configuration '${url.pathname}' did not contain an object.`,
-    );
-  }
-
-  return value;
-}
 
 function readOptions() {
   const { values } = parseArgs({
@@ -58,9 +45,9 @@ async function main() {
   const options = readOptions();
   const [presetConfiguration, continuityConfiguration, sourceQaConfiguration] =
     await Promise.all([
-      loadYaml(FILES.presets),
-      loadYaml(FILES.continuity),
-      loadYaml(FILES.qa),
+      readYamlConfig(FILES.presets),
+      readYamlConfig(FILES.continuity),
+      readYamlConfig(FILES.qa),
     ]);
   const qaConfiguration = structuredClone(sourceQaConfiguration);
 
