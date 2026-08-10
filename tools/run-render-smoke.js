@@ -4,14 +4,18 @@ import http from 'node:http';
 import path from 'node:path';
 import process from 'node:process';
 import { validateQaReportName } from '../src/qa/qa-report-name.js';
+import {
+  parseRenderSmokeMode,
+  parseRenderSmokePort,
+} from './render-smoke-options.js';
 
 const MAX_QA_REPORT_BYTES = 16 * 1024 * 1024;
-const port = Number(process.env.RENDER_SMOKE_PORT ?? 4173);
+const port = parseRenderSmokePort(process.env.RENDER_SMOKE_PORT);
 const outputDirectory = path.resolve(
   process.env.RENDER_SMOKE_OUTPUT ?? 'qa-results/render-smoke',
 );
 const rootDirectory = process.cwd();
-const qaMode = process.env.RENDER_SMOKE_QA_MODE ?? 'render-smoke';
+const qaMode = parseRenderSmokeMode(process.env.RENDER_SMOKE_QA_MODE);
 const query = new URLSearchParams({ qa: qaMode });
 const additionalQuery = new URLSearchParams(
   process.env.RENDER_SMOKE_QUERY ?? '',
@@ -92,8 +96,17 @@ function collectReport(request, response, requestUrl) {
 }
 
 function serve(request, response) {
-  const requestUrl = new URL(request.url, url);
-  const pathname = decodeURIComponent(requestUrl.pathname);
+  let requestUrl;
+  let pathname;
+
+  try {
+    requestUrl = new URL(request.url ?? '/', url);
+    pathname = decodeURIComponent(requestUrl.pathname);
+  } catch {
+    response.writeHead(400).end('Bad Request');
+    return;
+  }
+
   if (pathname === '/__qa-report') {
     collectReport(request, response, requestUrl);
     return;
@@ -214,7 +227,29 @@ function runBrowser(browser, name, size) {
     child.on('error', finish);
     child.on('close', (code) => {
       exitCode = code;
-      if (code !== 0) finish(new Error(`${name} browser exited ${code}: ${diagnostics}`));
+      if (code !== 0) {
+        finish(new Error(`${name} browser exited ${code}: ${diagnostics}`));
+        return;
+      }
+      if (activeCapture?.status === 'error') {
+        finish(new Error(`${name} render failed: ${activeCapture.error}`));
+        return;
+      }
+      if (activeCapture?.status !== 'ready') {
+        finish(
+          new Error(
+            `${name} browser exited before QA reported ready (${activeCapture?.status ?? 'missing'}): ${diagnostics}`,
+          ),
+        );
+        return;
+      }
+      if (requiresScreenshot && !hasScreenshot()) {
+        finish(
+          new Error(`${name} browser exited before writing its screenshot: ${diagnostics}`),
+        );
+        return;
+      }
+      finish();
     });
   });
 }
