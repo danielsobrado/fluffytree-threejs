@@ -7,18 +7,69 @@ import {
 } from '../src/qa/tree-lod-budget-analyzer.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
 
+const MAXIMUM_SEED = 0xffffffff;
+const LOD_COUNT = 4;
+
+function requirePositiveInteger(value, path) {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new Error(`Configuration '${path}' must be a positive integer.`);
+  }
+  return value;
+}
+
+function requireUint32(value, path) {
+  if (!Number.isSafeInteger(value) || value < 0 || value > MAXIMUM_SEED) {
+    throw new Error(`Configuration '${path}' must be an unsigned 32-bit integer.`);
+  }
+  return value;
+}
+
+function requireBudgetArray(value, path) {
+  if (!Array.isArray(value) || value.length !== LOD_COUNT) {
+    throw new Error(`Configuration '${path}' must contain exactly ${LOD_COUNT} values.`);
+  }
+  return value.map((entry, index) =>
+    requirePositiveInteger(entry, `${path}[${index}]`),
+  );
+}
+
+function loadQaPolicy() {
+  const config = readYamlConfigSync('config/tree-lod-qa.yaml');
+  const budgets = config.budgets;
+  const sweep = config.sweep;
+  if (!budgets || typeof budgets !== 'object' || Array.isArray(budgets)) {
+    throw new Error("Configuration 'tree-lod-qa.budgets' must be an object.");
+  }
+  if (!sweep || typeof sweep !== 'object' || Array.isArray(sweep)) {
+    throw new Error("Configuration 'tree-lod-qa.sweep' must be an object.");
+  }
+
+  return Object.freeze({
+    budgets: Object.freeze({
+      maximumTriangles: Object.freeze(
+        requireBudgetArray(budgets.maximumTriangles, 'tree-lod-qa.budgets.maximumTriangles'),
+      ),
+      maximumDrawCalls: Object.freeze(
+        requireBudgetArray(budgets.maximumDrawCalls, 'tree-lod-qa.budgets.maximumDrawCalls'),
+      ),
+      maximumShadowTriangles: requirePositiveInteger(
+        budgets.maximumShadowTriangles,
+        'tree-lod-qa.budgets.maximumShadowTriangles',
+      ),
+    }),
+    sweep: Object.freeze({
+      seedCount: requirePositiveInteger(sweep.seedCount, 'tree-lod-qa.sweep.seedCount'),
+      firstSeed: requireUint32(sweep.firstSeed, 'tree-lod-qa.sweep.firstSeed'),
+      seedStep: requirePositiveInteger(sweep.seedStep, 'tree-lod-qa.sweep.seedStep'),
+    }),
+  });
+}
+
 const treeConfig = readYamlConfigSync('config/tree-presets.yaml');
 const continuityConfig = readYamlConfigSync('config/foliage-continuity.yaml');
 const sceneConfig = validateSceneConfig(readYamlConfigSync('config/scene.yaml'));
 const presets = PresetLibrary.fromConfig(treeConfig, continuityConfig).presets;
-const budgets = {
-  maximumTriangles: [25000, 8000, 2000, 2],
-  maximumDrawCalls: [5, 4, 2, 1],
-  maximumShadowTriangles: 2000,
-};
-const SWEEP_SEED_COUNT = 24;
-const SWEEP_FIRST_SEED = 90001;
-const SWEEP_SEED_STEP = 7919;
+const { budgets, sweep } = loadQaPolicy();
 const report = [];
 const generator = new TreeGenerator();
 
@@ -39,10 +90,10 @@ for (const entry of sceneConfig.layout) {
 }
 
 for (const presetId of presets.keys()) {
-  for (let index = 0; index < SWEEP_SEED_COUNT; index += 1) {
+  for (let index = 0; index < sweep.seedCount; index += 1) {
     measure(
       presetId,
-      (SWEEP_FIRST_SEED + Math.imul(index, SWEEP_SEED_STEP)) >>> 0,
+      (sweep.firstSeed + Math.imul(index, sweep.seedStep)) >>> 0,
       'sweep',
     );
   }
