@@ -39,14 +39,13 @@ async function runStemManifoldQa(loader) {
 
 async function bootstrap() {
   const container = document.querySelector('#app');
-
-  if (!container) {
-    throw new Error("Required application container '#app' was not found.");
-  }
-
   let demo = null;
 
   try {
+    if (!container) {
+      throw new Error("Required application container '#app' was not found.");
+    }
+
     const loader = new YamlConfigLoader();
 
     if (isStemManifoldQaRequested()) {
@@ -85,8 +84,8 @@ async function bootstrap() {
     logger.error('Application bootstrap failed.', error);
     markRenderSmokeBootstrapFailure(error);
     markStemManifoldBootstrapFailure(error);
-    showFatalError(container, error);
+    if (container) showFatalError(container, error);
   }
 }
 
-bootstrap();
+void bootstrap();
