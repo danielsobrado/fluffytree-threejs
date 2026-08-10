@@ -1,0 +1,5 @@
+expectedTreeCount: 75
+maximumColorDrawCalls: 100
+maximumGpuMegabytes: 128
+targetFps: 30
+fpsRequiresTargetHardware: true
