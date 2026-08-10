@@ -1,0 +1,9 @@
+budgets:
+  maximumTriangles: [25000, 8000, 2000, 2]
+  maximumDrawCalls: [5, 4, 2, 1]
+  maximumShadowTriangles: 2000
+
+sweep:
+  seedCount: 24
+  firstSeed: 90001
+  seedStep: 7919
