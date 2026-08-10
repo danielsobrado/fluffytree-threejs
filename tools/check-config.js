@@ -11,11 +11,12 @@ import {
   resolveFoliageContinuityProfile,
 } from '../src/domain/foliage-continuity-config.js';
 import { PresetLibrary } from '../src/domain/preset-library.js';
+import { parseShellCoverageProbeOptions } from '../src/qa/shell-coverage-qa-config.js';
+import { parseTreeStressQaPolicy } from '../src/qa/tree-stress-qa-policy.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
 import { parsePagesConfig } from './pages-config.js';
 import { assertReleaseSourceConsistency } from './release-source-check.js';
 import { parseTreeLodQaPolicy } from './tree-lod-qa-policy.js';
-import { parseTreeStressQaPolicy } from './tree-stress-qa-policy.js';
 
 const REPOSITORY_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -77,6 +78,7 @@ for (const entry of sceneConfig.layout) {
   }
 }
 
+parseShellCoverageProbeOptions(readConfig('config/shell-coverage-qa.yaml'));
 parseTreeLodQaPolicy(readConfig('config/tree-lod-qa.yaml'));
 parseTreeStressQaPolicy(readConfig('config/tree-stress-qa.yaml'));
 parsePagesConfig(readConfig('pages.config.yml'));
