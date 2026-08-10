@@ -54,19 +54,20 @@ the page looks exactly as it does without it, and it is hidden entirely whenever
 the page is opened with a `qa` parameter, so it never appears in a measured
 capture.
 
-- Trunk, branch, crown, leaf and canopy-shading controls, generated from
-  `src/ui/tuning-schema.js`. Every control's range sits inside the range the
-  preset validator enforces, so a slider cannot build a preset that is rejected.
+- Trunk, branch, crown, leaf and canopy-shading controls are generated from
+  `src/ui/tuning-schema.js`. Individual control ranges stay inside validator
+  ranges; invalid cross-field combinations are rejected and rolled back before
+  the rendered tree is replaced.
 - Opening the studio switches the scene to one tree of the edited preset;
   closing it puts the whole scene back. Generating the full layout takes seconds
   while one tree takes a few hundred milliseconds, which is what makes a slider
   usable. Clear **Solo** to edit against the whole scene instead.
-- A **coverage** readout runs the same analysis as `npm run qa:coverage` on the
-  tree currently on screen: worst gap in card widths, leaf area per unit of
-  exposed crown, and lobes with no leaves at all. It is the fastest way to see
-  that a change has opened a hole on the far side of the crown.
-- **Close the gaps** solves for the leaf packing that meets both coverage
-  targets and regenerates until it does.
+- The **coverage** readout uses the same evaluator and per-preset thresholds as
+  `npm run qa:coverage`, including candidate, physical and continuous coverage,
+  worst gap in card widths, leaf area per exposed crown area, and bare lobes.
+- **Close the gaps** solves for leaf packing inside the configured per-preset
+  coverage limits and regenerates until the shared coverage evaluator passes or
+  no tighter useful packing remains.
 - Settings are saved by name in `localStorage` and export as a YAML file shaped
   like `config/tree-presets.yaml`, so a tuned tree can be pasted straight back
   into the preset configuration.
@@ -97,8 +98,11 @@ The no-QA command still fetches remote `main`, validates required Pages files, a
 
 ## Verification
 
+`npm run check` syntax-checks JavaScript, verifies local module and HTML entry assets, validates runtime/QA YAML and Pages/release coherence, then runs the unit tests.
+
 ```bash
 npm run check
+npm run qa:manifold
 npm run qa:render
 npm run qa:solidity
 npm run qa:coverage
@@ -106,6 +110,7 @@ npm run qa:shape
 npm run qa:crown
 npm run qa:lod
 npm run qa:stress
+npm run qa:stress:render
 npm run verify
 ```
 
@@ -114,20 +119,19 @@ Smaller development runs are available:
 ```bash
 npm run qa:shape:quick
 npm run qa:crown:quick
-npm run qa:stress:render
 ```
 
 The full control-shape run generates 2,048 seeded trees for every configured preset. Every tree is generated twice to verify exact replay determinism.
 
 The crown-volume battery extracts 16 proxy meshes per preset and repeats each extraction.
 
-The LOD budget gate measures every demo tree against fixed triangle, draw-call, and shadow-proxy limits.
+The LOD budget gate measures every demo tree against triangle, draw-call, and shadow-proxy limits from `config/tree-lod-qa.yaml`.
 
-The deterministic 75-tree stress gate projects a 1280×720 view, checks mixed-LOD migration, and enforces the 100-draw and 128 MB budgets. `qa:stress:render` additionally captures that scene in a browser; the 30 FPS requirement must be measured on the stated Iris Xe/GTX 670-class hardware rather than software WebGL.
+The deterministic 75-tree stress gate projects a 1280×720 view, checks mixed-LOD migration, and enforces budgets from `config/tree-stress-qa.yaml`. `qa:stress:render` additionally captures that scene in a browser; the configured FPS target must be measured on target hardware rather than software WebGL.
 
 The leaf coverage gate measures how far the exposed crown surface ever gets from a leaf cluster that could cover it. Probes are an independent Fibonacci set, twice as dense as the candidates the generator chose from and offset by an unrelated phase, and a cluster only counts when it faces the same way as the probe. The worst gap is reported in card widths, so a pass means the cards always overlap. It runs over a seed sweep rather than only the demo seeds, because cluster counts follow from covering the surface and vary with the seed. Limits live in `config/shell-coverage-qa.yaml`.
 
-The LOD budget gate measures the demo layout plus the same seed sweep, for the same reason.
+The LOD budget gate measures the demo layout plus its configured seed sweep, for the same reason.
 
 The canopy solidity gate renders every demo tree alone against a transparent background. Crown views measure LOD0, LOD1, LOD2, LOD3 and all three complementary transition midpoints from eight angles; trunk views measure LOD0 with foliage hidden from three angles. Background pixels that cannot reach the image border are counted as see-through openings. Transition renders keep the same high-resolution frame for strict coverage comparison, while minimum visible-hole size is scaled to the projected-pixel threshold where that transition actually runs in `config/scene.yaml`. This keeps the gate sensitive to gaps that are visible in production without magnifying a 35-pixel far tree into a false failure. Limits live in `config/canopy-solidity-qa.yaml`, and a failing run writes the worst view of each preset to `qa-results/canopy-solidity/` with every counted opening flooded in magenta.
 
