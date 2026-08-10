@@ -2,6 +2,10 @@ import { dump } from 'js-yaml';
 import { logger } from '../core/logger.js';
 import { PresetVariantStore, toPresetId } from './preset-variant-store.js';
 import { createControl, createElement } from './tuning-controls.js';
+import {
+  evaluateTuningCoverage,
+  tuningCoverageAutoFitTargets,
+} from './tuning-coverage-policy.js';
 import { TUNING_GROUPS, writePath } from './tuning-schema.js';
 
 /**
@@ -19,17 +23,14 @@ import { TUNING_GROUPS, writePath } from './tuning-schema.js';
  */
 
 const COMMIT_DELAY_MS = 90;
-
-const COVERAGE_LIMITS = Object.freeze({
+const DEFAULT_COVERAGE_THRESHOLDS = Object.freeze({
+  maximumCandidateCoverageRatio: 1.000001,
   gapCardRatio: 0.85,
   minimumLeafAreaIndex: 6.5,
+  bareExposedLobes: 0,
 });
-
 // Packing tighter than this stops buying coverage and only costs triangles.
 const MINIMUM_COVERAGE_CARD_RATIO = 0.2;
-// What auto-fit aims for, inside the gate limits so a nearby seed still passes.
-const AUTO_FIT_GAP_TARGET = 0.72;
-const AUTO_FIT_LEAF_AREA_TARGET = 7;
 // Each attempt costs a full regeneration, so the step is solved rather than
 // nudged; the cap only guarantees forward progress when the solve undershoots.
 const AUTO_FIT_MAXIMUM_STEP = 0.95;
@@ -52,15 +53,22 @@ function downloadText(filename, text) {
   const link = createElement('a');
   link.href = url;
   link.download = filename;
+  document.body.append(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 export class TuningPanel {
-  constructor(demo, library, { store = new PresetVariantStore() } = {}) {
+  constructor(
+    demo,
+    library,
+    { store = new PresetVariantStore(), coverageThresholds = null } = {},
+  ) {
     this.demo = demo;
     this.library = library;
     this.store = store;
+    this.coverageThresholds = coverageThresholds;
     this.presetId = library.ids[0];
     this.config = library.rawValue(this.presetId);
     this.controls = [];
@@ -446,6 +454,12 @@ export class TuningPanel {
     }
   }
 
+  coverageThresholdsForPreset(presetId = this.presetId) {
+    return this.coverageThresholds
+      ? this.coverageThresholds[presetId]
+      : DEFAULT_COVERAGE_THRESHOLDS;
+  }
+
   refreshCoverage() {
     const report = this.demo.analyzeCoverage(this.presetId);
 
@@ -454,27 +468,50 @@ export class TuningPanel {
       return null;
     }
 
-    const gapPassed = report.gapCardRatio <= COVERAGE_LIMITS.gapCardRatio;
-    const areaPassed =
-      report.leafAreaIndex >= COVERAGE_LIMITS.minimumLeafAreaIndex;
-    const barePassed = report.bareExposedLobes === 0;
+    let evaluation;
+    try {
+      evaluation = evaluateTuningCoverage(
+        report,
+        this.coverageThresholdsForPreset(),
+        this.presetId,
+      );
+    } catch (error) {
+      logger.error('Failed to evaluate studio coverage.', error);
+      this.setStatus(error.message, 'error');
+      return report;
+    }
 
-    this.setMetric('gap', report.gapCardRatio.toFixed(3), gapPassed);
-    this.setMetric('leafArea', report.leafAreaIndex.toFixed(2), areaPassed);
-    this.setMetric('bare', String(report.bareExposedLobes), barePassed);
+    const checks = evaluation.checks;
+    this.setMetric('gap', report.gapCardRatio.toFixed(3), checks.gapCardRatio);
+    this.setMetric(
+      'leafArea',
+      report.leafAreaIndex.toFixed(2),
+      checks.leafAreaIndex,
+    );
+    this.setMetric(
+      'bare',
+      String(report.bareExposedLobes),
+      checks.bareExposedLobes,
+    );
     this.setMetric('clusters', String(report.clusterCount), true);
 
-    if (gapPassed && areaPassed && barePassed) {
-      this.setStatus('Covered: no gap wider than a leaf card.', 'pass');
-    } else if (!gapPassed) {
+    if (evaluation.passed) {
+      this.setStatus('Covered: release coverage gates pass.', 'pass');
+    } else if (!checks.gapCardRatio) {
       this.setStatus(
         `Gaps up to ${report.gapCardRatio.toFixed(2)} card widths. Close them.`,
         'warn',
       );
-    } else if (!barePassed) {
-      this.setStatus(`${report.bareExposedLobes} lobes have no leaves.`, 'warn');
+    } else if (!checks.bareExposedLobes) {
+      this.setStatus(`${report.bareExposedLobes} lobes exceed the bare-lobe limit.`, 'warn');
+    } else if (!checks.leafAreaIndex) {
+      this.setStatus('Foliage is thinner than the configured coverage gate.', 'warn');
+    } else if (!checks.continuousCoverage) {
+      this.setStatus('Continuous crown coverage still has an uncovered patch.', 'warn');
+    } else if (!checks.candidateCoverage) {
+      this.setStatus('Candidate coverage exceeds the configured limit.', 'warn');
     } else {
-      this.setStatus('Foliage is thinner than the other presets.', 'warn');
+      this.setStatus('Physical leaf-card coverage exceeds the safe limit.', 'warn');
     }
 
     return report;
@@ -497,13 +534,17 @@ export class TuningPanel {
    */
   solvePacking(report) {
     const current = this.config.foliage.shell.coverageCardRatio;
+    const targets = tuningCoverageAutoFitTargets(
+      this.coverageThresholdsForPreset(),
+      this.presetId,
+    );
     const forGap =
       report.gapCardRatio > 0
-        ? current * (AUTO_FIT_GAP_TARGET / report.gapCardRatio)
+        ? current * (targets.gapCardRatio / report.gapCardRatio)
         : current;
     const forArea =
       report.leafAreaIndex > 0
-        ? current * Math.sqrt(report.leafAreaIndex / AUTO_FIT_LEAF_AREA_TARGET)
+        ? current * Math.sqrt(report.leafAreaIndex / targets.minimumLeafAreaIndex)
         : current;
 
     return Math.max(
@@ -536,13 +577,19 @@ export class TuningPanel {
           return;
         }
 
-        if (
-          report.gapCardRatio <= COVERAGE_LIMITS.gapCardRatio &&
-          report.leafAreaIndex >= COVERAGE_LIMITS.minimumLeafAreaIndex &&
-          report.bareExposedLobes === 0
-        ) {
+        let evaluation;
+        try {
+          evaluation = evaluateTuningCoverage(
+            report,
+            this.coverageThresholdsForPreset(),
+            this.presetId,
+          );
+        } catch (error) {
+          logger.error('Failed to evaluate studio coverage.', error);
+          this.setStatus(error.message, 'error');
           return;
         }
+        if (evaluation.passed) return;
 
         const current = this.config.foliage.shell.coverageCardRatio;
         const next = Number(this.solvePacking(report).toFixed(4));
