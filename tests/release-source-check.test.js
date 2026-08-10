@@ -8,11 +8,18 @@ const release = Object.freeze({
   label: 'production static hardening',
 });
 
-function indexHtml({ build = release.build, label = release.label } = {}) {
+function indexHtml({
+  build = release.build,
+  label = release.label,
+  includeFallback = true,
+} = {}) {
   return [
     `<!doctype html><title>Procedural Fluffy Trees v2.0.0+${build} — ${label}</title>`,
     `<link rel="stylesheet" href="./styles/main.css?v=2.0.0-${build}" />`,
-    `<script src="./src/main.js?v=2.0.0-${build}"></script>`,
+    includeFallback
+      ? `<script src="./src/bootstrap-fallback.js?v=2.0.0-${build}"></script>`
+      : '',
+    `<script type="module" src="./src/main.js?v=2.0.0-${build}"></script>`,
   ].join('\n');
 }
 
@@ -43,6 +50,15 @@ test('release source consistency rejects package and HTML drift', () => {
         packageConfig: { version: '2.0.0' },
         indexHtml: indexHtml({ build: 'old' }),
       }),
-    /index\.html title does not match release|asset cache keys do not match release/,
+    /index\.html title does not match release|missing release asset|asset cache keys do not match release/,
+  );
+  assert.throws(
+    () =>
+      assertReleaseSourceConsistency({
+        release,
+        packageConfig: { version: '2.0.0' },
+        indexHtml: indexHtml({ includeFallback: false }),
+      }),
+    /missing release asset.*bootstrap-fallback/,
   );
 });
