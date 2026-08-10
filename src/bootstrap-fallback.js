@@ -2,6 +2,7 @@
   const container = document.querySelector('#app');
   if (!container) return;
 
+  const qaRequested = new URLSearchParams(window.location.search).has('qa');
   const fail = () => {
     if (container.childElementCount > 0) return;
 
@@ -10,6 +11,8 @@
     element.className = 'demo-error';
     element.textContent = `The procedural tree demo could not start: ${message}`;
     container.replaceChildren(element);
+
+    if (!qaRequested) return;
 
     const query = new URLSearchParams({ status: 'error', error: message });
     void fetch(`/__render-smoke-status?${query}`, {
