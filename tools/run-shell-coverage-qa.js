@@ -3,10 +3,10 @@ import path from 'node:path';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
 import { PresetLibrary } from '../src/domain/preset-library.js';
-import { FOLIAGE_SHELL_CONSTANTS } from '../src/generation/foliage-shell-constants.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
 import { analyzeShellCoverage } from '../src/qa/shell-coverage-analyzer.js';
 import { parseShellCoverageQaConfig } from '../src/qa/shell-coverage-qa-config.js';
+import { evaluateShellCoverageQa } from '../src/qa/shell-coverage-qa-evaluator.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
 
 const { values } = parseArgs({
@@ -79,57 +79,17 @@ for (const [presetId, preset] of presets) {
     gapCardRatios.push(metrics.gapCardRatio);
     leafAreaIndices.push(metrics.leafAreaIndex);
     clusterCounts.push(metrics.clusterCount);
-    candidateCoverageRatios.push(tree.shellCandidateCoverageRatio);
+    candidateCoverageRatios.push(metrics.candidateCoverageRatio);
     physicalCoverageRatios.push(metrics.maximumPhysicalCoverageRatio);
     continuousTriangleCounts.push(metrics.continuous.trianglesVisited);
     bareLobeTotal += metrics.bareExposedLobes;
     continuousUncoveredTotal += metrics.continuous.uncoveredTriangleCount;
 
-    const seedFailures = [];
-    if (
-      tree.shellCandidateCoverageRatio >
-      thresholds.maximumCandidateCoverageRatio
-    ) {
-      seedFailures.push(
-        `candidateCoverageRatio ${tree.shellCandidateCoverageRatio.toFixed(6)} > ` +
-          `${thresholds.maximumCandidateCoverageRatio}`,
-      );
-    }
-    if (
-      metrics.maximumPhysicalCoverageRatio >
-      FOLIAGE_SHELL_CONSTANTS.maximumPhysicalCoverageCardRatio +
-        FOLIAGE_SHELL_CONSTANTS.coverageRatioEpsilon
-    ) {
-      seedFailures.push(
-        `physicalCoverageRatio ${metrics.maximumPhysicalCoverageRatio.toFixed(6)} > ` +
-          `${FOLIAGE_SHELL_CONSTANTS.maximumPhysicalCoverageCardRatio}`,
-      );
-    }
-    if (metrics.gapCardRatio > thresholds.gapCardRatio) {
-      seedFailures.push(
-        `gapCardRatio ${metrics.gapCardRatio.toFixed(4)} > ${thresholds.gapCardRatio}`,
-      );
-    }
-    if (metrics.leafAreaIndex < thresholds.minimumLeafAreaIndex) {
-      seedFailures.push(
-        `leafAreaIndex ${metrics.leafAreaIndex.toFixed(3)} < ${thresholds.minimumLeafAreaIndex}`,
-      );
-    }
-    if (metrics.bareExposedLobes > thresholds.bareExposedLobes) {
-      seedFailures.push(
-        `bareExposedLobes ${metrics.bareExposedLobes} > ${thresholds.bareExposedLobes}`,
-      );
-    }
-    if (!metrics.continuous.passed) {
-      seedFailures.push(
-        `continuousCoverage uncovered=${metrics.continuous.uncoveredTriangleCount} ` +
-          `depth=${metrics.continuous.maximumDepthReached}`,
-      );
-    }
-    if (seedFailures.length > 0) {
+    const evaluation = evaluateShellCoverageQa(metrics, thresholds);
+    if (!evaluation.passed) {
       failures.push({
         seed,
-        failures: seedFailures,
+        failures: [...evaluation.failures],
         worst: metrics.worst,
         continuousWorst: metrics.continuous.worst,
       });
