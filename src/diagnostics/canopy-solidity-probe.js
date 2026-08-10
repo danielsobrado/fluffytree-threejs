@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { logger } from '../core/logger.js';
 import { CANOPY_SOLIDITY_CONSTANTS } from './canopy-solidity-constants.js';
 import {
   postQaReport,
@@ -152,7 +153,7 @@ export class CanopySolidityProbe {
       this.root.dataset[STATUS_ATTRIBUTE] = 'error';
       this.root.dataset.solidityError = serializeQaError(error);
       reportQaStatus('error', serializeQaError(error));
-      console.error('Canopy solidity probe failed.', error);
+      logger.error('Canopy solidity probe failed.', error);
       return null;
     }
   }
