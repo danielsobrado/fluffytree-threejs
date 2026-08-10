@@ -9,8 +9,6 @@ import {
 } from 'node:path';
 
 const JAVASCRIPT_EXTENSION = '.js';
-const RELATIVE_IMPORT_PATTERN =
-  /\b(?:from|import)\s*(?:\(\s*)?['"](\.{1,2}\/[^'"]+)['"](?:\s*\))?/g;
 const LOCAL_HTML_ASSET_PATTERN =
   /<(?:script|link|img|source)\b[^>]*\b(?:src|href)=['"](\.\/[^'"?#]+)(?:[?#][^'"]*)?['"][^>]*>/gi;
 
@@ -37,17 +35,6 @@ function assertExistingRepositoryFile(target, repositoryRoot, description) {
   }
 }
 
-export function collectRelativeModuleSpecifiers(source) {
-  const specifiers = [];
-  RELATIVE_IMPORT_PATTERN.lastIndex = 0;
-
-  for (const match of source.matchAll(RELATIVE_IMPORT_PATTERN)) {
-    specifiers.push(match[1]);
-  }
-
-  return specifiers;
-}
-
 export function collectLocalHtmlAssets(source) {
   const assets = [];
   LOCAL_HTML_ASSET_PATTERN.lastIndex = 0;
@@ -59,25 +46,23 @@ export function collectLocalHtmlAssets(source) {
   return assets;
 }
 
-export function assertLocalImportTargets(files, repositoryRoot) {
-  for (const file of files) {
-    const source = readFileSync(file, 'utf8');
+export function assertLocalImportSpecifiers(file, specifiers, repositoryRoot) {
+  for (const specifier of specifiers) {
+    if (!specifier.startsWith('./') && !specifier.startsWith('../')) continue;
 
-    for (const specifier of collectRelativeModuleSpecifiers(source)) {
-      const localPath = modulePath(specifier);
-      if (extname(localPath) !== JAVASCRIPT_EXTENSION) {
-        throw new Error(
-          `Local module import '${specifier}' in '${file}' must include a .js extension.`,
-        );
-      }
-
-      const target = resolve(dirname(file), localPath);
-      assertExistingRepositoryFile(
-        target,
-        repositoryRoot,
-        `Local module import '${specifier}' in '${file}'`,
+    const localPath = modulePath(specifier);
+    if (extname(localPath) !== JAVASCRIPT_EXTENSION) {
+      throw new Error(
+        `Local module import '${specifier}' in '${file}' must include a .js extension.`,
       );
     }
+
+    const target = resolve(dirname(file), localPath);
+    assertExistingRepositoryFile(
+      target,
+      repositoryRoot,
+      `Local module import '${specifier}' in '${file}'`,
+    );
   }
 }
 
