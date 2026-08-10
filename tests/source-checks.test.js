@@ -23,8 +23,9 @@ function runImportChecker(repositoryRoot, files, returnDependencies = false) {
   );
 }
 
-test('collects local HTML assets without cache query strings', () => {
+test('collects active local HTML assets without cache query strings', () => {
   const source = [
+    '<!-- <script src="./src/retired.js"></script> -->',
     '<link rel="stylesheet" href="./styles/main.css?v=1" />',
     '<script src="./src/bootstrap.js?v=1"></script>',
     '<script src="https://example.com/remote.js"></script>',
@@ -109,7 +110,13 @@ test('local HTML assets must resolve inside the repository', () => {
     mkdirSync(path.join(root, 'styles'));
     writeFileSync(path.join(root, 'styles', 'main.css'), 'body {}\n');
     const html = path.join(root, 'index.html');
-    writeFileSync(html, '<link href="./styles/main.css?v=1" rel="stylesheet" />\n');
+    writeFileSync(
+      html,
+      [
+        '<!-- <script src="./src/retired.js"></script> -->',
+        '<link href="./styles/main.css?v=1" rel="stylesheet" />',
+      ].join('\n'),
+    );
     assert.doesNotThrow(() => assertLocalHtmlAssets(html, root));
 
     writeFileSync(html, '<script src="./src/missing.js"></script>\n');
