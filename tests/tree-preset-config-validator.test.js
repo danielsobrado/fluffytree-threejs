@@ -3,6 +3,10 @@ import fs from 'node:fs';
 import test from 'node:test';
 import { load } from 'js-yaml';
 import { PresetLibrary } from '../src/domain/preset-library.js';
+import {
+  createTreePreset,
+  createTreePresetMap,
+} from '../src/domain/tree-preset.js';
 
 function loadTreeConfig() {
   return load(fs.readFileSync('config/tree-presets.yaml', 'utf8'));
@@ -29,6 +33,17 @@ test('tree preset validation rejects numeric strings instead of coercing them', 
   assert.throws(
     () => PresetLibrary.fromConfig(config),
     /roundOrchard\.height.*finite number/,
+  );
+});
+
+test('direct preset construction uses the same strict numeric contract', () => {
+  const config = mutateRoundOrchard((preset) => {
+    preset.crown.lobeScale = ['0.74', 1.1];
+  });
+
+  assert.throws(
+    () => createTreePreset('roundOrchard', config.presets.roundOrchard),
+    /roundOrchard\.crown\.lobeScale.*finite number/,
   );
 });
 
@@ -120,13 +135,15 @@ test('tree preset validation rejects malformed non-empty colors', () => {
   );
 });
 
-test('preset library rejects non-object and empty preset collections', () => {
-  assert.throws(
-    () => PresetLibrary.fromConfig({ presets: [] }),
-    /must define a 'presets' object/,
-  );
-  assert.throws(
-    () => PresetLibrary.fromConfig({ presets: {} }),
-    /presets.*must not be empty/,
-  );
+test('preset collections reject arrays and empty mappings on both entry points', () => {
+  for (const config of [{ presets: [] }, { presets: {} }]) {
+    assert.throws(
+      () => PresetLibrary.fromConfig(config),
+      /presets.*(?:object|empty)/,
+    );
+    assert.throws(
+      () => createTreePresetMap(config),
+      /presets.*(?:object|empty)/,
+    );
+  }
 });
