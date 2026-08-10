@@ -22,6 +22,14 @@ function requireUint32(value, path) {
   return value;
 }
 
+function requirePositiveUint32(value, path) {
+  requireUint32(value, path);
+  if (value === 0) {
+    throw new Error(`Configuration '${path}' must be greater than zero.`);
+  }
+  return value;
+}
+
 function requireBudgetArray(value, path) {
   if (!Array.isArray(value) || value.length !== LOD_COUNT) {
     throw new Error(`Configuration '${path}' must contain exactly ${LOD_COUNT} values.`);
@@ -61,7 +69,7 @@ export function parseTreeLodQaPolicy(config) {
         sweep.firstSeed,
         'tree-lod-qa.sweep.firstSeed',
       ),
-      seedStep: requirePositiveInteger(
+      seedStep: requirePositiveUint32(
         sweep.seedStep,
         'tree-lod-qa.sweep.seedStep',
       ),
