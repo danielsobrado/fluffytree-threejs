@@ -2,10 +2,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { dirname, extname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import {
-  assertLocalHtmlAssets,
-  assertLocalImportTargets,
-} from './source-checks.js';
+import { assertLocalHtmlAssets } from './source-checks.js';
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_DIRECTORIES = Object.freeze(['src', 'tests', 'tools']);
@@ -14,6 +11,7 @@ const JAVASCRIPT_EXTENSION = '.js';
 const GITHUB_WORKFLOW_DIRECTORY = '.github/workflows';
 const GITHUB_WORKFLOW_PLACEHOLDER = '.gitkeep';
 const ENTRY_HTML = 'index.html';
+const IMPORT_CHECKER = join(REPOSITORY_ROOT, 'tools/check-module-imports.js');
 
 function collectJavaScriptFiles(directory) {
   const files = [];
@@ -45,6 +43,23 @@ function assertNoGitHubActions() {
   );
 }
 
+function assertParsedModuleImports(files) {
+  const result = spawnSync(
+    process.execPath,
+    ['--no-warnings', '--experimental-vm-modules', IMPORT_CHECKER],
+    {
+      encoding: 'utf8',
+      input: JSON.stringify({ repositoryRoot: REPOSITORY_ROOT, files }),
+    },
+  );
+
+  if (result.status === 0) return;
+
+  if (result.stderr) process.stderr.write(result.stderr);
+  if (result.stdout) process.stderr.write(result.stdout);
+  process.exit(result.status ?? 1);
+}
+
 assertNoGitHubActions();
 const files = SOURCE_DIRECTORIES.flatMap((directory) =>
   collectJavaScriptFiles(join(REPOSITORY_ROOT, directory)),
@@ -64,8 +79,8 @@ for (const file of files) {
   }
 }
 
-assertLocalImportTargets(importFiles, REPOSITORY_ROOT);
+assertParsedModuleImports(importFiles);
 assertLocalHtmlAssets(join(REPOSITORY_ROOT, ENTRY_HTML), REPOSITORY_ROOT);
 console.log(
-  `Syntax checked ${files.length} JavaScript files, verified ${importFiles.length} source module imports, and checked local HTML assets.`,
+  `Syntax checked ${files.length} JavaScript files, parsed ${importFiles.length} source module imports, and checked local HTML assets.`,
 );
