@@ -39,6 +39,7 @@ test('every lobe carries clusters and no probe is left beyond a card width', () 
   const metrics = analyzeShellCoverage(tree, preset, PROBE_OPTIONS);
 
   assert.equal(metrics.bareExposedLobes, 0);
+  assert.equal(metrics.candidateCoverageRatio, tree.shellCandidateCoverageRatio);
   assert.ok(metrics.probeCount > 0);
   assert.ok(metrics.clusterCount > 0);
   assert.ok(Number.isFinite(metrics.maximumGap));
