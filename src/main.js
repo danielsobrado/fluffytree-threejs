@@ -13,6 +13,8 @@ import {
   StemManifoldProbe,
 } from './diagnostics/stem-manifold-probe.js';
 import { PresetLibrary } from './domain/preset-library.js';
+import { parseShellCoverageQaConfig } from './qa/shell-coverage-qa-config.js';
+import { parseTreeStressQaPolicy } from './qa/tree-stress-qa-policy.js';
 import { showFatalError } from './ui/demo-overlay.js';
 import { createTuningPanel } from './ui/tuning-panel.js';
 
@@ -21,6 +23,8 @@ const CONFIG_URLS = Object.freeze({
   scene: './config/scene.yaml',
   trees: './config/tree-presets.yaml',
   foliageContinuity: './config/foliage-continuity.yaml',
+  shellCoverageQa: './config/shell-coverage-qa.yaml',
+  treeStressQa: './config/tree-stress-qa.yaml',
   stemManifoldQa: './config/stem-manifold-qa.yaml',
 });
 
@@ -53,14 +57,24 @@ async function bootstrap() {
       return;
     }
 
-    const [releaseConfig, rawSceneConfig, treeConfig, continuityConfig] =
-      await Promise.all([
-        loader.load(CONFIG_URLS.release),
-        loader.load(CONFIG_URLS.scene),
-        loader.load(CONFIG_URLS.trees),
-        loader.load(CONFIG_URLS.foliageContinuity),
-      ]);
+    const [
+      releaseConfig,
+      rawSceneConfig,
+      treeConfig,
+      continuityConfig,
+      rawCoverageConfig,
+      rawStressConfig,
+    ] = await Promise.all([
+      loader.load(CONFIG_URLS.release),
+      loader.load(CONFIG_URLS.scene),
+      loader.load(CONFIG_URLS.trees),
+      loader.load(CONFIG_URLS.foliageContinuity),
+      loader.load(CONFIG_URLS.shellCoverageQa),
+      loader.load(CONFIG_URLS.treeStressQa),
+    ]);
     const sceneConfig = validateSceneConfig(rawSceneConfig);
+    const coverageConfig = parseShellCoverageQaConfig(rawCoverageConfig);
+    const stressPolicy = parseTreeStressQaPolicy(rawStressConfig);
     const releaseVersion = formatReleaseVersion(releaseConfig);
     const overlayTitle = formatOverlayTitle(releaseConfig);
     applyDocumentTitle(releaseConfig);
@@ -72,6 +86,10 @@ async function bootstrap() {
       library,
       releaseVersion,
       overlayTitle,
+      {
+        coverageProbeOptions: coverageConfig.probe,
+        stressPolicy,
+      },
     );
 
     // The QA modes drive the same page. A studio panel over the canvas would
