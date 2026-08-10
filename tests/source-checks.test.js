@@ -1,31 +1,27 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {
   assertLocalHtmlAssets,
-  assertLocalImportTargets,
+  assertLocalImportSpecifiers,
   collectLocalHtmlAssets,
-  collectRelativeModuleSpecifiers,
 } from '../tools/source-checks.js';
 
-test('collects static side-effect export and dynamic relative imports', () => {
-  const source = [
-    "import './side.js';",
-    "import { value } from '../value.js';",
-    "export { item } from './item.js';",
-    "const lazy = import('./lazy.js');",
-    "import thing from 'three';",
-  ].join('\n');
+const IMPORT_CHECKER = path.resolve('tools/check-module-imports.js');
 
-  assert.deepEqual(collectRelativeModuleSpecifiers(source), [
-    './side.js',
-    '../value.js',
-    './item.js',
-    './lazy.js',
-  ]);
-});
+function runImportChecker(repositoryRoot, files) {
+  return spawnSync(
+    process.execPath,
+    ['--no-warnings', '--experimental-vm-modules', IMPORT_CHECKER],
+    {
+      encoding: 'utf8',
+      input: JSON.stringify({ repositoryRoot, files }),
+    },
+  );
+}
 
 test('collects local HTML assets without cache query strings', () => {
   const source = [
@@ -49,27 +45,53 @@ test('local imports must resolve inside the repository with explicit extensions'
     const dependency = path.join(sourceDirectory, 'dependency.js');
     const entry = path.join(sourceDirectory, 'entry.js');
     writeFileSync(dependency, 'export const value = 1;\n');
-    writeFileSync(entry, "import { value } from './dependency.js';\n");
 
-    assert.doesNotThrow(() => assertLocalImportTargets([entry], root));
-
-    writeFileSync(entry, "import './missing.js';\n");
+    assert.doesNotThrow(() =>
+      assertLocalImportSpecifiers(entry, ['./dependency.js'], root),
+    );
     assert.throws(
-      () => assertLocalImportTargets([entry], root),
+      () => assertLocalImportSpecifiers(entry, ['./missing.js'], root),
       /does not resolve to a file/,
     );
-
-    writeFileSync(entry, "import './dependency';\n");
     assert.throws(
-      () => assertLocalImportTargets([entry], root),
+      () => assertLocalImportSpecifiers(entry, ['./dependency'], root),
       /must include a \.js extension/,
     );
-
-    writeFileSync(entry, "import '../../outside.js';\n");
     assert.throws(
-      () => assertLocalImportTargets([entry], root),
+      () => assertLocalImportSpecifiers(entry, ['../../outside.js'], root),
       /escapes the repository/,
     );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('module parser ignores commented imports and validates real static imports', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'fluffytree-module-parser-'));
+
+  try {
+    const sourceDirectory = path.join(root, 'src');
+    mkdirSync(sourceDirectory);
+    const dependency = path.join(sourceDirectory, 'dependency.js');
+    const entry = path.join(sourceDirectory, 'entry.js');
+    writeFileSync(dependency, 'export const value = 1;\n');
+    writeFileSync(
+      entry,
+      [
+        "// import './missing.js';",
+        "/* export { old } from './also-missing.js'; */",
+        "import { value } from './dependency.js';",
+        "export { value as exported } from './dependency.js';",
+      ].join('\n'),
+    );
+
+    const valid = runImportChecker(root, [entry]);
+    assert.equal(valid.status, 0, valid.stderr);
+
+    writeFileSync(entry, "import './missing.js';\n");
+    const invalid = runImportChecker(root, [entry]);
+    assert.notEqual(invalid.status, 0);
+    assert.match(invalid.stderr, /does not resolve to a file/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
