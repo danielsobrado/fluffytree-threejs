@@ -1,17 +1,15 @@
-import fs from 'node:fs';
-import { load } from 'js-yaml';
+import { validateSceneConfig } from '../src/config/scene-config-validator.js';
 import { PresetLibrary } from '../src/domain/preset-library.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
 import {
   analyzeTreeLodBudgets,
   evaluateTreeLodBudgets,
 } from '../src/qa/tree-lod-budget-analyzer.js';
+import { readYamlConfigSync } from './node-yaml-config.js';
 
-const treeConfig = load(fs.readFileSync('config/tree-presets.yaml', 'utf8'));
-const continuityConfig = load(
-  fs.readFileSync('config/foliage-continuity.yaml', 'utf8'),
-);
-const sceneConfig = load(fs.readFileSync('config/scene.yaml', 'utf8'));
+const treeConfig = readYamlConfigSync('config/tree-presets.yaml');
+const continuityConfig = readYamlConfigSync('config/foliage-continuity.yaml');
+const sceneConfig = validateSceneConfig(readYamlConfigSync('config/scene.yaml'));
 const presets = PresetLibrary.fromConfig(treeConfig, continuityConfig).presets;
 const budgets = {
   maximumTriangles: [25000, 8000, 2000, 2],
@@ -22,10 +20,15 @@ const SWEEP_SEED_COUNT = 24;
 const SWEEP_FIRST_SEED = 90001;
 const SWEEP_SEED_STEP = 7919;
 const report = [];
+const generator = new TreeGenerator();
 
 function measure(presetId, seed, source) {
   const preset = presets.get(presetId);
-  const tree = new TreeGenerator().generate(preset, seed);
+  if (!preset) {
+    throw new Error(`LOD QA references unknown preset '${presetId}'.`);
+  }
+
+  const tree = generator.generate(preset, seed);
   const metrics = analyzeTreeLodBudgets(tree);
   const failures = evaluateTreeLodBudgets(metrics, budgets);
   report.push({ preset: presetId, seed, source, metrics, failures });
