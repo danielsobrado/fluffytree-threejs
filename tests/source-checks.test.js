@@ -12,13 +12,13 @@ import {
 
 const IMPORT_CHECKER = path.resolve('tools/check-module-imports.js');
 
-function runImportChecker(repositoryRoot, files) {
+function runImportChecker(repositoryRoot, files, returnDependencies = false) {
   return spawnSync(
     process.execPath,
     ['--no-warnings', '--experimental-vm-modules', IMPORT_CHECKER],
     {
       encoding: 'utf8',
-      input: JSON.stringify({ repositoryRoot, files }),
+      input: JSON.stringify({ repositoryRoot, files, returnDependencies }),
     },
   );
 }
@@ -66,7 +66,7 @@ test('local imports must resolve inside the repository with explicit extensions'
   }
 });
 
-test('module parser ignores commented imports and validates real static imports', () => {
+test('module parser ignores comments, validates imports, and can return dependencies', () => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'fluffytree-module-parser-'));
 
   try {
@@ -85,8 +85,13 @@ test('module parser ignores commented imports and validates real static imports'
       ].join('\n'),
     );
 
-    const valid = runImportChecker(root, [entry]);
+    const valid = runImportChecker(root, [entry], true);
     assert.equal(valid.status, 0, valid.stderr);
+    const dependencies = JSON.parse(valid.stdout);
+    assert.deepEqual(dependencies[entry], [
+      './dependency.js',
+      './dependency.js',
+    ]);
 
     writeFileSync(entry, "import './missing.js';\n");
     const invalid = runImportChecker(root, [entry]);
