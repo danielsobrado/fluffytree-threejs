@@ -1,5 +1,4 @@
 import { resolveFoliageContinuityProfile } from './foliage-continuity-config.js';
-import { validateTreePresetConfig } from './tree-preset-config-validator.js';
 import { createTreePreset } from './tree-preset.js';
 
 /**
@@ -66,7 +65,6 @@ export class PresetLibrary {
   }
 
   validate(id, value) {
-    validateTreePresetConfig(id, value);
     const basePreset = createTreePreset(id, value);
     const continuity = resolveFoliageContinuityProfile(
       this.continuityConfig,
