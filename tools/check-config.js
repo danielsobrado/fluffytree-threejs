@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -40,6 +40,23 @@ function readJson(relativePath) {
     throw new Error(`Failed to parse JSON file '${relativePath}'.`, {
       cause: error,
     });
+  }
+}
+
+function assertRequiredFilesExist(requiredFiles) {
+  for (const relativePath of requiredFiles) {
+    const absolutePath = path.join(REPOSITORY_ROOT, relativePath);
+
+    try {
+      if (!statSync(absolutePath).isFile()) {
+        throw new Error('Path is not a file.');
+      }
+    } catch (error) {
+      throw new Error(
+        `Pages required file '${relativePath}' does not exist as a file.`,
+        { cause: error },
+      );
+    }
   }
 }
 
@@ -99,7 +116,8 @@ for (const presetId of Object.keys(coverageConfig.thresholds)) {
 
 parseTreeLodQaPolicy(readConfig('config/tree-lod-qa.yaml'));
 parseTreeStressQaPolicy(readConfig('config/tree-stress-qa.yaml'));
-parsePagesConfig(readConfig('pages.config.yml'));
+const pagesConfig = parsePagesConfig(readConfig('pages.config.yml'));
+assertRequiredFilesExist(pagesConfig.requiredFiles);
 console.log(
-  `Validated ${configFiles.length} YAML config files, ${library.ids.length} tree presets, and ${sceneConfig.layout.length} scene entries.`,
+  `Validated ${configFiles.length} YAML config files, ${library.ids.length} tree presets, ${sceneConfig.layout.length} scene entries, and ${pagesConfig.requiredFiles.length} Pages files.`,
 );
