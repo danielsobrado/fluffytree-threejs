@@ -4,6 +4,12 @@ import {
 } from '../src/app/release-title.js';
 import { versionHtmlAssets } from './module-versioning.js';
 
+const REQUIRED_ENTRY_ASSETS = Object.freeze([
+  './styles/main.css',
+  './src/bootstrap-fallback.js',
+  './src/main.js',
+]);
+
 function requirePackageVersion(packageConfig) {
   const version = packageConfig?.version;
   if (typeof version !== 'string' || version.trim() === '') {
@@ -35,6 +41,14 @@ export function assertReleaseSourceConsistency({
   }
 
   const cacheKey = `${version}-${build}`;
+  for (const asset of REQUIRED_ENTRY_ASSETS) {
+    if (!indexHtml.includes(`${asset}?v=${cacheKey}`)) {
+      throw new Error(
+        `index.html is missing release asset '${asset}?v=${cacheKey}'.`,
+      );
+    }
+  }
+
   if (versionHtmlAssets(indexHtml, cacheKey) !== indexHtml) {
     throw new Error(
       `index.html local asset cache keys do not match release '${releaseVersion}'.`,
