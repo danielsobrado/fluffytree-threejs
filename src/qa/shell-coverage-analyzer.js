@@ -215,6 +215,7 @@ export function analyzeShellCoverage(tree, preset, options = {}) {
   return Object.freeze({
     probeCount: measuredProbes,
     clusterCount: tree.shell.length,
+    candidateCoverageRatio: tree.shellCandidateCoverageRatio,
     maximumGap,
     meanGap: measuredProbes === 0 ? 0 : totalGap / measuredProbes,
     p95Gap: percentile(0.95),
