@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { parseShellCoverageQaConfig } from '../src/qa/shell-coverage-qa-config.js';
+import { parseTreeStressQaPolicy } from '../src/qa/tree-stress-qa-policy.js';
 import { parseTreeLodQaPolicy } from '../tools/tree-lod-qa-policy.js';
-import { parseTreeStressQaPolicy } from '../tools/tree-stress-qa-policy.js';
 
 function lodPolicy(overrides = {}) {
   return {
@@ -26,6 +27,35 @@ function stressPolicy(overrides = {}) {
     maximumGpuMegabytes: 128,
     targetFps: 30,
     fpsRequiresTargetHardware: true,
+    ...overrides,
+  };
+}
+
+function coveragePolicy(overrides = {}) {
+  return {
+    run: { seedCount: 24, firstSeed: 90001, seedStep: 7919 },
+    probe: {
+      probeDensityMultiplier: 2,
+      probeExposureMargin: 0.05,
+      continuous: {
+        maximumCoverageRatio: 1,
+        maximumSubdivisionDepth: 8,
+        minimumDirectionDiameter: 0.004,
+        exposureMargin: 0.05,
+        normalUncertaintyScale: 1,
+        minimumCoverageNormalDot: 0.2588,
+        maximumFailureExamples: 12,
+      },
+    },
+    thresholds: {
+      roundOrchard: {
+        maximumCandidateCoverageRatio: 1.000001,
+        gapCardRatio: 0.85,
+        minimumLeafAreaIndex: 6.5,
+        bareExposedLobes: 0,
+      },
+    },
+    report: { maxFailures: 6 },
     ...overrides,
   };
 }
@@ -76,5 +106,37 @@ test('stress QA policy rejects invalid acceptance thresholds', () => {
         stressPolicy({ fpsRequiresTargetHardware: 'yes' }),
       ),
     /must be a boolean/,
+  );
+});
+
+test('shell coverage QA config validates the shared sweep and probe policy', () => {
+  const parsed = parseShellCoverageQaConfig(coveragePolicy());
+  assert.equal(parsed.run.seedCount, 24);
+  assert.equal(parsed.probe.continuous.minimumDirectionDiameter, 0.004);
+  assert.equal(parsed.thresholds.roundOrchard.gapCardRatio, 0.85);
+
+  assert.throws(
+    () =>
+      parseShellCoverageQaConfig(
+        coveragePolicy({
+          run: { ...coveragePolicy().run, seedStep: 0x100000000 },
+        }),
+      ),
+    /unsigned 32-bit integer/,
+  );
+  assert.throws(
+    () =>
+      parseShellCoverageQaConfig(
+        coveragePolicy({
+          probe: {
+            ...coveragePolicy().probe,
+            continuous: {
+              ...coveragePolicy().probe.continuous,
+              minimumCoverageNormalDot: 2,
+            },
+          },
+        }),
+      ),
+    /within \[-1, 1\]/,
   );
 });
