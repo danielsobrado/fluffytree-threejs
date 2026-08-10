@@ -14,6 +14,7 @@ import {
   parseDeployOptions,
 } from './deploy-source-guard.js';
 import { stampModuleGraph, versionHtmlAssets } from './module-versioning.js';
+import { parsePagesConfig } from './pages-config.js';
 import { releaseCacheKeyFromYaml } from './release-cache-key.js';
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
@@ -45,36 +46,8 @@ function runGit(
   }
 }
 
-function requireString(config, key) {
-  const value = config[key];
-  if (typeof value !== 'string' || value.trim() === '') {
-    throw new Error(`Missing non-empty configuration value: ${key}`);
-  }
-
-  return value.trim();
-}
-
 function loadConfig() {
-  const document = yaml.load(readFileSync(CONFIG_PATH, 'utf8'));
-  if (!document || typeof document !== 'object' || Array.isArray(document)) {
-    throw new Error('pages.config.yml must contain a YAML object.');
-  }
-
-  const requiredFiles = document.requiredFiles;
-  if (
-    !Array.isArray(requiredFiles) ||
-    requiredFiles.length === 0 ||
-    requiredFiles.some((file) => typeof file !== 'string' || file.trim() === '')
-  ) {
-    throw new Error('requiredFiles must contain at least one repository-relative path.');
-  }
-
-  return Object.freeze({
-    remote: requireString(document, 'remote'),
-    sourceBranch: requireString(document, 'sourceBranch'),
-    publishBranch: requireString(document, 'publishBranch'),
-    requiredFiles: requiredFiles.map((file) => file.trim()),
-  });
+  return parsePagesConfig(yaml.load(readFileSync(CONFIG_PATH, 'utf8')));
 }
 
 function assertBranchName(branchName) {
