@@ -95,7 +95,9 @@ async function bootstrap() {
     // The QA modes drive the same page. A studio panel over the canvas would
     // change what every screenshot gate measures, so it stays out of them.
     if (!new URLSearchParams(window.location.search).has('qa')) {
-      createTuningPanel(container, demo, library);
+      createTuningPanel(container, demo, library, {
+        coverageThresholds: coverageConfig.thresholds,
+      });
     }
   } catch (error) {
     demo?.destroy();
