@@ -1,25 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  ALLOW_UNVERIFIED_SOURCE_FLAG,
-  assertVerifiedDeploySource,
-  parseDeployOptions,
-} from '../tools/deploy-source-guard.js';
+import { assertDeploySourceMatchesCheckout } from '../tools/deploy-source-guard.js';
 
-test('verified deployment is the default', () => {
-  assert.deepEqual(parseDeployOptions(), { requireVerifiedSource: true });
-  assert.deepEqual(parseDeployOptions([ALLOW_UNVERIFIED_SOURCE_FLAG]), {
-    requireVerifiedSource: false,
-  });
-});
-
-test('unknown deployment options fail fast', () => {
-  assert.throws(() => parseDeployOptions(['--typo']), /Unknown deployment option/);
-});
-
-test('verified deployment requires a clean checkout at the fetched source', () => {
+test('deployment requires a clean checkout at the fetched source', () => {
   assert.doesNotThrow(() =>
-    assertVerifiedDeploySource({
+    assertDeploySourceMatchesCheckout({
       sourceSha: 'abc123',
       headSha: 'abc123',
       workingTreeStatus: '',
@@ -28,7 +13,7 @@ test('verified deployment requires a clean checkout at the fetched source', () =
 
   assert.throws(
     () =>
-      assertVerifiedDeploySource({
+      assertDeploySourceMatchesCheckout({
         sourceSha: 'abc123',
         headSha: 'abc123',
         workingTreeStatus: ' M src/main.js',
@@ -38,11 +23,32 @@ test('verified deployment requires a clean checkout at the fetched source', () =
 
   assert.throws(
     () =>
-      assertVerifiedDeploySource({
+      assertDeploySourceMatchesCheckout({
         sourceSha: 'abc123',
         headSha: 'def456',
         workingTreeStatus: '',
       }),
     /to match fetched source/,
+  );
+});
+
+test('deployment source identifiers must be present', () => {
+  assert.throws(
+    () =>
+      assertDeploySourceMatchesCheckout({
+        sourceSha: '',
+        headSha: 'abc123',
+        workingTreeStatus: '',
+      }),
+    /Remote source commit SHA cannot be empty/,
+  );
+  assert.throws(
+    () =>
+      assertDeploySourceMatchesCheckout({
+        sourceSha: 'abc123',
+        headSha: '',
+        workingTreeStatus: '',
+      }),
+    /Local HEAD commit SHA cannot be empty/,
   );
 });
