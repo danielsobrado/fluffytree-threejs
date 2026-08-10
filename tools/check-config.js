@@ -1,7 +1,6 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import yaml from 'js-yaml';
 import {
   formatOverlayTitle,
   formatReleaseVersion,
@@ -12,6 +11,7 @@ import {
   resolveFoliageContinuityProfile,
 } from '../src/domain/foliage-continuity-config.js';
 import { PresetLibrary } from '../src/domain/preset-library.js';
+import { readYamlConfigSync } from './node-yaml-config.js';
 import { parsePagesConfig } from './pages-config.js';
 
 const REPOSITORY_ROOT = path.resolve(
@@ -21,23 +21,8 @@ const REPOSITORY_ROOT = path.resolve(
 const CONFIG_DIRECTORY = path.join(REPOSITORY_ROOT, 'config');
 const YAML_EXTENSIONS = new Set(['.yaml', '.yml']);
 
-function readYaml(relativePath) {
-  const absolutePath = path.join(REPOSITORY_ROOT, relativePath);
-  let document;
-
-  try {
-    document = yaml.load(readFileSync(absolutePath, 'utf8'));
-  } catch (error) {
-    throw new Error(`Failed to parse YAML configuration '${relativePath}'.`, {
-      cause: error,
-    });
-  }
-
-  if (document === null || document === undefined) {
-    throw new Error(`YAML configuration '${relativePath}' must not be empty.`);
-  }
-
-  return document;
+function readConfig(relativePath) {
+  return readYamlConfigSync(path.join(REPOSITORY_ROOT, relativePath));
 }
 
 const configFiles = readdirSync(CONFIG_DIRECTORY, { withFileTypes: true })
@@ -48,20 +33,20 @@ const configFiles = readdirSync(CONFIG_DIRECTORY, { withFileTypes: true })
   .map((entry) => `config/${entry.name}`)
   .sort();
 
-for (const file of configFiles) readYaml(file);
+for (const file of configFiles) readConfig(file);
 
-const releaseConfig = readYaml('config/release.yaml');
+const releaseConfig = readConfig('config/release.yaml');
 formatReleaseVersion(releaseConfig);
 formatOverlayTitle(releaseConfig);
 
-const sceneConfig = validateSceneConfig(readYaml('config/scene.yaml'));
-const continuityConfig = readYaml('config/foliage-continuity.yaml');
+const sceneConfig = validateSceneConfig(readConfig('config/scene.yaml'));
+const continuityConfig = readConfig('config/foliage-continuity.yaml');
 for (const profile of FOLIAGE_CONTINUITY_PROFILE_IDS) {
   resolveFoliageContinuityProfile(continuityConfig, profile);
 }
 
 const library = PresetLibrary.fromConfig(
-  readYaml('config/tree-presets.yaml'),
+  readConfig('config/tree-presets.yaml'),
   continuityConfig,
 );
 for (const entry of sceneConfig.layout) {
@@ -70,7 +55,7 @@ for (const entry of sceneConfig.layout) {
   }
 }
 
-parsePagesConfig(readYaml('pages.config.yml'));
+parsePagesConfig(readConfig('pages.config.yml'));
 console.log(
   `Validated ${configFiles.length} YAML config files, ${library.ids.length} tree presets, and ${sceneConfig.layout.length} scene entries.`,
 );
