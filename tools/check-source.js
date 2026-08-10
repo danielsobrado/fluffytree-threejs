@@ -1,8 +1,12 @@
 import { existsSync, readdirSync } from 'node:fs';
-import { extname, join } from 'node:path';
+import { dirname, extname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { assertLocalImportTargets } from './source-checks.js';
 
+const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_DIRECTORIES = Object.freeze(['src', 'tests', 'tools']);
+const IMPORT_DIRECTORIES = Object.freeze(['src', 'tools']);
 const JAVASCRIPT_EXTENSION = '.js';
 const GITHUB_WORKFLOW_DIRECTORY = '.github/workflows';
 const GITHUB_WORKFLOW_PLACEHOLDER = '.gitkeep';
@@ -24,9 +28,10 @@ function collectJavaScriptFiles(directory) {
 }
 
 function assertNoGitHubActions() {
-  if (!existsSync(GITHUB_WORKFLOW_DIRECTORY)) return;
+  const workflowDirectory = join(REPOSITORY_ROOT, GITHUB_WORKFLOW_DIRECTORY);
+  if (!existsSync(workflowDirectory)) return;
 
-  const entries = readdirSync(GITHUB_WORKFLOW_DIRECTORY, {
+  const entries = readdirSync(workflowDirectory, {
     withFileTypes: true,
   }).filter((entry) => entry.name !== GITHUB_WORKFLOW_PLACEHOLDER);
   if (entries.length === 0) return;
@@ -37,7 +42,12 @@ function assertNoGitHubActions() {
 }
 
 assertNoGitHubActions();
-const files = SOURCE_DIRECTORIES.flatMap(collectJavaScriptFiles).sort();
+const files = SOURCE_DIRECTORIES.flatMap((directory) =>
+  collectJavaScriptFiles(join(REPOSITORY_ROOT, directory)),
+).sort();
+const importFiles = IMPORT_DIRECTORIES.flatMap((directory) =>
+  collectJavaScriptFiles(join(REPOSITORY_ROOT, directory)),
+).sort();
 
 for (const file of files) {
   const result = spawnSync(process.execPath, ['--check', file], {
@@ -50,4 +60,7 @@ for (const file of files) {
   }
 }
 
-console.log(`Syntax checked ${files.length} JavaScript files.`);
+assertLocalImportTargets(importFiles, REPOSITORY_ROOT);
+console.log(
+  `Syntax checked ${files.length} JavaScript files and verified ${importFiles.length} source module imports.`,
+);
