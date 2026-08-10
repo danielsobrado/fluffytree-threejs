@@ -14,59 +14,19 @@ import {
   remapUnavailableLodWeights,
 } from '../src/rendering/tree-lod-math.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
+import { parseTreeStressQaPolicy } from './tree-stress-qa-policy.js';
 
 const VISIBLE_FADE_THRESHOLD = 0.001;
 const VIEWPORT = Object.freeze([1280, 720]);
-
-function requirePositiveFinite(value, path) {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
-    throw new Error(`Configuration '${path}' must be a finite number > 0.`);
-  }
-  return value;
-}
-
-function requirePositiveInteger(value, path) {
-  if (!Number.isSafeInteger(value) || value <= 0) {
-    throw new Error(`Configuration '${path}' must be a positive integer.`);
-  }
-  return value;
-}
-
-function loadStressPolicy() {
-  const config = readYamlConfigSync('config/tree-stress-qa.yaml');
-  if (typeof config.fpsRequiresTargetHardware !== 'boolean') {
-    throw new Error(
-      "Configuration 'tree-stress-qa.fpsRequiresTargetHardware' must be a boolean.",
-    );
-  }
-
-  return Object.freeze({
-    expectedTreeCount: requirePositiveInteger(
-      config.expectedTreeCount,
-      'tree-stress-qa.expectedTreeCount',
-    ),
-    maximumColorDrawCalls: requirePositiveInteger(
-      config.maximumColorDrawCalls,
-      'tree-stress-qa.maximumColorDrawCalls',
-    ),
-    maximumGpuMegabytes: requirePositiveFinite(
-      config.maximumGpuMegabytes,
-      'tree-stress-qa.maximumGpuMegabytes',
-    ),
-    targetFps: requirePositiveFinite(
-      config.targetFps,
-      'tree-stress-qa.targetFps',
-    ),
-    fpsRequiresTargetHardware: config.fpsRequiresTargetHardware,
-  });
-}
 
 const baseScene = validateSceneConfig(readYamlConfigSync('config/scene.yaml'));
 const scene = validateSceneConfig(createStressSceneConfig(baseScene));
 const treeConfig = readYamlConfigSync('config/tree-presets.yaml');
 const continuityConfig = readYamlConfigSync('config/foliage-continuity.yaml');
 const presets = PresetLibrary.fromConfig(treeConfig, continuityConfig).presets;
-const policy = loadStressPolicy();
+const policy = parseTreeStressQaPolicy(
+  readYamlConfigSync('config/tree-stress-qa.yaml'),
+);
 const generator = new TreeGenerator();
 const viewportHeight = VIEWPORT[1];
 const focalPixels =
