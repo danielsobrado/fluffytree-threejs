@@ -9,10 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
-import {
-  assertVerifiedDeploySource,
-  parseDeployOptions,
-} from './deploy-source-guard.js';
+import { assertDeploySourceMatchesCheckout } from './deploy-source-guard.js';
 import { stampModuleGraph, versionHtmlAssets } from './module-versioning.js';
 import { parsePagesConfig } from './pages-config.js';
 import { releaseCacheKeyFromYaml } from './release-cache-key.js';
@@ -106,13 +103,13 @@ function assertFreshReleaseCacheKey(sourceSha, publishRef, publishSha) {
   }
 }
 
-function assertVerifiedSource(sourceSha) {
+function assertSourceMatchesCheckout(sourceSha) {
   const headSha = runGit(['rev-parse', 'HEAD'], { capture: true });
   const workingTreeStatus = runGit(
     ['status', '--porcelain=v1', '--untracked-files=all'],
     { capture: true },
   );
-  assertVerifiedDeploySource({ sourceSha, headSha, workingTreeStatus });
+  assertDeploySourceMatchesCheckout({ sourceSha, headSha, workingTreeStatus });
 }
 
 function createPublishedCommit(sourceSha) {
@@ -147,7 +144,7 @@ function createPublishedCommit(sourceSha) {
   }
 }
 
-function deploy(options) {
+function deploy() {
   const config = loadConfig();
   assertBranchName(config.sourceBranch);
   assertBranchName(config.publishBranch);
@@ -174,7 +171,7 @@ function deploy(options) {
     allowFailure: true,
   });
 
-  if (options.requireVerifiedSource) assertVerifiedSource(sourceSha);
+  assertSourceMatchesCheckout(sourceSha);
   assertRequiredFiles(sourceSha, config.requiredFiles);
 
   if (currentPublishedSource(publishRef) === sourceSha) {
@@ -198,7 +195,7 @@ function deploy(options) {
 }
 
 try {
-  deploy(parseDeployOptions(process.argv.slice(2)));
+  deploy();
 } catch (error) {
   console.error(
     `${LOG_PREFIX} Deployment failed:`,
