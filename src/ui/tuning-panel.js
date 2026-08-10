@@ -471,7 +471,15 @@ export class TuningPanel {
   }
 
   refreshCoverage() {
-    const report = this.demo.analyzeCoverage(this.presetId);
+    let report;
+    try {
+      report = this.demo.analyzeCoverage(this.presetId);
+    } catch (error) {
+      for (const value of this.coverageRows.values()) value.textContent = '–';
+      logger.error('Failed to analyze studio coverage.', error);
+      this.setStatus(error.message, 'error');
+      return null;
+    }
 
     if (!report) {
       for (const value of this.coverageRows.values()) value.textContent = '–';
