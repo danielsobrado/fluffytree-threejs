@@ -75,6 +75,7 @@ export class TuningPanel {
     this.commitTimer = null;
     this.activeApply = null;
     this.activeApplyConfig = null;
+    this.sceneRevision = 0;
   }
 
   mount(container) {
@@ -119,6 +120,7 @@ export class TuningPanel {
   tryStudioPreset(presetId) {
     try {
       this.demo.setStudioPreset(presetId);
+      this.sceneRevision += 1;
       return true;
     } catch (error) {
       logger.error('Failed to change the studio scene.', error);
@@ -387,6 +389,7 @@ export class TuningPanel {
     const presetId = this.presetId;
     const config = this.config;
     const previous = this.library.rawValue(presetId);
+    const sceneRevision = this.sceneRevision;
 
     if (!this.storeConfiguration(presetId, config)) return Promise.resolve(false);
 
@@ -398,16 +401,22 @@ export class TuningPanel {
     // edit would sit unapplied until the tab came forward.
     const operation = new Promise((resolve) => {
       setTimeout(() => {
-        // The user may switch presets or make another edit while this paint-yield
-        // is pending. The stored snapshot is valid, but rebuilding it now would
-        // replace the newer state the studio is already describing.
-        if (this.presetId !== presetId || this.config !== config) {
+        // The user may switch presets, make another edit or rebuild the scene
+        // while this paint-yield is pending. That newer scene already consumed
+        // the stored configuration, so this operation must not rebuild or roll
+        // it back afterward.
+        if (
+          this.presetId !== presetId ||
+          this.config !== config ||
+          this.sceneRevision !== sceneRevision
+        ) {
           resolve(true);
           return;
         }
 
         try {
           this.demo.rebuildPreset(presetId);
+          this.sceneRevision += 1;
           this.refreshCoverage();
           resolve(true);
         } catch (error) {
@@ -445,6 +454,7 @@ export class TuningPanel {
   reseedScene() {
     try {
       this.demo.reseed();
+      this.sceneRevision += 1;
       this.refreshCoverage();
       return true;
     } catch (error) {
