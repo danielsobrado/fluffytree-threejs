@@ -2,11 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
-import { load } from 'js-yaml';
 import { PresetLibrary } from '../src/domain/preset-library.js';
 import { FOLIAGE_SHELL_CONSTANTS } from '../src/generation/foliage-shell-constants.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
 import { analyzeShellCoverage } from '../src/qa/shell-coverage-analyzer.js';
+import { readYamlConfigSync } from './node-yaml-config.js';
 
 const { values } = parseArgs({
   options: {
@@ -15,18 +15,17 @@ const { values } = parseArgs({
   },
 });
 
-const configuration = load(
-  fs.readFileSync('config/shell-coverage-qa.yaml', 'utf8'),
-);
-const treeConfig = load(fs.readFileSync('config/tree-presets.yaml', 'utf8'));
-const continuityConfig = load(
-  fs.readFileSync('config/foliage-continuity.yaml', 'utf8'),
-);
+const configuration = readYamlConfigSync('config/shell-coverage-qa.yaml');
+const treeConfig = readYamlConfigSync('config/tree-presets.yaml');
+const continuityConfig = readYamlConfigSync('config/foliage-continuity.yaml');
 const presets = PresetLibrary.fromConfig(
   treeConfig,
   continuityConfig,
 ).presets;
 const seedCount = Number(values.seeds ?? configuration.run.seedCount);
+if (!Number.isSafeInteger(seedCount) || seedCount <= 0) {
+  throw new Error(`Invalid shell coverage seed count '${values.seeds ?? configuration.run.seedCount}'.`);
+}
 const outputDirectory = path.resolve(
   values.output ?? 'qa-results/shell-coverage',
 );
