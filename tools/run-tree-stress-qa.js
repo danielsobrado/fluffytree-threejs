@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import { load } from 'js-yaml';
 import { createStressSceneConfig } from '../src/app/stress-scene.js';
 import { validateSceneConfig } from '../src/config/scene-config-validator.js';
 import { PresetLibrary } from '../src/domain/preset-library.js';
@@ -14,16 +13,13 @@ import {
   calculateLodWeights,
   remapUnavailableLodWeights,
 } from '../src/rendering/tree-lod-math.js';
+import { readYamlConfigSync } from './node-yaml-config.js';
 
 const VISIBLE_FADE_THRESHOLD = 0.001;
-const baseScene = validateSceneConfig(
-  load(fs.readFileSync('config/scene.yaml', 'utf8')),
-);
+const baseScene = validateSceneConfig(readYamlConfigSync('config/scene.yaml'));
 const scene = validateSceneConfig(createStressSceneConfig(baseScene));
-const treeConfig = load(fs.readFileSync('config/tree-presets.yaml', 'utf8'));
-const continuityConfig = load(
-  fs.readFileSync('config/foliage-continuity.yaml', 'utf8'),
-);
+const treeConfig = readYamlConfigSync('config/tree-presets.yaml');
+const continuityConfig = readYamlConfigSync('config/foliage-continuity.yaml');
 const presets = PresetLibrary.fromConfig(treeConfig, continuityConfig).presets;
 const generator = new TreeGenerator();
 const viewportHeight = 720;
