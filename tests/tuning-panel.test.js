@@ -90,6 +90,23 @@ test('a newer same-preset edit makes an older yielding apply stale', async () =>
   assert.equal(library.rawValue('first').trunk.bend, 0.72);
 });
 
+test('a newer scene rebuild makes a yielding apply stale without rolling back', async () => {
+  const { panel, library, rebuilds } = createPanel();
+  panel.config.trunk.bend = 0.77;
+  panel.demo.reseed = () => rebuilds.push('reseed');
+  panel.demo.rebuildPreset = () => {
+    throw new Error('stale rebuild ran');
+  };
+
+  const applied = panel.apply();
+  assert.equal(panel.reseedScene(), true);
+
+  assert.equal(await applied, true);
+  assert.deepEqual(rebuilds, ['reseed']);
+  assert.equal(library.rawValue('first').trunk.bend, 0.77);
+  assert.equal(panel.config.trunk.bend, 0.77);
+});
+
 test('coverage auto-fit settles pending edits and creates a detached revision', async () => {
   const { panel, rebuilds } = createPanel();
   installCoverageRows(panel);
