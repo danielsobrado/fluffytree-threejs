@@ -1,12 +1,22 @@
 const STATUS_ENDPOINT = '/__render-smoke-status';
 const REPORT_ENDPOINT = '/__qa-report';
 
+function isQaMode() {
+  try {
+    return new URLSearchParams(globalThis.location?.search ?? '').has('qa');
+  } catch {
+    return false;
+  }
+}
+
 export function serializeQaError(error) {
   if (error instanceof Error) return `${error.name}: ${error.message}`;
   return String(error);
 }
 
 export function reportQaStatus(status, error = '') {
+  if (!isQaMode()) return;
+
   const query = new URLSearchParams({ status, error });
   void fetch(`${STATUS_ENDPOINT}?${query}`, {
     cache: 'no-store',
@@ -15,6 +25,8 @@ export function reportQaStatus(status, error = '') {
 }
 
 export async function postQaReport(name, payload) {
+  if (!isQaMode()) return;
+
   try {
     await fetch(`${REPORT_ENDPOINT}?${new URLSearchParams({ name })}`, {
       method: 'POST',
