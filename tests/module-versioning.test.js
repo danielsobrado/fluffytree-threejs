@@ -49,6 +49,14 @@ test('relative dynamic browser imports are rejected instead of published unstamp
     () => assertNoRelativeDynamicImports("const lazy = import('./lazy.js');", 'app.js'),
     /cannot be cache-versioned safely/,
   );
+  assert.throws(
+    () =>
+      assertNoRelativeDynamicImports(
+        'const lazy = import(`./${name}.js`);',
+        'app.js',
+      ),
+    /dynamic template import.*cannot be cache-versioned safely/,
+  );
 
   assert.doesNotThrow(() =>
     assertNoRelativeDynamicImports(
