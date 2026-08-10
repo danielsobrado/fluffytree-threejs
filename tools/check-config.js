@@ -13,6 +13,8 @@ import {
 import { PresetLibrary } from '../src/domain/preset-library.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
 import { parsePagesConfig } from './pages-config.js';
+import { parseTreeLodQaPolicy } from './tree-lod-qa-policy.js';
+import { parseTreeStressQaPolicy } from './tree-stress-qa-policy.js';
 
 const REPOSITORY_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -55,6 +57,8 @@ for (const entry of sceneConfig.layout) {
   }
 }
 
+parseTreeLodQaPolicy(readConfig('config/tree-lod-qa.yaml'));
+parseTreeStressQaPolicy(readConfig('config/tree-stress-qa.yaml'));
 parsePagesConfig(readConfig('pages.config.yml'));
 console.log(
   `Validated ${configFiles.length} YAML config files, ${library.ids.length} tree presets, and ${sceneConfig.layout.length} scene entries.`,
