@@ -54,6 +54,13 @@ test('LOD QA policy validates budgets and sweep seeds', () => {
       ),
     /unsigned 32-bit integer/,
   );
+  assert.throws(
+    () =>
+      parseTreeLodQaPolicy(
+        lodPolicy({ sweep: { ...lodPolicy().sweep, seedStep: 0x100000000 } }),
+      ),
+    /unsigned 32-bit integer/,
+  );
 });
 
 test('stress QA policy rejects invalid acceptance thresholds', () => {
