@@ -1,4 +1,4 @@
-import { readdirSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -13,6 +13,7 @@ import {
 import { PresetLibrary } from '../src/domain/preset-library.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
 import { parsePagesConfig } from './pages-config.js';
+import { assertReleaseSourceConsistency } from './release-source-check.js';
 import { parseTreeLodQaPolicy } from './tree-lod-qa-policy.js';
 import { parseTreeStressQaPolicy } from './tree-stress-qa-policy.js';
 
@@ -25,6 +26,20 @@ const YAML_EXTENSIONS = new Set(['.yaml', '.yml']);
 
 function readConfig(relativePath) {
   return readYamlConfigSync(path.join(REPOSITORY_ROOT, relativePath));
+}
+
+function readText(relativePath) {
+  return readFileSync(path.join(REPOSITORY_ROOT, relativePath), 'utf8');
+}
+
+function readJson(relativePath) {
+  try {
+    return JSON.parse(readText(relativePath));
+  } catch (error) {
+    throw new Error(`Failed to parse JSON file '${relativePath}'.`, {
+      cause: error,
+    });
+  }
 }
 
 const configFiles = readdirSync(CONFIG_DIRECTORY, { withFileTypes: true })
@@ -40,6 +55,11 @@ for (const file of configFiles) readConfig(file);
 const releaseConfig = readConfig('config/release.yaml');
 formatReleaseVersion(releaseConfig);
 formatOverlayTitle(releaseConfig);
+assertReleaseSourceConsistency({
+  release: releaseConfig,
+  packageConfig: readJson('package.json'),
+  indexHtml: readText('index.html'),
+});
 
 const sceneConfig = validateSceneConfig(readConfig('config/scene.yaml'));
 const continuityConfig = readConfig('config/foliage-continuity.yaml');
