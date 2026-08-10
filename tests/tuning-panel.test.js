@@ -156,6 +156,21 @@ test('a failed rebuild restores the previous library and editor configuration', 
   assert.equal(panel.status.dataset.tone, 'error');
 });
 
+test('coverage diagnostics cannot roll back a successful rebuild', async () => {
+  const { panel, library, rebuilds } = createPanel();
+  panel.config.trunk.bend = 0.77;
+  panel.demo.analyzeCoverage = () => {
+    throw new Error('coverage failed');
+  };
+
+  assert.equal(await panel.apply(), true);
+  assert.deepEqual(rebuilds, ['first']);
+  assert.equal(library.rawValue('first').trunk.bend, 0.77);
+  assert.equal(panel.config.trunk.bend, 0.77);
+  assert.equal(panel.status.textContent, 'coverage failed');
+  assert.equal(panel.status.dataset.tone, 'error');
+});
+
 test('a failed studio scene change reports the error without throwing', () => {
   const { panel } = createPanel();
   panel.demo.setStudioPreset = () => {
