@@ -2,7 +2,10 @@ import { existsSync, readdirSync } from 'node:fs';
 import { dirname, extname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { assertLocalImportTargets } from './source-checks.js';
+import {
+  assertLocalHtmlAssets,
+  assertLocalImportTargets,
+} from './source-checks.js';
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_DIRECTORIES = Object.freeze(['src', 'tests', 'tools']);
@@ -10,6 +13,7 @@ const IMPORT_DIRECTORIES = Object.freeze(['src', 'tools']);
 const JAVASCRIPT_EXTENSION = '.js';
 const GITHUB_WORKFLOW_DIRECTORY = '.github/workflows';
 const GITHUB_WORKFLOW_PLACEHOLDER = '.gitkeep';
+const ENTRY_HTML = 'index.html';
 
 function collectJavaScriptFiles(directory) {
   const files = [];
@@ -61,6 +65,7 @@ for (const file of files) {
 }
 
 assertLocalImportTargets(importFiles, REPOSITORY_ROOT);
+assertLocalHtmlAssets(join(REPOSITORY_ROOT, ENTRY_HTML), REPOSITORY_ROOT);
 console.log(
-  `Syntax checked ${files.length} JavaScript files and verified ${importFiles.length} source module imports.`,
+  `Syntax checked ${files.length} JavaScript files, verified ${importFiles.length} source module imports, and checked local HTML assets.`,
 );
