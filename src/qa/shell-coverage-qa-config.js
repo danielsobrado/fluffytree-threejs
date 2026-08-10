@@ -156,10 +156,6 @@ function parseThresholds(config) {
   return Object.freeze(thresholds);
 }
 
-export function parseShellCoverageProbeOptions(config) {
-  return parseProbe(config);
-}
-
 export function parseShellCoverageQaConfig(config) {
   const run = requireObject(config?.run, 'shell-coverage-qa.run');
   const report = requireObject(config?.report, 'shell-coverage-qa.report');
