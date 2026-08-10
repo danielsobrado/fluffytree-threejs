@@ -11,6 +11,8 @@ import {
 const JAVASCRIPT_EXTENSION = '.js';
 const RELATIVE_IMPORT_PATTERN =
   /\b(?:from|import)\s*(?:\(\s*)?['"](\.{1,2}\/[^'"]+)['"](?:\s*\))?/g;
+const LOCAL_HTML_ASSET_PATTERN =
+  /<(?:script|link|img|source)\b[^>]*\b(?:src|href)=['"](\.\/[^'"?#]+)(?:[?#][^'"]*)?['"][^>]*>/gi;
 
 function modulePath(specifier) {
   const queryIndex = specifier.search(/[?#]/);
@@ -26,6 +28,15 @@ function isInsideRepository(repositoryRoot, target) {
   );
 }
 
+function assertExistingRepositoryFile(target, repositoryRoot, description) {
+  if (!isInsideRepository(repositoryRoot, target)) {
+    throw new Error(`${description} escapes the repository.`);
+  }
+  if (!existsSync(target) || !statSync(target).isFile()) {
+    throw new Error(`${description} does not resolve to a file.`);
+  }
+}
+
 export function collectRelativeModuleSpecifiers(source) {
   const specifiers = [];
   RELATIVE_IMPORT_PATTERN.lastIndex = 0;
@@ -35,6 +46,17 @@ export function collectRelativeModuleSpecifiers(source) {
   }
 
   return specifiers;
+}
+
+export function collectLocalHtmlAssets(source) {
+  const assets = [];
+  LOCAL_HTML_ASSET_PATTERN.lastIndex = 0;
+
+  for (const match of source.matchAll(LOCAL_HTML_ASSET_PATTERN)) {
+    assets.push(match[1]);
+  }
+
+  return assets;
 }
 
 export function assertLocalImportTargets(files, repositoryRoot) {
@@ -50,16 +72,24 @@ export function assertLocalImportTargets(files, repositoryRoot) {
       }
 
       const target = resolve(dirname(file), localPath);
-      if (!isInsideRepository(repositoryRoot, target)) {
-        throw new Error(
-          `Local module import '${specifier}' in '${file}' escapes the repository.`,
-        );
-      }
-      if (!existsSync(target) || !statSync(target).isFile()) {
-        throw new Error(
-          `Local module import '${specifier}' in '${file}' does not resolve to a file.`,
-        );
-      }
+      assertExistingRepositoryFile(
+        target,
+        repositoryRoot,
+        `Local module import '${specifier}' in '${file}'`,
+      );
     }
+  }
+}
+
+export function assertLocalHtmlAssets(htmlFile, repositoryRoot) {
+  const source = readFileSync(htmlFile, 'utf8');
+
+  for (const asset of collectLocalHtmlAssets(source)) {
+    const target = resolve(dirname(htmlFile), asset);
+    assertExistingRepositoryFile(
+      target,
+      repositoryRoot,
+      `Local HTML asset '${asset}' in '${htmlFile}'`,
+    );
   }
 }
