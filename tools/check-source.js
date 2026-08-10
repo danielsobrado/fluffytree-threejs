@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertModuleDependencies } from './module-dependency-parser.js';
 import { assertNoRelativeDynamicImports } from './module-versioning.js';
 import { assertLocalHtmlAssets } from './source-checks.js';
 
@@ -13,7 +14,6 @@ const JAVASCRIPT_EXTENSION = '.js';
 const GITHUB_WORKFLOW_DIRECTORY = '.github/workflows';
 const GITHUB_WORKFLOW_PLACEHOLDER = '.gitkeep';
 const ENTRY_HTML = 'index.html';
-const IMPORT_CHECKER = join(REPOSITORY_ROOT, 'tools/check-module-imports.js');
 
 function collectJavaScriptFiles(directory) {
   const files = [];
@@ -45,23 +45,6 @@ function assertNoGitHubActions() {
   );
 }
 
-function assertParsedModuleImports(files) {
-  const result = spawnSync(
-    process.execPath,
-    ['--no-warnings', '--experimental-vm-modules', IMPORT_CHECKER],
-    {
-      encoding: 'utf8',
-      input: JSON.stringify({ repositoryRoot: REPOSITORY_ROOT, files }),
-    },
-  );
-
-  if (result.status === 0) return;
-
-  if (result.stderr) process.stderr.write(result.stderr);
-  if (result.stdout) process.stderr.write(result.stdout);
-  process.exit(result.status ?? 1);
-}
-
 assertNoGitHubActions();
 const files = SOURCE_DIRECTORIES.flatMap((directory) =>
   collectJavaScriptFiles(join(REPOSITORY_ROOT, directory)),
@@ -84,7 +67,7 @@ for (const file of files) {
   }
 }
 
-assertParsedModuleImports(importFiles);
+assertModuleDependencies(importFiles, REPOSITORY_ROOT);
 for (const file of browserFiles) {
   assertNoRelativeDynamicImports(readFileSync(file, 'utf8'), file);
 }
