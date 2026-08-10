@@ -1,3 +1,3 @@
 version: '2.0.0'
-build: '20260809.9'
-label: runtime performance hardening
+build: '20260810.1'
+label: production static hardening
