@@ -3,6 +3,7 @@ import { createStressSceneConfig } from '../src/app/stress-scene.js';
 import { validateSceneConfig } from '../src/config/scene-config-validator.js';
 import { PresetLibrary } from '../src/domain/preset-library.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
+import { parseTreeStressQaPolicy } from '../src/qa/tree-stress-qa-policy.js';
 import { analyzeTreeLodBudgets } from '../src/qa/tree-lod-budget-analyzer.js';
 import {
   BILLBOARD_BATCH_CAPACITY,
@@ -14,7 +15,6 @@ import {
   remapUnavailableLodWeights,
 } from '../src/rendering/tree-lod-math.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
-import { parseTreeStressQaPolicy } from './tree-stress-qa-policy.js';
 
 const VISIBLE_FADE_THRESHOLD = 0.001;
 const VIEWPORT = Object.freeze([1280, 720]);
