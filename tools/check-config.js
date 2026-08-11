@@ -11,7 +11,9 @@ import {
   resolveFoliageContinuityProfile,
 } from '../src/domain/foliage-continuity-config.js';
 import { PresetLibrary } from '../src/domain/preset-library.js';
+import { parseCrownVolumeQaConfig } from '../src/qa/crown-volume-qa-config.js';
 import { parseShellCoverageQaConfig } from '../src/qa/shell-coverage-qa-config.js';
+import { parseTreeShapeQaConfig } from '../src/qa/tree-shape-qa-config.js';
 import { parseTreeStressQaPolicy } from '../src/qa/tree-stress-qa-policy.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
 import { parsePagesConfig } from './pages-config.js';
@@ -95,10 +97,10 @@ for (const entry of sceneConfig.layout) {
   }
 }
 
+const presetIds = new Set(library.ids);
 const coverageConfig = parseShellCoverageQaConfig(
   readConfig('config/shell-coverage-qa.yaml'),
 );
-const presetIds = new Set(library.ids);
 for (const presetId of presetIds) {
   if (!coverageConfig.thresholds[presetId]) {
     throw new Error(
@@ -114,6 +116,18 @@ for (const presetId of Object.keys(coverageConfig.thresholds)) {
   }
 }
 
+const treeShapeConfig = parseTreeShapeQaConfig(
+  readConfig('config/tree-shape-qa.yaml'),
+);
+for (const presetId of Object.keys(treeShapeConfig.thresholds.presets)) {
+  if (!presetIds.has(presetId)) {
+    throw new Error(
+      `Tree shape QA contains an override for unknown tree preset '${presetId}'.`,
+    );
+  }
+}
+
+parseCrownVolumeQaConfig(readConfig('config/crown-volume-qa.yaml'));
 parseTreeLodQaPolicy(readConfig('config/tree-lod-qa.yaml'));
 parseTreeStressQaPolicy(readConfig('config/tree-stress-qa.yaml'));
 const pagesConfig = parsePagesConfig(readConfig('pages.config.yml'));
