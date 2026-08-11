@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { PresetLibrary } from '../src/domain/preset-library.js';
 import { renderQaMarkdown } from '../src/qa/qa-report-renderer.js';
+import { parseTreeShapeQaConfig } from '../src/qa/tree-shape-qa-config.js';
 import { TreeShapeQaRunner } from '../src/qa/tree-shape-qa-runner.js';
 import { readYamlConfig } from './node-yaml-config.js';
 
@@ -55,11 +56,15 @@ async function main() {
     qaConfiguration.run.seedCount = options.seedCount;
   }
 
+  const validatedQaConfiguration = parseTreeShapeQaConfig(qaConfiguration);
   const presets = PresetLibrary.fromConfig(
     presetConfiguration,
     continuityConfiguration,
   ).presets;
-  const report = new TreeShapeQaRunner().run(presets, qaConfiguration);
+  const report = new TreeShapeQaRunner().run(
+    presets,
+    validatedQaConfiguration,
+  );
   const outputDirectory = options.output;
   await mkdir(outputDirectory, { recursive: true });
   await Promise.all([
@@ -70,7 +75,7 @@ async function main() {
     ),
     writeFile(
       `${outputDirectory}/report.md`,
-      renderQaMarkdown(report, qaConfiguration.report.summaryMetrics),
+      renderQaMarkdown(report, validatedQaConfiguration.report.summaryMetrics),
       'utf8',
     ),
   ]);
