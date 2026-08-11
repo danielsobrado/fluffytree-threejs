@@ -1,4 +1,7 @@
 function formatNumber(value) {
+  if (!Number.isFinite(value)) {
+    throw new Error(`QA report contains a non-finite metric value '${value}'.`);
+  }
   if (Number.isInteger(value)) return String(value);
   return value.toFixed(4);
 }
@@ -11,7 +14,9 @@ function renderMetricTable(report, metricNames) {
 
   for (const metric of metricNames) {
     const statistics = report.metrics[metric];
-    if (!statistics) continue;
+    if (!statistics) {
+      throw new Error(`QA report is missing configured summary metric '${metric}'.`);
+    }
     lines.push(
       `| ${metric} | ${formatNumber(statistics.minimum)} | ${formatNumber(statistics.p05)} | ${formatNumber(statistics.p50)} | ${formatNumber(statistics.p95)} | ${formatNumber(statistics.maximum)} | ${formatNumber(statistics.mean)} |`,
     );
