@@ -18,6 +18,11 @@ import { readYamlConfigSync } from './node-yaml-config.js';
 
 const VISIBLE_FADE_THRESHOLD = 0.001;
 const VIEWPORT = Object.freeze([1280, 720]);
+const OUTPUT_DIRECTORY = 'qa-results/tree-stress';
+const REPORT_PATH = `${OUTPUT_DIRECTORY}/report.json`;
+
+fs.mkdirSync(OUTPUT_DIRECTORY, { recursive: true });
+fs.rmSync(REPORT_PATH, { force: true });
 
 const baseScene = validateSceneConfig(readYamlConfigSync('config/scene.yaml'));
 const scene = validateSceneConfig(createStressSceneConfig(baseScene));
@@ -116,9 +121,8 @@ const passed =
   report.estimatedColorDrawCalls <= policy.maximumColorDrawCalls &&
   report.estimatedGpuMegabytes <= policy.maximumGpuMegabytes;
 
-fs.mkdirSync('qa-results/tree-stress', { recursive: true });
 fs.writeFileSync(
-  'qa-results/tree-stress/report.json',
+  REPORT_PATH,
   `${JSON.stringify({ passed, ...report }, null, 2)}\n`,
 );
 console.log(JSON.stringify(report, null, 2));
