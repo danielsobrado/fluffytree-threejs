@@ -48,6 +48,11 @@ export function evaluateSolidityView(view, thresholds) {
     const limit = thresholds[metric];
     if (limit === undefined) continue;
 
+    if (!Number.isFinite(limit)) {
+      failures.push(`${viewLabel(view)} ${metric} threshold is not finite`);
+      continue;
+    }
+
     const actual = view[metric];
     if (!Number.isFinite(actual)) {
       failures.push(`${viewLabel(view)} ${metric} is not finite`);
@@ -60,7 +65,7 @@ export function evaluateSolidityView(view, thresholds) {
       failures.push(
         `${viewLabel(view)} ${metric} ${actual.toFixed(5)} ${
           isBelowMinimum(metric) ? '<' : '>'
-        } ${Number(limit).toFixed(5)}`,
+        } ${limit.toFixed(5)}`,
       );
     }
   }
@@ -80,10 +85,18 @@ export function evaluateSolidityReport(trees, thresholds) {
     }
 
     const minimumWind = presetThresholds.minimumWindMovedRatio;
-    if (minimumWind !== undefined && tree.windMovedRatio < minimumWind) {
-      failures.push(
-        `${tree.presetId} windMovedRatio ${tree.windMovedRatio.toFixed(4)} < ${minimumWind}`,
-      );
+    if (minimumWind !== undefined) {
+      if (!Number.isFinite(minimumWind)) {
+        failures.push(
+          `${tree.presetId} minimumWindMovedRatio threshold is not finite`,
+        );
+      } else if (!Number.isFinite(tree.windMovedRatio)) {
+        failures.push(`${tree.presetId} windMovedRatio is not finite`);
+      } else if (tree.windMovedRatio < minimumWind) {
+        failures.push(
+          `${tree.presetId} windMovedRatio ${tree.windMovedRatio.toFixed(4)} < ${minimumWind}`,
+        );
+      }
     }
 
     for (const view of tree.views) {
