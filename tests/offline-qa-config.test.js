@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import { load } from 'js-yaml';
+import { parseCanopySolidityQaConfig } from '../src/qa/canopy-solidity-qa-config.js';
 import { parseCrownVolumeQaConfig } from '../src/qa/crown-volume-qa-config.js';
 import { parseTreeShapeQaConfig } from '../src/qa/tree-shape-qa-config.js';
 
@@ -15,10 +16,36 @@ function cloneConfig(path) {
 
 test('shipped offline QA configurations are valid', () => {
   assert.doesNotThrow(() =>
+    parseCanopySolidityQaConfig(loadConfig('config/canopy-solidity-qa.yaml')),
+  );
+  assert.doesNotThrow(() =>
     parseCrownVolumeQaConfig(loadConfig('config/crown-volume-qa.yaml')),
   );
   assert.doesNotThrow(() =>
     parseTreeShapeQaConfig(loadConfig('config/tree-shape-qa.yaml')),
+  );
+});
+
+test('canopy solidity QA requires complete finite ratio thresholds', () => {
+  const missing = cloneConfig('config/canopy-solidity-qa.yaml');
+  delete missing.thresholds.roundOrchard.crown.coverageRetention;
+  assert.throws(
+    () => parseCanopySolidityQaConfig(missing),
+    /coverageRetention.*finite number/,
+  );
+
+  const coercible = cloneConfig('config/canopy-solidity-qa.yaml');
+  coercible.thresholds.roundOrchard.minimumWindMovedRatio = '0.15';
+  assert.throws(
+    () => parseCanopySolidityQaConfig(coercible),
+    /minimumWindMovedRatio.*finite number/,
+  );
+
+  const outOfRange = cloneConfig('config/canopy-solidity-qa.yaml');
+  outOfRange.thresholds.roundOrchard.base.holeRatio = 1.1;
+  assert.throws(
+    () => parseCanopySolidityQaConfig(outOfRange),
+    /holeRatio.*finite number/,
   );
 });
 
