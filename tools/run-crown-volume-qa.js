@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { PresetLibrary } from '../src/domain/preset-library.js';
 import { parseCrownVolumeQaConfig } from '../src/qa/crown-volume-qa-config.js';
@@ -10,6 +10,7 @@ const FILES = Object.freeze({
   continuity: new URL('../config/foliage-continuity.yaml', import.meta.url),
   qa: new URL('../config/crown-volume-qa.yaml', import.meta.url),
 });
+const REPORT_FILES = Object.freeze(['report.json', 'report.md']);
 
 function readOptions() {
   const { values } = parseArgs({
@@ -27,6 +28,13 @@ function readOptions() {
   }
 
   return { ...values, seedCount };
+}
+
+async function clearPreviousReports(outputDirectory) {
+  await mkdir(outputDirectory, { recursive: true });
+  await Promise.all(
+    REPORT_FILES.map((file) => rm(`${outputDirectory}/${file}`, { force: true })),
+  );
 }
 
 function renderMarkdown(report) {
@@ -86,6 +94,7 @@ function printSummary(report) {
 
 async function main() {
   const options = readOptions();
+  await clearPreviousReports(options.output);
   const [presetConfiguration, continuityConfiguration, sourceQaConfiguration] =
     await Promise.all([
       readYamlConfig(FILES.presets),
@@ -107,7 +116,6 @@ async function main() {
     presets,
     validatedQaConfiguration,
   );
-  await mkdir(options.output, { recursive: true });
   await Promise.all([
     writeFile(
       `${options.output}/report.json`,
