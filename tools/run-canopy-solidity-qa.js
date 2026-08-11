@@ -5,6 +5,11 @@ import process from 'node:process';
 
 const outputDirectory =
   process.env.CANOPY_SOLIDITY_OUTPUT ?? 'qa-results/canopy-solidity';
+const reportPath = path.resolve(outputDirectory, 'canopy-solidity.json');
+
+// A failed browser run must never leave the previous successful report looking
+// like current output.
+fs.rmSync(reportPath, { force: true });
 
 const child = spawn(process.execPath, ['tools/run-render-smoke.js'], {
   env: {
@@ -20,18 +25,24 @@ const exitCode = await new Promise((resolve, reject) => {
   child.once('close', resolve);
 });
 
-const reportPath = path.resolve(outputDirectory, 'canopy-solidity.json');
+function safeFileSegment(value) {
+  return encodeURIComponent(String(value));
+}
 
 function writeWorstViewImage(tree) {
   const dataUrl = tree.worstView?.image;
   if (!dataUrl) return null;
 
-  const encoded = dataUrl.slice(dataUrl.indexOf(',') + 1);
+  const prefix = 'data:image/png;base64,';
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith(prefix)) {
+    throw new Error(`Invalid worst-view image for '${tree.presetId}'.`);
+  }
+
   const file = path.resolve(
     outputDirectory,
-    `worst-${tree.presetId}-${tree.worstView.name}.png`,
+    `worst-${safeFileSegment(tree.presetId)}-${safeFileSegment(tree.worstView.name)}.png`,
   );
-  fs.writeFileSync(file, Buffer.from(encoded, 'base64'));
+  fs.writeFileSync(file, Buffer.from(dataUrl.slice(prefix.length), 'base64'));
   tree.worstView.image = path.basename(file);
   return file;
 }
