@@ -1,34 +1,7 @@
 import { TreeGenerator } from '../generation/tree-generator.js';
 import { TrunkGeometryFactory } from '../rendering/trunk-geometry-factory.js';
 import { analyzeBufferGeometryManifold } from './mesh-manifold-analyzer.js';
-
-function validateConfiguration(configuration) {
-  const seedStart = Number(configuration?.run?.seedStart);
-  const seedCount = Number(configuration?.run?.seedCount);
-  const variants = configuration?.run?.variants;
-
-  if (!Number.isSafeInteger(seedStart)) {
-    throw new Error('Stem manifold QA seedStart must be an integer.');
-  }
-  if (!Number.isSafeInteger(seedCount) || seedCount <= 0) {
-    throw new Error('Stem manifold QA seedCount must be a positive integer.');
-  }
-  if (!Array.isArray(variants) || variants.length === 0) {
-    throw new Error('Stem manifold QA requires at least one geometry variant.');
-  }
-
-  for (const variant of variants) {
-    if (
-      typeof variant.id !== 'string' ||
-      !Number.isSafeInteger(variant.radialSegments) ||
-      variant.radialSegments < 3 ||
-      !Number.isSafeInteger(variant.trunkCurveSamples) ||
-      variant.trunkCurveSamples < 2
-    ) {
-      throw new Error('Stem manifold QA contains an invalid geometry variant.');
-    }
-  }
-}
+import { parseStemManifoldQaConfig } from './stem-manifold-qa-config.js';
 
 function collectFailures(metrics) {
   const checks = [
@@ -91,15 +64,11 @@ export class StemManifoldQaRunner {
   }
 
   run(presets, configuration) {
-    validateConfiguration(configuration);
-    const analysisOptions = configuration.analysis ?? {};
-    const maximumFailureExamples = Number(
-      configuration.report?.maximumFailureExamples ?? 20,
-    );
+    const config = parseStemManifoldQaConfig(configuration);
     const failuresByMetric = {};
     const failureExamples = [];
     const variants = Object.fromEntries(
-      configuration.run.variants.map((variant) => [
+      config.run.variants.map((variant) => [
         variant.id,
         {
           radialSegments: variant.radialSegments,
@@ -119,19 +88,23 @@ export class StemManifoldQaRunner {
     let failedGeometryCount = 0;
 
     for (const [presetId, preset] of presets) {
-      for (let offset = 0; offset < configuration.run.seedCount; offset += 1) {
-        const seed = configuration.run.seedStart + offset;
+      for (let offset = 0; offset < config.run.seedCount; offset += 1) {
+        const seed = config.run.seedStart + offset;
         const tree = this.treeGenerator.generate(preset, seed, {
           includeSurfaceSamples: false,
         });
 
-        for (const variant of configuration.run.variants) {
+        for (const variant of config.run.variants) {
           const geometry = this.trunkGeometryFactory.create(tree, variant);
-          const metrics = analyzeBufferGeometryManifold(
-            geometry,
-            analysisOptions,
-          );
-          geometry.dispose();
+          let metrics;
+          try {
+            metrics = analyzeBufferGeometryManifold(
+              geometry,
+              config.analysis,
+            );
+          } finally {
+            geometry.dispose();
+          }
           const failures = collectFailures(metrics);
           const variantReport = variants[variant.id];
 
@@ -167,7 +140,7 @@ export class StemManifoldQaRunner {
           failedGeometryCount += 1;
           variantReport.failedGeometryCount += 1;
           incrementFailures(failuresByMetric, failures);
-          if (failureExamples.length < maximumFailureExamples) {
+          if (failureExamples.length < config.report.maximumFailureExamples) {
             failureExamples.push({
               presetId,
               seed,
@@ -190,11 +163,11 @@ export class StemManifoldQaRunner {
     return Object.freeze({
       schemaVersion: 2,
       passed: failedGeometryCount === 0,
-      configuration: structuredClone(configuration),
+      configuration: structuredClone(config),
       summary: {
         presetCount: presets.size,
-        seedCount: configuration.run.seedCount,
-        variantCount: configuration.run.variants.length,
+        seedCount: config.run.seedCount,
+        variantCount: config.run.variants.length,
         geometriesAnalyzed,
         failedGeometryCount,
       },
