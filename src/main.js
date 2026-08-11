@@ -7,6 +7,7 @@ import { TreeDemo } from './app/tree-demo.js';
 import { validateSceneConfig } from './config/scene-config-validator.js';
 import { YamlConfigLoader } from './config/yaml-config-loader.js';
 import { logger } from './core/logger.js';
+import { IsolatedCanopySolidityProbe } from './diagnostics/isolated-canopy-solidity-probe.js';
 import { markRenderSmokeBootstrapFailure } from './diagnostics/render-smoke-probe.js';
 import {
   markStemManifoldBootstrapFailure,
@@ -79,7 +80,9 @@ async function bootstrap() {
     const overlayTitle = formatOverlayTitle(releaseConfig);
     applyDocumentTitle(releaseConfig);
     const library = PresetLibrary.fromConfig(treeConfig, continuityConfig);
-    demo = new TreeDemo();
+    demo = new TreeDemo({
+      canopySolidityProbe: new IsolatedCanopySolidityProbe(),
+    });
     demo.start(
       container,
       sceneConfig,
