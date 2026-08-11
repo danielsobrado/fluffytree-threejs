@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { PresetLibrary } from '../src/domain/preset-library.js';
+import { parseCrownVolumeQaConfig } from '../src/qa/crown-volume-qa-config.js';
 import { CrownVolumeQaRunner } from '../src/qa/crown-volume-qa-runner.js';
 import { readYamlConfig } from './node-yaml-config.js';
 
@@ -97,11 +98,15 @@ async function main() {
     qaConfiguration.run.seedCount = options.seedCount;
   }
 
+  const validatedQaConfiguration = parseCrownVolumeQaConfig(qaConfiguration);
   const presets = PresetLibrary.fromConfig(
     presetConfiguration,
     continuityConfiguration,
   ).presets;
-  const report = new CrownVolumeQaRunner().run(presets, qaConfiguration);
+  const report = new CrownVolumeQaRunner().run(
+    presets,
+    validatedQaConfiguration,
+  );
   await mkdir(options.output, { recursive: true });
   await Promise.all([
     writeFile(
