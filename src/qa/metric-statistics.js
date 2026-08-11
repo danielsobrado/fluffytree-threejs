@@ -12,14 +12,26 @@ function round(value) {
   return Number(value.toFixed(6));
 }
 
+function requireMetricValues(metricRows, metric) {
+  const values = metricRows.map((row) => row[metric]);
+  if (values.some((value) => !Number.isFinite(value))) {
+    throw new Error(`QA metric '${metric}' is missing or not finite.`);
+  }
+  return values;
+}
+
 export function summarizeMetrics(metricRows) {
+  if (!Array.isArray(metricRows) || metricRows.length === 0) {
+    throw new Error('QA metric summary requires at least one row.');
+  }
+
   const metricNames = Object.keys(metricRows[0]).filter(
     (name) => name !== 'seed' && typeof metricRows[0][name] === 'number',
   );
   const summary = {};
 
   for (const metric of metricNames.sort()) {
-    const values = metricRows.map((row) => row[metric]);
+    const values = requireMetricValues(metricRows, metric);
     const sorted = [...values].sort((left, right) => left - right);
     const statistics = {
       minimum: round(sorted[0]),
@@ -39,9 +51,14 @@ export function summarizeMetrics(metricRows) {
 }
 
 export function findWorstSeeds(metricRows, metricNames) {
+  if (!Array.isArray(metricRows) || metricRows.length === 0) {
+    throw new Error('Worst-seed analysis requires at least one metric row.');
+  }
+
   const result = {};
 
   for (const metric of metricNames) {
+    requireMetricValues(metricRows, metric);
     const sorted = [...metricRows].sort(
       (left, right) => left[metric] - right[metric],
     );
