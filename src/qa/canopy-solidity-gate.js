@@ -9,6 +9,10 @@ function isBelowMinimum(metric) {
   return metric === 'coverageRatio' || metric === 'coverageRetention';
 }
 
+function isRequiredMetric(group, metric) {
+  return group !== 'base' || metric !== 'coverageRetention';
+}
+
 function summarize(values) {
   const finiteValues = values.filter(Number.isFinite);
   return Object.freeze({
@@ -46,7 +50,12 @@ export function evaluateSolidityView(view, thresholds) {
 
   for (const metric of GATED_METRICS) {
     const limit = thresholds[metric];
-    if (limit === undefined) continue;
+    if (limit === undefined) {
+      if (isRequiredMetric(view.group, metric)) {
+        failures.push(`${viewLabel(view)} ${metric} threshold is missing`);
+      }
+      continue;
+    }
 
     if (!Number.isFinite(limit)) {
       failures.push(`${viewLabel(view)} ${metric} threshold is not finite`);
@@ -85,18 +94,20 @@ export function evaluateSolidityReport(trees, thresholds) {
     }
 
     const minimumWind = presetThresholds.minimumWindMovedRatio;
-    if (minimumWind !== undefined) {
-      if (!Number.isFinite(minimumWind)) {
-        failures.push(
-          `${tree.presetId} minimumWindMovedRatio threshold is not finite`,
-        );
-      } else if (!Number.isFinite(tree.windMovedRatio)) {
-        failures.push(`${tree.presetId} windMovedRatio is not finite`);
-      } else if (tree.windMovedRatio < minimumWind) {
-        failures.push(
-          `${tree.presetId} windMovedRatio ${tree.windMovedRatio.toFixed(4)} < ${minimumWind}`,
-        );
-      }
+    if (minimumWind === undefined) {
+      failures.push(
+        `${tree.presetId} minimumWindMovedRatio threshold is missing`,
+      );
+    } else if (!Number.isFinite(minimumWind)) {
+      failures.push(
+        `${tree.presetId} minimumWindMovedRatio threshold is not finite`,
+      );
+    } else if (!Number.isFinite(tree.windMovedRatio)) {
+      failures.push(`${tree.presetId} windMovedRatio is not finite`);
+    } else if (tree.windMovedRatio < minimumWind) {
+      failures.push(
+        `${tree.presetId} windMovedRatio ${tree.windMovedRatio.toFixed(4)} < ${minimumWind}`,
+      );
     }
 
     for (const view of tree.views) {
