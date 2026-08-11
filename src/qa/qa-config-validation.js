@@ -70,11 +70,19 @@ export function requireQaRange(value, path) {
   return Object.freeze([minimum, maximum]);
 }
 
-export function parseQaExactMap(value, path) {
+function requireMetricEntries(value, path) {
   const source = requireQaObject(value, path);
+  const entries = Object.entries(source);
+  if (entries.length === 0) {
+    throw new Error(`Configuration '${path}' must not be empty.`);
+  }
+  return entries;
+}
+
+export function parseQaExactMap(value, path) {
   return Object.freeze(
     Object.fromEntries(
-      Object.entries(source).map(([metric, expected]) => [
+      requireMetricEntries(value, path).map(([metric, expected]) => [
         metric,
         requireQaFinite(expected, `${path}.${metric}`),
       ]),
@@ -83,10 +91,9 @@ export function parseQaExactMap(value, path) {
 }
 
 export function parseQaRangeMap(value, path) {
-  const source = requireQaObject(value, path);
   return Object.freeze(
     Object.fromEntries(
-      Object.entries(source).map(([metric, range]) => [
+      requireMetricEntries(value, path).map(([metric, range]) => [
         metric,
         requireQaRange(range, `${path}.${metric}`),
       ]),
