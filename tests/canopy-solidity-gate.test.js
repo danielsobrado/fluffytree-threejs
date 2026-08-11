@@ -94,6 +94,17 @@ test('missing or non-finite gated metrics fail explicitly', () => {
   ]);
 });
 
+test('non-finite configured limits fail closed', () => {
+  const failures = evaluateSolidityView(createView(), {
+    ...THRESHOLDS.roundOrchard.crown,
+    holeRatio: Number.NaN,
+  });
+
+  assert.deepEqual(failures, [
+    'crown/lod0/y27e10 holeRatio threshold is not finite',
+  ]);
+});
+
 test('missing thresholds fail rather than silently pass', () => {
   const withoutPreset = evaluateSolidityReport(
     [{ presetId: 'unknown', views: [createView()] }],
@@ -108,6 +119,46 @@ test('missing thresholds fail rather than silently pass', () => {
   );
   assert.equal(withoutGroup.length, 1);
   assert.match(withoutGroup[0], /Missing 'canopy' solidity thresholds/);
+});
+
+test('non-finite wind measurements and limits fail closed', () => {
+  const nonFiniteMeasurement = evaluateSolidityReport(
+    [
+      {
+        presetId: 'roundOrchard',
+        windMovedRatio: Number.NaN,
+        views: [createView()],
+      },
+    ],
+    {
+      roundOrchard: {
+        ...THRESHOLDS.roundOrchard,
+        minimumWindMovedRatio: 0.15,
+      },
+    },
+  );
+  assert.deepEqual(nonFiniteMeasurement, [
+    'roundOrchard windMovedRatio is not finite',
+  ]);
+
+  const nonFiniteLimit = evaluateSolidityReport(
+    [
+      {
+        presetId: 'roundOrchard',
+        windMovedRatio: 0.2,
+        views: [createView()],
+      },
+    ],
+    {
+      roundOrchard: {
+        ...THRESHOLDS.roundOrchard,
+        minimumWindMovedRatio: Number.POSITIVE_INFINITY,
+      },
+    },
+  );
+  assert.deepEqual(nonFiniteLimit, [
+    'roundOrchard minimumWindMovedRatio threshold is not finite',
+  ]);
 });
 
 test('report failures name the preset, LOD state, and view', () => {
