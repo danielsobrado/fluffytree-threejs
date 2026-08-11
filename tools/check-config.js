@@ -11,6 +11,7 @@ import {
   resolveFoliageContinuityProfile,
 } from '../src/domain/foliage-continuity-config.js';
 import { PresetLibrary } from '../src/domain/preset-library.js';
+import { parseCanopySolidityQaConfig } from '../src/qa/canopy-solidity-qa-config.js';
 import { parseCrownVolumeQaConfig } from '../src/qa/crown-volume-qa-config.js';
 import { parseShellCoverageQaConfig } from '../src/qa/shell-coverage-qa-config.js';
 import { parseTreeShapeQaConfig } from '../src/qa/tree-shape-qa-config.js';
@@ -62,6 +63,19 @@ function assertRequiredFilesExist(requiredFiles) {
   }
 }
 
+function assertExactPresetCoverage(label, configuredIds, presetIds) {
+  for (const presetId of presetIds) {
+    if (!configuredIds.has(presetId)) {
+      throw new Error(`${label} is missing thresholds for tree preset '${presetId}'.`);
+    }
+  }
+  for (const presetId of configuredIds) {
+    if (!presetIds.has(presetId)) {
+      throw new Error(`${label} contains thresholds for unknown tree preset '${presetId}'.`);
+    }
+  }
+}
+
 const configFiles = readdirSync(CONFIG_DIRECTORY, { withFileTypes: true })
   .filter(
     (entry) =>
@@ -101,20 +115,20 @@ const presetIds = new Set(library.ids);
 const coverageConfig = parseShellCoverageQaConfig(
   readConfig('config/shell-coverage-qa.yaml'),
 );
-for (const presetId of presetIds) {
-  if (!coverageConfig.thresholds[presetId]) {
-    throw new Error(
-      `Shell coverage QA is missing thresholds for tree preset '${presetId}'.`,
-    );
-  }
-}
-for (const presetId of Object.keys(coverageConfig.thresholds)) {
-  if (!presetIds.has(presetId)) {
-    throw new Error(
-      `Shell coverage QA contains thresholds for unknown tree preset '${presetId}'.`,
-    );
-  }
-}
+assertExactPresetCoverage(
+  'Shell coverage QA',
+  new Set(Object.keys(coverageConfig.thresholds)),
+  presetIds,
+);
+
+const solidityConfig = parseCanopySolidityQaConfig(
+  readConfig('config/canopy-solidity-qa.yaml'),
+);
+assertExactPresetCoverage(
+  'Canopy solidity QA',
+  new Set(Object.keys(solidityConfig.thresholds)),
+  presetIds,
+);
 
 const treeShapeConfig = parseTreeShapeQaConfig(
   readConfig('config/tree-shape-qa.yaml'),
