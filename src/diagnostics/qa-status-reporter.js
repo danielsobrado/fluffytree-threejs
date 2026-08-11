@@ -27,14 +27,19 @@ export function reportQaStatus(status, error = '') {
 export async function postQaReport(name, payload) {
   if (!isQaMode()) return;
 
-  try {
-    await fetch(`${REPORT_ENDPOINT}?${new URLSearchParams({ name })}`, {
+  const response = await fetch(
+    `${REPORT_ENDPOINT}?${new URLSearchParams({ name })}`,
+    {
       method: 'POST',
       cache: 'no-store',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    });
-  } catch {
-    // The report file is a convenience artefact; the status call is the gate.
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to store QA report '${name}': ${response.status} ${response.statusText ?? ''}`.trim(),
+    );
   }
 }
