@@ -45,6 +45,7 @@ function renderMarkdown(report) {
     '',
     `Samples: ${report.summary.samplesAnalyzed}`,
     `Failed samples: ${report.summary.failedSampleCount}`,
+    `Aggregate failures: ${report.summary.aggregateFailureCount}`,
     `Deterministic mismatches: ${report.summary.deterministicMismatchCount}`,
     '',
   ];
@@ -54,6 +55,8 @@ function renderMarkdown(report) {
     lines.push(`Result: **${preset.passed ? 'PASS' : 'FAIL'}**`);
     lines.push(
       `Unique volumes: ${preset.uniqueVolumeCount}/${preset.samplesAnalyzed}`,
+      `Failed samples: ${preset.failedSampleCount}`,
+      `Aggregate failures: ${preset.aggregateFailureCount}`,
       '',
       '| Metric | Min | P50 | P95 | Max | Mean |',
       '|---|---:|---:|---:|---:|---:|',
@@ -82,7 +85,7 @@ function renderMarkdown(report) {
 
 function printSummary(report) {
   console.log(
-    `Crown volume QA ${report.passed ? 'PASSED' : 'FAILED'}: ${report.summary.samplesAnalyzed} samples, ${report.summary.failedSampleCount} failures.`,
+    `Crown volume QA ${report.passed ? 'PASSED' : 'FAILED'}: ${report.summary.samplesAnalyzed} samples, ${report.summary.failedSampleCount} failed samples, ${report.summary.aggregateFailureCount} aggregate failures.`,
   );
 
   for (const [presetId, preset] of Object.entries(report.presets)) {
