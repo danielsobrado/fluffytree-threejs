@@ -63,10 +63,15 @@ function evaluateMetrics(metrics, thresholds) {
 
 function summarizeMetrics(samples, metricNames) {
   return Object.fromEntries(
-    metricNames.map((metric) => [
-      metric,
-      summarize(samples.map((sample) => Number(sample.metrics[metric]))),
-    ]),
+    metricNames.map((metric) => {
+      const values = samples.map((sample) => sample.metrics[metric]);
+      if (values.some((value) => !Number.isFinite(value))) {
+        throw new Error(
+          `Crown volume QA report metric '${metric}' is missing or not finite.`,
+        );
+      }
+      return [metric, summarize(values)];
+    }),
   );
 }
 
@@ -82,14 +87,16 @@ export class CrownVolumeQaRunner {
   run(presetMap, configuration) {
     const presets = {};
     let totalSamples = 0;
-    let totalFailures = 0;
+    let totalFailedSamples = 0;
+    let totalAggregateFailures = 0;
     let deterministicMismatchCount = 0;
 
     for (const [presetId, preset] of presetMap) {
       const samples = [];
       const hashes = new Set();
       const failureExamples = [];
-      let presetFailures = 0;
+      let failedSampleCount = 0;
+      let aggregateFailureCount = 0;
 
       for (let offset = 0; offset < configuration.run.seedCount; offset += 1) {
         const seed = configuration.run.seedStart + offset;
@@ -122,7 +129,7 @@ export class CrownVolumeQaRunner {
         }
 
         if (failures.length > 0) {
-          presetFailures += 1;
+          failedSampleCount += 1;
           if (failureExamples.length < 12) {
             failureExamples.push({ seed, failures });
           }
@@ -133,7 +140,7 @@ export class CrownVolumeQaRunner {
 
       const uniqueHashRate = hashes.size / samples.length;
       if (uniqueHashRate < configuration.thresholds.minimumUniqueHashRate) {
-        presetFailures += 1;
+        aggregateFailureCount += 1;
         failureExamples.push({
           seed: null,
           failures: [
@@ -143,25 +150,31 @@ export class CrownVolumeQaRunner {
       }
 
       presets[presetId] = {
-        passed: presetFailures === 0,
+        passed: failedSampleCount === 0 && aggregateFailureCount === 0,
         samplesAnalyzed: samples.length,
-        failedSampleCount: presetFailures,
+        failedSampleCount,
+        aggregateFailureCount,
         uniqueVolumeCount: hashes.size,
         uniqueHashRate: round(uniqueHashRate),
         metrics: summarizeMetrics(samples, configuration.report.metrics),
         failureExamples,
       };
       totalSamples += samples.length;
-      totalFailures += presetFailures;
+      totalFailedSamples += failedSampleCount;
+      totalAggregateFailures += aggregateFailureCount;
     }
 
     return {
-      passed: totalFailures === 0 && deterministicMismatchCount === 0,
+      passed:
+        totalFailedSamples === 0 &&
+        totalAggregateFailures === 0 &&
+        deterministicMismatchCount === 0,
       generatedAt: new Date().toISOString(),
       configuration: configuration.run,
       summary: {
         samplesAnalyzed: totalSamples,
-        failedSampleCount: totalFailures,
+        failedSampleCount: totalFailedSamples,
+        aggregateFailureCount: totalAggregateFailures,
         deterministicMismatchCount,
       },
       presets,
