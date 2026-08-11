@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { PresetLibrary } from '../src/domain/preset-library.js';
 import { renderQaMarkdown } from '../src/qa/qa-report-renderer.js';
@@ -11,6 +11,7 @@ const FILES = Object.freeze({
   continuity: new URL('../config/foliage-continuity.yaml', import.meta.url),
   qa: new URL('../config/tree-shape-qa.yaml', import.meta.url),
 });
+const REPORT_FILES = Object.freeze(['report.json', 'report.md']);
 
 function readOptions() {
   const { values } = parseArgs({
@@ -30,6 +31,13 @@ function readOptions() {
   return { ...values, seedCount };
 }
 
+async function clearPreviousReports(outputDirectory) {
+  await mkdir(outputDirectory, { recursive: true });
+  await Promise.all(
+    REPORT_FILES.map((file) => rm(`${outputDirectory}/${file}`, { force: true })),
+  );
+}
+
 function printSummary(report) {
   console.log(
     `Tree shape QA ${report.passed ? 'PASSED' : 'FAILED'}: ${report.summary.treesAnalyzed} trees, ${report.summary.failedTreeCount} failures.`,
@@ -44,6 +52,7 @@ function printSummary(report) {
 
 async function main() {
   const options = readOptions();
+  await clearPreviousReports(options.output);
   const [presetConfiguration, continuityConfiguration, sourceQaConfiguration] =
     await Promise.all([
       readYamlConfig(FILES.presets),
@@ -66,7 +75,6 @@ async function main() {
     validatedQaConfiguration,
   );
   const outputDirectory = options.output;
-  await mkdir(outputDirectory, { recursive: true });
   await Promise.all([
     writeFile(
       `${outputDirectory}/report.json`,
