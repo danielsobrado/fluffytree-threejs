@@ -1,6 +1,17 @@
 import * as THREE from 'three';
 import { hashUnit } from './deterministic-hash.js';
+import {
+  calculateSurfaceLayerScale,
+  calculateSurfaceRadialOffset,
+  getTangentialJitterRatio,
+} from './leaf-cluster-layer-layout.js';
 import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constants.js';
+
+export {
+  getInnerInsetRatio,
+  getOuterOffsetRatio,
+  getTangentialJitterRatio,
+} from './leaf-cluster-layer-layout.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const RIGHT = new THREE.Vector3(1, 0, 0);
@@ -34,48 +45,6 @@ function projectToSurface(field, sample) {
     position,
     normal: new THREE.Vector3(gradient.x, gradient.y, gradient.z).normalize(),
   };
-}
-
-function calculateLayerRatio(layer, layerCount) {
-  return layerCount <= 1 ? 0.5 : layer / (layerCount - 1);
-}
-
-function calculateSurfaceLayerScale(layer, settings) {
-  return THREE.MathUtils.lerp(
-    LEAF_DETAIL_RENDERING_CONSTANTS.innerLayerScale,
-    LEAF_DETAIL_RENDERING_CONSTANTS.outerLayerScale,
-    calculateLayerRatio(layer, settings.layerCount),
-  );
-}
-
-export function getInnerInsetRatio(settings) {
-  return (
-    settings.layerOffsetRatio *
-    LEAF_DETAIL_RENDERING_CONSTANTS.innerInsetMultiplier
-  );
-}
-
-export function getOuterOffsetRatio(settings) {
-  return (
-    settings.layerOffsetRatio *
-    LEAF_DETAIL_RENDERING_CONSTANTS.outerOffsetMultiplier
-  );
-}
-
-export function getTangentialJitterRatio(settings) {
-  return (
-    settings.layerOffsetRatio *
-    LEAF_DETAIL_RENDERING_CONSTANTS.tangentialJitterMultiplier
-  );
-}
-
-function calculateSurfaceRadialOffset(layer, settings, instanceScale) {
-  const offsetRatio = THREE.MathUtils.lerp(
-    -getInnerInsetRatio(settings),
-    getOuterOffsetRatio(settings),
-    calculateLayerRatio(layer, settings.layerCount),
-  );
-  return offsetRatio * instanceScale;
 }
 
 function createTangentBasis(normal) {
