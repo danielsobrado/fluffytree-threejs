@@ -42,6 +42,7 @@ export class TreeWindController {
   } = {}) {
     this.strength = requireNonNegativeFinite(strength, 'Tree wind strength');
     this.speed = requireNonNegativeFinite(speed, 'Tree wind speed');
+    this.time = 0;
     this.states = [];
     this.stateSet = new Set();
     this.wrappedTrees = new WeakSet();
@@ -70,6 +71,7 @@ export class TreeWindController {
         const state = material?.userData?.windState;
         if (!state) continue;
         windEnabled = true;
+        state.time = this.time;
         state.phase = phase;
         state.strength = this.strength;
         state.treeHeight = treeHeight;
@@ -101,10 +103,14 @@ export class TreeWindController {
   }
 
   update(elapsedSeconds) {
-    for (const state of this.states) state.time = elapsedSeconds * this.speed;
+    this.time =
+      requireNonNegativeFinite(elapsedSeconds, 'Tree wind elapsed time') *
+      this.speed;
+    for (const state of this.states) state.time = this.time;
   }
 
   clear() {
+    this.time = 0;
     this.states.length = 0;
     this.stateSet.clear();
   }

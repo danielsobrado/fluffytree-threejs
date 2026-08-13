@@ -53,13 +53,15 @@ test('wind controller discovers materials created by deferred hero LOD', () => {
   controller.register(tree, 37);
   assert.equal(controller.states.length, 0);
 
+  controller.update(3);
   tree.userData.lod.buildHero();
   assert.equal(controller.states.length, 1);
   assert.equal(controller.states[0].strength, 0.2);
   assert.equal(controller.states[0].treeHeight, TREE_HEIGHT);
-
-  controller.update(3);
   assert.equal(controller.states[0].time, 6);
+
+  controller.update(4);
+  assert.equal(controller.states[0].time, 8);
 });
 
 test('minimum LOD trees do not wrap an unreachable hero builder', () => {
@@ -139,6 +141,7 @@ test('wind controller expands instanced foliage bounds once for GPU sway', () =>
 test('wind controller rejects invalid runtime settings and tree heights', () => {
   assert.throws(() => new TreeWindController({ strength: -0.1 }), /strength/);
   assert.throws(() => new TreeWindController({ speed: Number.NaN }), /speed/);
+  assert.throws(() => new TreeWindController().update(-1), /elapsed time/);
 
   const controller = new TreeWindController();
   const tree = createTree();
