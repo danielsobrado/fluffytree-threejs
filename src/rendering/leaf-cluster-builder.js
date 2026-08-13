@@ -13,6 +13,7 @@ import {
   resolvePosition,
 } from './leaf-cluster-placement.js';
 import { samplePaletteColor } from './palette-color-sampler.js';
+import { configureTreeWindMaterial } from './tree-wind-shader.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
@@ -73,6 +74,7 @@ export class LeafClusterBuilder {
         side: THREE.FrontSide,
       });
       material.name = 'leaf-detail-material';
+      configureTreeWindMaterial(material, { cacheKey: 'leaf-detail-wind-v1' });
 
       const mesh = new THREE.InstancedMesh(geometry, material, records.length);
       const matrix = new THREE.Matrix4();
@@ -125,6 +127,8 @@ export class LeafClusterBuilder {
       mesh.name = 'hero-leaf-shell';
       mesh.castShadow = false;
       mesh.receiveShadow = true;
+      mesh.computeBoundingBox();
+      mesh.computeBoundingSphere();
 
       mesh.userData.heroLeaves = {
         clusterCount: records.length,

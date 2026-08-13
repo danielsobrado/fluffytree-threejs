@@ -1,6 +1,11 @@
 import {
   FOLIAGE_RENDERING_CONSTANTS,
 } from './foliage-rendering-constants.js';
+import {
+  createTreeWindState,
+  injectTreeWindVertexShader,
+  installTreeWindUniforms,
+} from './tree-wind-shader.js';
 
 function createVertexDeclarations() {
   return `
@@ -19,9 +24,6 @@ function createVertexDeclarations() {
     uniform float uFoliageExposurePaletteShift;
     uniform float uFoliageRadialNormalStrength;
     uniform float uFoliageCrownNormalBlend;
-    uniform float uTreeWindTime;
-    uniform float uTreeWindPhase;
-    uniform float uTreeWindStrength;
   `;
 }
 
@@ -144,7 +146,7 @@ export function configureStylizedFoliageShader(
     cacheKey,
   },
 ) {
-  const windState = { time: 0, phase: 0, strength: 0.055 };
+  const windState = createTreeWindState();
   material.userData.windState = windState;
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, {
@@ -168,77 +170,51 @@ export function configureStylizedFoliageShader(
       uFoliageHeightLightStrength: { value: foliage.heightLightStrength },
       uFoliageColorMultiplier: { value: colorMultiplier },
       uFoliageSurfaceBreakup: { value: surfaceBreakup },
-      uTreeWindTime: {
-        get value() {
-          return windState.time;
-        },
-      },
-      uTreeWindPhase: {
-        get value() {
-          return windState.phase;
-        },
-      },
-      uTreeWindStrength: {
-        get value() {
-          return windState.strength;
-        },
-      },
     });
+    installTreeWindUniforms(shader, windState);
 
-    shader.vertexShader = `${createVertexDeclarations()}\n${shader.vertexShader}`
-      .replace(
-        '#include <beginnormal_vertex>',
-        `
-          #include <beginnormal_vertex>
-          vec3 foliageRadialLocal = ${radialNormalExpression};
-          objectNormal = normalize( mix(
-            objectNormal,
-            foliageRadialLocal,
-            uFoliageRadialNormalStrength
-          ) );
-        `,
-      )
-      .replace(
-        '#include <begin_vertex>',
-        `
-          #include <begin_vertex>
-          float treeWindInstancePhase = uTreeWindPhase;
-          #ifdef USE_INSTANCING
-            treeWindInstancePhase +=
-              instanceMatrix[ 3 ].x * 0.73 + instanceMatrix[ 3 ].z * 0.51;
-          #endif
-          float treeWindWeight = clamp( ${heightExpression}, 0.0, 1.0 );
-          float treeWindPrimary = sin(
-            uTreeWindTime * 0.78 + treeWindInstancePhase
-          );
-          float treeWindSecondary = sin(
-            uTreeWindTime * 1.31 + treeWindInstancePhase * 1.7
-          );
-          transformed.x += treeWindPrimary * uTreeWindStrength * treeWindWeight;
-          transformed.z += treeWindSecondary * uTreeWindStrength * treeWindWeight * 0.46;
-          vFoliageHeight = clamp( ${heightExpression}, 0.0, 1.0 );
-          vFoliageLocalPosition = position;
-          vFoliageExposure = instanceExposure;
-          vFoliagePaletteCoordinate = clamp(
-            uFoliagePaletteBase +
-              ( instanceColorMix - 0.5 ) * uFoliageVariation +
-              ( vFoliageHeight - 0.5 ) * uFoliageHeightPaletteShift +
-              ( instanceExposure - 0.5 ) * uFoliageExposurePaletteShift,
-            0.0,
-            1.0
-          );
-          vFoliagePatch =
-            sin(position.x * 5.3 + position.y * 3.7) * 0.55 +
-            sin(position.z * 6.1 - position.y * 4.9) * 0.45;
-        `,
-      )
-      .replace(
-        '#include <project_vertex>',
-        `
-          #include <project_vertex>
-          ${createWorldRadialShader()}
-        `,
-      );
+    shader.vertexShader = injectTreeWindVertexShader(
+      `${createVertexDeclarations()}\n${shader.vertexShader}`
+        .replace(
+          '#include <beginnormal_vertex>',
+          `
+            #include <beginnormal_vertex>
+            vec3 foliageRadialLocal = ${radialNormalExpression};
+            objectNormal = normalize( mix(
+              objectNormal,
+              foliageRadialLocal,
+              uFoliageRadialNormalStrength
+            ) );
+          `,
+        )
+        .replace(
+          '#include <begin_vertex>',
+          `
+            #include <begin_vertex>
+            vFoliageHeight = clamp( ${heightExpression}, 0.0, 1.0 );
+            vFoliageLocalPosition = position;
+            vFoliageExposure = instanceExposure;
+            vFoliagePaletteCoordinate = clamp(
+              uFoliagePaletteBase +
+                ( instanceColorMix - 0.5 ) * uFoliageVariation +
+                ( vFoliageHeight - 0.5 ) * uFoliageHeightPaletteShift +
+                ( instanceExposure - 0.5 ) * uFoliageExposurePaletteShift,
+              0.0,
+              1.0
+            );
+            vFoliagePatch =
+              sin(position.x * 5.3 + position.y * 3.7) * 0.55 +
+              sin(position.z * 6.1 - position.y * 4.9) * 0.45;
+          `,
+        )
+        .replace(
+          '#include <project_vertex>',
+          `
+            #include <project_vertex>
+            ${createWorldRadialShader()}
+          `,
+        ),
+    );
 
     shader.fragmentShader = applyFragmentNormalOverride(
       `${createFragmentDeclarations()}\n${shader.fragmentShader}`,

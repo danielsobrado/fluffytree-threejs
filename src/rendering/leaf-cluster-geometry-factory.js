@@ -11,9 +11,13 @@ function createLeafPoints(index, leafCount, settings) {
   const ratio = (index + 0.5) / leafCount;
   const baseAngle = index * GOLDEN_ANGLE + (index % 3) * 0.17;
   const baseRadius = 0.08 + Math.sqrt(ratio) * 0.2;
+  const embedMultiplier =
+    LEAF_DETAIL_RENDERING_CONSTANTS.leafRootEmbedBaseMultiplier +
+    (index % 2) *
+      LEAF_DETAIL_RENDERING_CONSTANTS.leafRootEmbedAlternateMultiplier;
   const baseCenter = new THREE.Vector3(
     Math.cos(baseAngle) * baseRadius,
-    -settings.embedRatio * (0.78 + (index % 2) * 0.18),
+    -settings.embedRatio * embedMultiplier,
     Math.sin(baseAngle) * baseRadius,
   );
   const directionAngle = baseAngle + (index % 2 === 0 ? 0.48 : -0.34);

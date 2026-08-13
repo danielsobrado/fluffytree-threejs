@@ -1,34 +1,85 @@
-// Displacement in world units at the crown edge. Neighbouring clusters differ in
-// phase by only a fraction of a radian, so this moves the canopy as a mass rather
-// than sliding cards apart and opening gaps between them.
-const DEFAULT_STRENGTH = 0.09;
-const DEFAULT_SPEED = 0.72;
+import {
+  TREE_WIND_PROFILE,
+  calculateTreeWindBoundsPadding,
+} from './tree-wind-profile.js';
+
+function requireNonNegativeFinite(value, name) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) {
+    throw new RangeError(`${name} must be finite and non-negative.`);
+  }
+  return number;
+}
+
+function requirePositiveFinite(value, name) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) {
+    throw new RangeError(`${name} must be finite and positive.`);
+  }
+  return number;
+}
+
+function expandWindBounds(object, strength) {
+  if (!object?.isInstancedMesh) return;
+
+  const targetPadding = calculateTreeWindBoundsPadding(strength);
+  const userData = object.userData ?? (object.userData = {});
+  const previousPadding = Number(userData.windBoundsPadding ?? 0);
+  const additionalPadding = targetPadding - previousPadding;
+  if (!(additionalPadding > Number.EPSILON)) return;
+
+  if (!object.boundingBox) object.computeBoundingBox?.();
+  if (!object.boundingSphere) object.computeBoundingSphere?.();
+  object.boundingBox?.expandByScalar?.(additionalPadding);
+  if (object.boundingSphere) object.boundingSphere.radius += additionalPadding;
+  userData.windBoundsPadding = targetPadding;
+}
 
 export class TreeWindController {
-  constructor({ strength = DEFAULT_STRENGTH, speed = DEFAULT_SPEED } = {}) {
-    this.strength = strength;
-    this.speed = speed;
+  constructor({
+    strength = TREE_WIND_PROFILE.defaultStrength,
+    speed = TREE_WIND_PROFILE.defaultSpeed,
+  } = {}) {
+    this.strength = requireNonNegativeFinite(strength, 'Tree wind strength');
+    this.speed = requireNonNegativeFinite(speed, 'Tree wind speed');
     this.states = [];
     this.stateSet = new Set();
     this.wrappedTrees = new WeakSet();
   }
 
   register(tree, seed) {
-    const phase = ((Number(seed) % 997) / 997) * Math.PI * 2;
+    const treeHeight = requirePositiveFinite(
+      tree.userData?.tree?.height,
+      'Tree wind height',
+    );
+    const normalizedSeed = Number(seed) >>> 0;
+    const phase =
+      ((normalizedSeed % TREE_WIND_PROFILE.seedModulo) /
+        TREE_WIND_PROFILE.seedModulo) *
+      Math.PI * 2;
+
     tree.traverse((object) => {
       const materials = Array.isArray(object.material)
         ? object.material
         : object.material
           ? [object.material]
           : [];
+      let windEnabled = false;
+
       for (const material of materials) {
-        const state = material.userData.windState;
-        if (!state || this.stateSet.has(state)) continue;
+        const state = material?.userData?.windState;
+        if (!state) continue;
+        windEnabled = true;
         state.phase = phase;
         state.strength = this.strength;
+        state.treeHeight = treeHeight;
+        if (this.stateSet.has(state)) continue;
+
         this.stateSet.add(state);
         this.states.push(state);
       }
+
+      if (windEnabled) expandWindBounds(object, this.strength);
     });
 
     const lodState = tree.userData?.lod;
@@ -39,6 +90,7 @@ export class TreeWindController {
     ) {
       return;
     }
+
     const buildHero = lodState.buildHero;
     lodState.buildHero = () => {
       const result = buildHero();
@@ -55,6 +107,5 @@ export class TreeWindController {
   clear() {
     this.states.length = 0;
     this.stateSet.clear();
-    this.wrappedTrees = new WeakSet();
   }
 }

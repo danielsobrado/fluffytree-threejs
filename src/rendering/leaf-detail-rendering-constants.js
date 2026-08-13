@@ -13,4 +13,7 @@ export const LEAF_DETAIL_RENDERING_CONSTANTS = Object.freeze({
   innerInsetMultiplier: 2.6,
   outerOffsetMultiplier: 0.55,
   tangentialJitterMultiplier: 1.8,
+  leafRootEmbedBaseMultiplier: 0.78,
+  leafRootEmbedAlternateMultiplier: 0.18,
+  rootSurfaceClearanceRatio: 0.02,
 });

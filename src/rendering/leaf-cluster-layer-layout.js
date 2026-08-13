@@ -26,6 +26,22 @@ export function getOuterOffsetRatio(settings) {
   );
 }
 
+export function getLeafRootInsetRatio(settings) {
+  return (
+    settings.embedRatio *
+    (LEAF_DETAIL_RENDERING_CONSTANTS.leafRootEmbedBaseMultiplier +
+      LEAF_DETAIL_RENDERING_CONSTANTS.leafRootEmbedAlternateMultiplier)
+  );
+}
+
+export function getEffectiveOuterOffsetRatio(settings) {
+  return Math.max(
+    getOuterOffsetRatio(settings),
+    getLeafRootInsetRatio(settings) +
+      LEAF_DETAIL_RENDERING_CONSTANTS.rootSurfaceClearanceRatio,
+  );
+}
+
 export function getTangentialJitterRatio(settings) {
   return (
     settings.layerOffsetRatio *
@@ -44,7 +60,7 @@ export function calculateSurfaceLayerScale(layer, settings) {
 export function calculateSurfaceRadialOffset(layer, settings, instanceScale) {
   const offsetRatio = lerp(
     -getInnerInsetRatio(settings),
-    getOuterOffsetRatio(settings),
+    getEffectiveOuterOffsetRatio(settings),
     calculateRadialLayerRatio(layer, settings.layerCount),
   );
   return offsetRatio * instanceScale;
