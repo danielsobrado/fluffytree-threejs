@@ -11,6 +11,7 @@ import {
   summarizeViewMetrics,
 } from '../qa/canopy-solidity-gate.js';
 import { CANOPY_SOLIDITY_LOD_STATES } from '../qa/canopy-solidity-lod-states.js';
+import { createWindSolidityStates } from '../qa/canopy-solidity-wind-states.js';
 import { calculateTransitionHoleThresholds } from '../qa/canopy-solidity-scale.js';
 import {
   analyzeSilhouetteHoles,
@@ -62,6 +63,26 @@ function findStructure(tree) {
     if (!structure && object.userData?.structure?.rootBase) structure = object;
   });
   return structure;
+}
+
+function collectWindStates(tree) {
+  const states = [];
+  tree.traverse((object) => {
+    const materials = Array.isArray(object.material)
+      ? object.material
+      : object.material
+        ? [object.material]
+        : [];
+    for (const material of materials) {
+      const state = material.userData.windState;
+      if (state && !states.includes(state)) states.push(state);
+    }
+  });
+  return states;
+}
+
+function setWindTime(states, time) {
+  for (const state of states) state.time = time;
 }
 
 function createCrownFrame(level) {
@@ -188,6 +209,7 @@ export class CanopySolidityProbe {
       resolution,
       minimumHolePixels: CANOPY_SOLIDITY_CONSTANTS.minimumHolePixels,
       minimumHoleRadius: CANOPY_SOLIDITY_CONSTANTS.minimumHoleRadius,
+      windSampleTimes: CANOPY_SOLIDITY_CONSTANTS.windSoliditySampleTimes,
       lodStates: this.lodStates.map((state) => state.id),
       trees: results,
     };
@@ -232,6 +254,11 @@ export class CanopySolidityProbe {
     }
 
     const restoreTree = this.isolateTree(tree, lodState);
+    const windStates = collectWindStates(tree);
+    const windSolidityStates = createWindSolidityStates(
+      this.lodStates,
+      CANOPY_SOLIDITY_CONSTANTS.windSoliditySampleTimes,
+    );
     const camera = new THREE.PerspectiveCamera(
       CANOPY_SOLIDITY_CONSTANTS.fieldOfView,
       1,
@@ -341,8 +368,14 @@ export class CanopySolidityProbe {
         target,
         pixels,
         resolution,
-        tree,
+        states: windStates,
       });
+
+      for (const state of windSolidityStates) {
+        setWindTime(windStates, state.time);
+        this.applyLodState(lodState, state.sourceState);
+        for (const view of crownViews) captureView(view, state.captureState);
+      }
     } finally {
       this.setFoliageVisible(heroLevel, true);
       restoreTree();
@@ -401,25 +434,12 @@ export class CanopySolidityProbe {
     }
   }
 
-  measureWind({ renderer, scene, camera, frame, view, target, pixels, resolution, tree }) {
-    const states = [];
-    tree.traverse((object) => {
-      const materials = Array.isArray(object.material)
-        ? object.material
-        : object.material
-          ? [object.material]
-          : [];
-      for (const material of materials) {
-        const state = material.userData.windState;
-        if (state && !states.includes(state)) states.push(state);
-      }
-    });
-
+  measureWind({ renderer, scene, camera, frame, view, target, pixels, resolution, states }) {
     if (states.length === 0) return 0;
 
     this.placeCamera(camera, frame, view);
     const capture = (time) => {
-      for (const state of states) state.time = time;
+      setWindTime(states, time);
       renderer.setRenderTarget(target);
       renderer.clear();
       renderer.render(scene, camera);
