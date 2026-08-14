@@ -62,3 +62,16 @@ test('crown volume gradient remains normalized after transform caching', () => {
   assert.ok(Number.isFinite(length));
   assert.ok(Math.abs(length - 1) < 1e-9);
 });
+
+test('crown volume gradient reuses a supplied target', () => {
+  const field = new CrownVolumeField(createTreeData());
+  const point = { x: 1.9, y: 2.6, z: -0.4 };
+  const expected = field.gradient(point);
+  const target = { x: 0, y: 0, z: 0 };
+  const result = field.gradient(point, target);
+
+  assert.equal(result, target);
+  assert.ok(Math.abs(result.x - expected.x) < 1e-12);
+  assert.ok(Math.abs(result.y - expected.y) < 1e-12);
+  assert.ok(Math.abs(result.z - expected.z) < 1e-12);
+});
