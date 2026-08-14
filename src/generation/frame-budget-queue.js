@@ -29,6 +29,12 @@ export class FrameBudgetQueue {
   }
 
   process(budgetMilliseconds) {
+    if (this.head >= this.tasks.length) {
+      this.lastProcessDuration = 0;
+      this.compact();
+      return 0;
+    }
+
     const started = this.now();
     let processed = 0;
 
