@@ -1,7 +1,6 @@
-import { normalizeVector } from './lobe-geometry.js';
-
 const MINIMUM_SMOOTHNESS = 1e-4;
 const MINIMUM_GRADIENT_EPSILON = 1e-4;
+const MINIMUM_NORMAL_LENGTH = 1e-9;
 const TAU = Math.PI * 2;
 
 function clamp(value, minimum, maximum) {
@@ -37,10 +36,10 @@ function prepareDistanceLobe(lobe) {
   };
 }
 
-function ellipsoidDistance(point, lobe) {
-  const x = point.x - lobe.position.x;
-  const y = point.y - lobe.position.y;
-  const z = point.z - lobe.position.z;
+function ellipsoidDistance(pointX, pointY, pointZ, lobe) {
+  const x = pointX - lobe.position.x;
+  const y = pointY - lobe.position.y;
+  const z = pointZ - lobe.position.z;
   const xAfterZ = x * lobe.cosZ - y * lobe.sinZ;
   const yAfterZ = x * lobe.sinZ + y * lobe.cosZ;
   const xAfterY = xAfterZ * lobe.cosY + z * lobe.sinY;
@@ -65,17 +64,17 @@ function createNoisePhases(seed) {
   };
 }
 
-function calculateNoise(point, phases, frequency) {
+function calculateNoise(x, y, z, phases, frequency) {
   const first =
-    Math.sin(point.x * frequency + phases.x) *
-    Math.cos(point.z * frequency * 0.83 + phases.z);
+    Math.sin(x * frequency + phases.x) *
+    Math.cos(z * frequency * 0.83 + phases.z);
   const second = Math.sin(
-    point.y * frequency * 0.67 +
-      point.x * frequency * 0.21 +
+    y * frequency * 0.67 +
+      x * frequency * 0.21 +
       phases.y,
   );
   const third = Math.cos(
-    (point.x + point.z) * frequency * 0.43 + phases.z - phases.x,
+    (x + z) * frequency * 0.43 + phases.z - phases.x,
   );
   return first * 0.55 + second * 0.3 + third * 0.15;
 }
@@ -100,6 +99,21 @@ function calculateBounds(lobes, padding) {
   });
 }
 
+function normalizeGradient(x, y, z, target) {
+  const length = Math.hypot(x, y, z);
+  if (length <= MINIMUM_NORMAL_LENGTH) {
+    target.x = 0;
+    target.y = 1;
+    target.z = 0;
+    return target;
+  }
+
+  target.x = x / length;
+  target.y = y / length;
+  target.z = z / length;
+  return target;
+}
+
 export class CrownVolumeField {
   constructor(treeData) {
     if (!treeData?.lobes?.length) {
@@ -117,45 +131,51 @@ export class CrownVolumeField {
     );
   }
 
-  sample(point) {
+  sampleCoordinates(x, y, z) {
     let distance = Number.POSITIVE_INFINITY;
 
     for (const lobe of this.distanceLobes) {
       distance = smoothMinimum(
         distance,
-        ellipsoidDistance(point, lobe),
+        ellipsoidDistance(x, y, z, lobe),
         this.settings.smoothing,
       );
     }
 
     const normalizedHeight = clamp(
-      (point.y - this.bounds.minimum.y) / this.crownHeight,
+      (y - this.bounds.minimum.y) / this.crownHeight,
       0,
       1,
     );
     const edgeWeight = 0.55 + normalizedHeight * 0.45;
     const noise = calculateNoise(
-      point,
+      x,
+      y,
+      z,
       this.phases,
       this.settings.noiseFrequency,
     );
     return distance + noise * this.settings.noiseAmplitude * edgeWeight;
   }
 
-  gradient(point) {
+  sample(point) {
+    return this.sampleCoordinates(point.x, point.y, point.z);
+  }
+
+  gradient(point, target = { x: 0, y: 0, z: 0 }) {
     const epsilon = Math.max(
       MINIMUM_GRADIENT_EPSILON,
       this.settings.normalEpsilon,
     );
     const x =
-      this.sample({ x: point.x + epsilon, y: point.y, z: point.z }) -
-      this.sample({ x: point.x - epsilon, y: point.y, z: point.z });
+      this.sampleCoordinates(point.x + epsilon, point.y, point.z) -
+      this.sampleCoordinates(point.x - epsilon, point.y, point.z);
     const y =
-      this.sample({ x: point.x, y: point.y + epsilon, z: point.z }) -
-      this.sample({ x: point.x, y: point.y - epsilon, z: point.z });
+      this.sampleCoordinates(point.x, point.y + epsilon, point.z) -
+      this.sampleCoordinates(point.x, point.y - epsilon, point.z);
     const z =
-      this.sample({ x: point.x, y: point.y, z: point.z + epsilon }) -
-      this.sample({ x: point.x, y: point.y, z: point.z - epsilon });
-    return normalizeVector({ x, y, z });
+      this.sampleCoordinates(point.x, point.y, point.z + epsilon) -
+      this.sampleCoordinates(point.x, point.y, point.z - epsilon);
+    return normalizeGradient(x, y, z, target);
   }
 }
