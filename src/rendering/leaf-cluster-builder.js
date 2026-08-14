@@ -82,16 +82,26 @@ export class LeafClusterBuilder {
       const spin = new THREE.Quaternion();
       const scale = new THREE.Vector3();
       const instanceColor = new THREE.Color();
+      const placement = {
+        position: new THREE.Vector3(),
+        normal: new THREE.Vector3(),
+      };
+      const position = new THREE.Vector3();
+      const tangent = new THREE.Vector3();
+      const bitangent = new THREE.Vector3();
 
       records.forEach((record, index) => {
-        const placement = resolvePlacement(record, field);
+        resolvePlacement(record, field, placement);
         const instanceScale = calculateInstanceScale(record, settings, treeData);
-        const position = resolvePosition(
+        resolvePosition(
           record,
           placement,
           treeData,
           settings,
           instanceScale,
+          position,
+          tangent,
+          bitangent,
         );
 
         alignment.setFromUnitVectors(UP, placement.normal);
