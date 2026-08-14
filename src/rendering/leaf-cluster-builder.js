@@ -81,6 +81,7 @@ export class LeafClusterBuilder {
       const alignment = new THREE.Quaternion();
       const spin = new THREE.Quaternion();
       const scale = new THREE.Vector3();
+      const instanceColor = new THREE.Color();
 
       records.forEach((record, index) => {
         const placement = resolvePlacement(record, field);
@@ -117,6 +118,7 @@ export class LeafClusterBuilder {
           samplePaletteColor(
             treeData.palette.palette,
             record.sample.colorMix + settings.colorLift + jitter,
+            instanceColor,
           ),
         );
       });
