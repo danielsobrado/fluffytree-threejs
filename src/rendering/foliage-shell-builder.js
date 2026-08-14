@@ -7,17 +7,23 @@ import { selectFoliageLodInstances } from './foliage-lod-selector.js';
 
 const LOCAL_OUTWARD = new THREE.Vector3(0, 0, 1);
 
-function crownDirection(position, center) {
+function crownDirection(position, center, result) {
   const x = position.x - center.x;
   const y = position.y - center.y;
   const z = position.z - center.z;
   const length = Math.hypot(x, y, z);
 
   if (length <= Number.EPSILON) {
-    return { x: 0, y: 1, z: 0 };
+    result.x = 0;
+    result.y = 1;
+    result.z = 0;
+    return result;
   }
 
-  return { x: x / length, y: y / length, z: z / length };
+  result.x = x / length;
+  result.y = y / length;
+  result.z = z / length;
+  return result;
 }
 
 function averageLobeScale(lobe) {
@@ -91,7 +97,10 @@ export class FoliageShellBuilder {
       interiorInsetRatio,
       interiorScaleRatio,
     );
-    const instances = [...outerInstances, ...interiorInstances];
+    const instances =
+      interiorInstances.length === 0
+        ? outerInstances
+        : outerInstances.concat(interiorInstances);
     let geometry = null;
     let material = null;
 
@@ -99,8 +108,8 @@ export class FoliageShellBuilder {
       geometry = this.geometryFactory.create(planesPerCluster);
       addFoliageInstanceAttributes(geometry, instances, {
         getExposure: (instance) => instance.exposure,
-        getCrownDirection: (instance) =>
-          crownDirection(instance.position, treeData.crownCenter),
+        getCrownDirection: (instance, _index, target) =>
+          crownDirection(instance.position, treeData.crownCenter, target),
       });
 
       material = this.materialFactory.create({
