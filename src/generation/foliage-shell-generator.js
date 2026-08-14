@@ -93,7 +93,7 @@ function createCandidate(
     exposure * FOLIAGE_SHELL_CONSTANTS.exposureWeight +
     outwardAlignment * FOLIAGE_SHELL_CONSTANTS.outwardWeight +
     upwardAlignment * FOLIAGE_SHELL_CONSTANTS.upwardWeight +
-    random.next() * FOLIAGE_SHELL_CONSTANTS.ccoreJitter;
+    random.next() * FOLIAGE_SHELL_CONSTANTS.scoreJitter;
   const sizing = createFoliageCardSizing(
     meanScale,
     settings,
