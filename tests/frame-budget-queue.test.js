@@ -21,6 +21,20 @@ test('generation queue is deterministic, keyed, and respects its frame budget', 
   assert.equal(queue.length, 0);
 });
 
+test('idle generation queue does not sample the frame clock', () => {
+  let clockReads = 0;
+  const queue = new FrameBudgetQueue({
+    now: () => {
+      clockReads += 1;
+      return 0;
+    },
+  });
+
+  assert.equal(queue.process(8), 0);
+  assert.equal(queue.lastProcessDuration, 0);
+  assert.equal(clockReads, 0);
+});
+
 test('generation queue leaves later tasks for the next frame', () => {
   let time = 0;
   const queue = new FrameBudgetQueue({ now: () => time });
