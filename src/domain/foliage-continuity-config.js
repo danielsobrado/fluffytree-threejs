@@ -9,6 +9,8 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     sameMacroOnly: false,
     verticalBias: 0.04,
     maximumShellCardWidthSpread: 1.4,
+    shellCoverageRepairProbeRatio: 0.2,
+    shellCoverageRepairStopRatio: 0.5,
     lod: Object.freeze([
       Object.freeze({ coreScale: 1, bridges: true }),
       Object.freeze({ coreScale: 1.04, bridges: true }),
@@ -22,6 +24,8 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     sameMacroOnly: false,
     verticalBias: 0.38,
     maximumShellCardWidthSpread: 2.5,
+    shellCoverageRepairProbeRatio: 0.12,
+    shellCoverageRepairStopRatio: 0.5,
     lod: Object.freeze([
       Object.freeze({ coreScale: 1.02, bridges: true }),
       Object.freeze({ coreScale: 1.09, bridges: true }),
@@ -35,6 +39,8 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     sameMacroOnly: false,
     verticalBias: 0.14,
     maximumShellCardWidthSpread: 2.6,
+    shellCoverageRepairProbeRatio: 0.24,
+    shellCoverageRepairStopRatio: 0.5,
     lod: Object.freeze([
       Object.freeze({ coreScale: 1, bridges: true }),
       Object.freeze({ coreScale: 1.06, bridges: true }),
@@ -48,6 +54,8 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     sameMacroOnly: true,
     verticalBias: 0.08,
     maximumShellCardWidthSpread: 2.5,
+    shellCoverageRepairProbeRatio: 0.28,
+    shellCoverageRepairStopRatio: 0.5,
     lod: Object.freeze([
       Object.freeze({ coreScale: 1, bridges: true }),
       Object.freeze({ coreScale: 1.05, bridges: true }),
@@ -167,6 +175,20 @@ export function resolveFoliageContinuityProfile(config, profile) {
       1,
       4,
       `${path}.maximumShellCardWidthSpread`,
+    ),
+    shellCoverageRepairProbeRatio: requireRange(
+      source.shellCoverageRepairProbeRatio ??
+        fallback.shellCoverageRepairProbeRatio,
+      0,
+      1,
+      `${path}.shellCoverageRepairProbeRatio`,
+    ),
+    shellCoverageRepairStopRatio: requireRange(
+      source.shellCoverageRepairStopRatio ??
+        fallback.shellCoverageRepairStopRatio,
+      0.1,
+      1,
+      `${path}.shellCoverageRepairStopRatio`,
     ),
     lod: createLodConfig(source.lod, fallback.lod, `${path}.lod`),
   });

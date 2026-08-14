@@ -1,6 +1,8 @@
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
 export const FOLIAGE_SHELL_CONSTANTS = Object.freeze({
   tau: Math.PI * 2,
-  goldenAngle: Math.PI * (3 - Math.sqrt(5)),
+  goldenAngle: GOLDEN_ANGLE,
   clearanceOffset: 0.08,
   clearanceRange: 0.6,
   outwardBias: 0.25,
@@ -9,6 +11,8 @@ export const FOLIAGE_SHELL_CONSTANTS = Object.freeze({
   outwardWeight: 0.34,
   upwardWeight: 0.08,
   scoreJitter: 0.0001,
+  primaryCoverageStopRatio: 0.5,
+  coverageRepairPhaseOffset: GOLDEN_ANGLE * 0.5,
   // A cluster only counts as covering a candidate when both face roughly the
   // same way, so a card on the far side of a thin crown cannot claim the near
   // side is covered. cos(75 degrees).

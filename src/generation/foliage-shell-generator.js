@@ -1,5 +1,7 @@
+import { resolveFoliageContinuityProfile } from '../domain/foliage-continuity-config.js';
 import { createFoliageAlphaProfile } from '../rendering/foliage-alpha-profile.js';
 import { createFoliageCardSizing } from './foliage-card-sizing.js';
+import { repairFoliageCoverage } from './foliage-coverage-repair.js';
 import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
 import { selectDeterministicFoliageMaxCover } from './foliage-max-cover-selector.js';
 import {
@@ -91,7 +93,7 @@ function createCandidate(
     exposure * FOLIAGE_SHELL_CONSTANTS.exposureWeight +
     outwardAlignment * FOLIAGE_SHELL_CONSTANTS.outwardWeight +
     upwardAlignment * FOLIAGE_SHELL_CONSTANTS.upwardWeight +
-    random.next() * FOLIAGE_SHELL_CONSTANTS.scoreJitter;
+    random.next() * FOLIAGE_SHELL_CONSTANTS.ccoreJitter;
   const sizing = createFoliageCardSizing(
     meanScale,
     settings,
@@ -150,15 +152,56 @@ function coverEveryLobe(selected, bestByLobe) {
   return additions;
 }
 
+function createCoverageRepairCandidates(
+  lobes,
+  primaryPhases,
+  crownCenter,
+  settings,
+  continuity,
+  maximumCardWidthSpread,
+  alphaProfile,
+  random,
+) {
+  const probeCount = Math.ceil(
+    settings.candidatesPerLobe * continuity.shellCoverageRepairProbeRatio,
+  );
+  if (probeCount <= 0) return [];
+
+  const candidates = [];
+  for (const lobe of lobes) {
+    const phase =
+      primaryPhases.get(lobe.id) +
+      FOLIAGE_SHELL_CONSTANTS.coverageRepairPhaseOffset;
+
+    for (let index = 0; index < probeCount; index += 1) {
+      const candidate = createCandidate(
+        lobe,
+        createFibonacciDirection(index, probeCount, phase),
+        lobes,
+        crownCenter,
+        settings,
+        maximumCardWidthSpread,
+        alphaProfile,
+        random,
+        settings.candidatesPerLobe + index,
+      );
+      if (candidate.exposure >= settings.exposureThreshold) {
+        candidates.push(candidate);
+      }
+    }
+  }
+
+  return candidates;
+}
+
 export class FoliageShellGenerator {
   generate(preset, sourceLobes, random) {
     const settings = preset.foliage.shell;
-    const maximumCardWidthSpread =
-      preset.continuity?.maximumShellCardWidthSpread ??
-      FOLIAGE_SHELL_CONSTANTS.maximumShellCardWidthSpreadByProfile[
-        preset.crown.profile
-      ] ??
-      FOLIAGE_SHELL_CONSTANTS.defaultMaximumShellCardWidthSpread;
+    const continuity = resolveFoliageContinuityProfile(
+      preset.continuity,
+      preset.crown.profile,
+    );
+    const maximumCardWidthSpread = continuity.maximumShellCardWidthSpread;
     const alphaProfile = createFoliageAlphaProfile({
       shapeId: preset.foliage.leafShape,
       alphaTest: settings.alphaTest,
@@ -167,10 +210,12 @@ export class FoliageShellGenerator {
     const lobes = prepareExposureLobes(sourceLobes);
     const crownCenter = calculateCrownCenter(lobes);
     const bestByLobe = new Map();
+    const primaryPhases = new Map();
     const exposed = [];
 
     for (const lobe of lobes) {
       const phase = random.range(0, FOLIAGE_SHELL_CONSTANTS.tau);
+      primaryPhases.set(lobe.id, phase);
       let best = null;
 
       for (let index = 0; index < settings.candidatesPerLobe; index += 1) {
@@ -195,11 +240,27 @@ export class FoliageShellGenerator {
 
     const maxCover = selectDeterministicFoliageMaxCover(exposed, {
       targetCount: exposed.length,
-      stopCoverageRatio: 0.5,
+      stopCoverageRatio: FOLIAGE_SHELL_CONSTANTS.primaryCoverageStopRatio,
       minimumPerLobe: false,
     });
     const selected = [...maxCover.selected];
     selected.push(...coverEveryLobe(selected, bestByLobe));
+
+    const repairCandidates = createCoverageRepairCandidates(
+      lobes,
+      primaryPhases,
+      crownCenter,
+      settings,
+      continuity,
+      maximumCardWidthSpread,
+      alphaProfile,
+      random,
+    );
+    const repair = repairFoliageCoverage(selected, repairCandidates, {
+      stopCoverageRatio: continuity.shellCoverageRepairStopRatio,
+      verificationCandidates: exposed.concat(repairCandidates),
+    });
+    selected.push(...repair.additions);
     selected.sort(compareCandidates);
 
     const lobeExposureTotals = new Map();
@@ -245,7 +306,7 @@ export class FoliageShellGenerator {
     return {
       instances,
       lobeExposure,
-      maximumCandidateCoverageRatio: maxCover.maximumCoverageRatio,
+      maximumCandidateCoverageRatio: repair.maximumCoverageRatio,
     };
   }
 }

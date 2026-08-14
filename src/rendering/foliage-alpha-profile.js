@@ -1,5 +1,9 @@
 import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js';
-import { getLeafShape, sampleLeafAlpha } from './leaf-shape-library.js';
+import {
+  DEFAULT_LEAF_SHAPE_ID,
+  getLeafShape,
+  sampleLeafAlpha,
+} from './leaf-shape-library.js';
 
 const PROFILE_CACHE = new Map();
 const PIXEL_CACHE = new Map();
@@ -34,12 +38,17 @@ function requirePlaneCount(value) {
   return planeCount;
 }
 
+function resolveShapeId(shapeId) {
+  return shapeId === undefined ? DEFAULT_LEAF_SHAPE_ID : shapeId;
+}
+
 function createPixelTemplate(shapeId, resolution) {
-  const key = `${shapeId}:${resolution}`;
+  const resolvedShapeId = resolveShapeId(shapeId);
+  const key = `${resolvedShapeId}:${resolution}`;
   const cached = PIXEL_CACHE.get(key);
   if (cached) return cached;
 
-  const leafShape = getLeafShape(shapeId);
+  const leafShape = getLeafShape(resolvedShapeId);
   const data = new Uint8Array(resolution * resolution * CHANNEL_COUNT);
 
   for (let y = 0; y < resolution; y += 1) {
@@ -131,13 +140,14 @@ export function createFoliageAlphaProfile({
   const size = requireResolution(resolution);
   const threshold = requireAlphaTest(alphaTest);
   const planeCount = requirePlaneCount(planesPerCluster);
-  const key = `${shapeId}:${threshold}:${planeCount}:${size}`;
+  const resolvedShapeId = resolveShapeId(shapeId);
+  const key = `${resolvedShapeId}:${threshold}:${planeCount}:${size}`;
   const cached = PROFILE_CACHE.get(key);
   if (cached) return cached;
 
-  const pixels = createPixelTemplate(shapeId, size);
+  const pixels = createPixelTemplate(resolvedShapeId, size);
   const profile = Object.freeze({
-    shapeId,
+    shapeId: resolvedShapeId,
     alphaTest: threshold,
     planesPerCluster: planeCount,
     resolution: size,

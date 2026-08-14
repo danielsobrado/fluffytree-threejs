@@ -6,6 +6,8 @@ profiles:
     sameMacroOnly: false
     verticalBias: 0.04
     maximumShellCardWidthSpread: 1.40
+    shellCoverageRepairProbeRatio: 0.20
+    shellCoverageRepairStopRatio: 0.50
     lod:
       - coreScale: 1.00
         bridges: true
@@ -21,6 +23,8 @@ profiles:
     sameMacroOnly: false
     verticalBias: 0.38
     maximumShellCardWidthSpread: 2.50
+    shellCoverageRepairProbeRatio: 0.12
+    shellCoverageRepairStopRatio: 0.50
     lod:
       - coreScale: 1.02
         bridges: true
@@ -36,6 +40,8 @@ profiles:
     sameMacroOnly: false
     verticalBias: 0.14
     maximumShellCardWidthSpread: 2.60
+    shellCoverageRepairProbeRatio: 0.24
+    shellCoverageRepairStopRatio: 0.50
     lod:
       - coreScale: 1.00
         bridges: true
@@ -51,6 +57,8 @@ profiles:
     sameMacroOnly: true
     verticalBias: 0.08
     maximumShellCardWidthSpread: 2.50
+    shellCoverageRepairProbeRatio: 0.28
+    shellCoverageRepairStopRatio: 0.50
     lod:
       - coreScale: 1.00
         bridges: true

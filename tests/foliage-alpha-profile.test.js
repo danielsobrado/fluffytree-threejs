@@ -5,9 +5,27 @@ import {
   createFoliageAlphaPixels,
   createFoliageAlphaProfile,
 } from '../src/rendering/foliage-alpha-profile.js';
-import { LEAF_SHAPE_IDS } from '../src/rendering/leaf-shape-library.js';
+import {
+  DEFAULT_LEAF_SHAPE_ID,
+  LEAF_SHAPE_IDS,
+} from '../src/rendering/leaf-shape-library.js';
 
 const ALPHA_TEST = 0.46;
+
+test('default foliage alpha profile resolves to the canonical broadleaf shape', () => {
+  const implicit = createFoliageAlphaProfile({
+    alphaTest: ALPHA_TEST,
+    planesPerCluster: 2,
+  });
+  const explicit = createFoliageAlphaProfile({
+    shapeId: DEFAULT_LEAF_SHAPE_ID,
+    alphaTest: ALPHA_TEST,
+    planesPerCluster: 2,
+  });
+
+  assert.equal(implicit.shapeId, DEFAULT_LEAF_SHAPE_ID);
+  assert.equal(implicit, explicit);
+});
 
 test('guaranteed alpha radius is opaque for every leaf shape', () => {
   for (const shapeId of LEAF_SHAPE_IDS) {
