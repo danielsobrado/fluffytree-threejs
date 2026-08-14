@@ -13,8 +13,10 @@ function createScalarAttribute(instances, getValue) {
 
 function createVectorAttribute(instances, getValue) {
   const values = new Float32Array(instances.length * 3);
+  const target = { x: 0, y: 0, z: 0 };
+
   for (let index = 0; index < instances.length; index += 1) {
-    const value = getValue(instances[index], index);
+    const value = getValue(instances[index], index, target);
     const offset = index * 3;
     values[offset] = value.x;
     values[offset + 1] = value.y;
