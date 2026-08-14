@@ -32,6 +32,22 @@ export class TreeLodController {
     this.onGenerationError = onGenerationError;
     this.entries = [];
     this.worldPosition = new THREE.Vector3();
+    this.dirty = true;
+    this.lastCameraX = Number.NaN;
+    this.lastCameraY = Number.NaN;
+    this.lastCameraZ = Number.NaN;
+    this.lastCameraFov = Number.NaN;
+    this.lastViewportHeight = Number.NaN;
+    this.lastNearPixels = Number.NaN;
+    this.lastMediumPixels = Number.NaN;
+    this.lastFarPixels = Number.NaN;
+    this.lastCullPixels = Number.NaN;
+    this.lastHysteresis = Number.NaN;
+    this.lastFadeBand = Number.NaN;
+    this.lastShadowPixels = Number.NaN;
+    this.focalPixels = 0;
+    this.focalCameraFov = Number.NaN;
+    this.focalViewportHeight = Number.NaN;
   }
 
   register(tree) {
@@ -47,10 +63,12 @@ export class TreeLodController {
         heroReady: lodState.heroReady,
       },
     });
+    this.dirty = true;
   }
 
   clear() {
     this.entries.length = 0;
+    this.dirty = true;
   }
 
   queueHeroBuild(entry, lodState) {
@@ -64,6 +82,8 @@ export class TreeLodController {
           return;
         }
         throw error;
+      } finally {
+        this.dirty = true;
       }
     };
 
@@ -103,18 +123,73 @@ export class TreeLodController {
     entry.appliedInverts[index] = invert;
   }
 
+  inputsChanged(camera, viewportHeight) {
+    const position = camera.position;
+    const settings = this.settings;
+    return (
+      this.dirty ||
+      position.x !== this.lastCameraX ||
+      position.y !== this.lastCameraY ||
+      position.z !== this.lastCameraZ ||
+      camera.fov !== this.lastCameraFov ||
+      viewportHeight !== this.lastViewportHeight ||
+      settings.nearPixels !== this.lastNearPixels ||
+      settings.mediumPixels !== this.lastMediumPixels ||
+      settings.farPixels !== this.lastFarPixels ||
+      settings.cullPixels !== this.lastCullPixels ||
+      settings.hysteresis !== this.lastHysteresis ||
+      settings.fadeBand !== this.lastFadeBand ||
+      settings.shadowPixels !== this.lastShadowPixels
+    );
+  }
+
+  captureInputs(camera, viewportHeight) {
+    const position = camera.position;
+    const settings = this.settings;
+    this.lastCameraX = position.x;
+    this.lastCameraY = position.y;
+    this.lastCameraZ = position.z;
+    this.lastCameraFov = camera.fov;
+    this.lastViewportHeight = viewportHeight;
+    this.lastNearPixels = settings.nearPixels;
+    this.lastMediumPixels = settings.mediumPixels;
+    this.lastFarPixels = settings.farPixels;
+    this.lastCullPixels = settings.cullPixels;
+    this.lastHysteresis = settings.hysteresis;
+    this.lastFadeBand = settings.fadeBand;
+    this.lastShadowPixels = settings.shadowPixels;
+    this.dirty = false;
+  }
+
+  resolveFocalPixels(camera, viewportHeight) {
+    if (
+      camera.fov === this.focalCameraFov &&
+      viewportHeight === this.focalViewportHeight
+    ) {
+      return this.focalPixels;
+    }
+
+    this.focalCameraFov = camera.fov;
+    this.focalViewportHeight = viewportHeight;
+    this.focalPixels =
+      viewportHeight /
+      (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) * 0.5));
+    return this.focalPixels;
+  }
+
   update(camera, viewportHeight, renderer) {
-    const focalPixels =
-      viewportHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) * 0.5));
+    if (!this.inputsChanged(camera, viewportHeight)) return;
+
+    const focalPixels = this.resolveFocalPixels(camera, viewportHeight);
     const prewarmPixels = this.settings.nearPixels * (1 - this.settings.hysteresis);
     let shadowChanged = false;
 
     for (const entry of this.entries) {
+      const treeState = entry.tree.userData.tree;
+      const lodState = entry.tree.userData.lod;
       entry.tree.getWorldPosition(this.worldPosition);
       const distance = Math.max(0.001, camera.position.distanceTo(this.worldPosition));
-      const projectedPixels =
-        (entry.tree.userData.tree.height / distance) * focalPixels;
-      const lodState = entry.tree.userData.lod;
+      const projectedPixels = (treeState.height / distance) * focalPixels;
       const minimumLevel = lodState.minimumLevel ?? 0;
       entry.stableLevel = Math.max(
         minimumLevel,
@@ -159,10 +234,11 @@ export class TreeLodController {
         proxy.visible = castsShadow;
         shadowChanged = true;
       }
-      entry.tree.userData.lod.currentLevel = entry.stableLevel;
-      entry.tree.userData.lod.projectedPixels = projectedPixels;
+      lodState.currentLevel = entry.stableLevel;
+      lodState.projectedPixels = projectedPixels;
     }
 
     if (shadowChanged && renderer?.shadowMap) renderer.shadowMap.needsUpdate = true;
+    this.captureInputs(camera, viewportHeight);
   }
 }
