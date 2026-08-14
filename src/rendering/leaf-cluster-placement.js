@@ -16,12 +16,17 @@ export {
 const UP = new THREE.Vector3(0, 1, 0);
 const RIGHT = new THREE.Vector3(1, 0, 0);
 
-function projectToSurface(field, sample) {
-  const position = new THREE.Vector3(
-    sample.position.x,
-    sample.position.y,
-    sample.position.z,
-  );
+function createPlacementTarget() {
+  return {
+    position: new THREE.Vector3(),
+    normal: new THREE.Vector3(),
+  };
+}
+
+function projectToSurface(field, sample, target) {
+  const position = target.position;
+  const normal = target.normal;
+  position.set(sample.position.x, sample.position.y, sample.position.z);
 
   for (
     let iteration = 0;
@@ -33,28 +38,21 @@ function projectToSurface(field, sample) {
       break;
     }
 
-    const gradient = field.gradient(position);
-    position.addScaledVector(
-      new THREE.Vector3(gradient.x, gradient.y, gradient.z),
-      -distance,
-    );
+    field.gradient(position, normal);
+    position.addScaledVector(normal, -distance);
   }
 
-  const gradient = field.gradient(position);
-  return {
-    position,
-    normal: new THREE.Vector3(gradient.x, gradient.y, gradient.z).normalize(),
-  };
+  field.gradient(position, normal);
+  return target;
 }
 
-function createTangentBasis(normal) {
+function createTangentBasis(normal, tangent, bitangent) {
   const reference =
     Math.abs(normal.y) < LEAF_DETAIL_RENDERING_CONSTANTS.tangentReferenceThreshold
       ? UP
       : RIGHT;
-  const tangent = new THREE.Vector3().crossVectors(reference, normal).normalize();
-  const bitangent = new THREE.Vector3().crossVectors(normal, tangent).normalize();
-  return { tangent, bitangent };
+  tangent.crossVectors(reference, normal).normalize();
+  bitangent.crossVectors(normal, tangent).normalize();
 }
 
 function addSurfaceJitter(
@@ -64,6 +62,8 @@ function addSurfaceJitter(
   record,
   settings,
   instanceScale,
+  tangent,
+  bitangent,
 ) {
   const id = record.sample.id + record.layer * 8191;
   const angle =
@@ -73,13 +73,17 @@ function addSurfaceJitter(
     Math.sqrt(hashUnit(treeData.seed, id, 0xd3a2646c)) *
     getTangentialJitterRatio(settings) *
     instanceScale;
-  const { tangent, bitangent } = createTangentBasis(normal);
+  createTangentBasis(normal, tangent, bitangent);
   position.addScaledVector(tangent, Math.cos(angle) * radius);
   position.addScaledVector(bitangent, Math.sin(angle) * radius);
 }
 
-export function resolvePlacement(record, field) {
-  return projectToSurface(field, record.sample);
+export function resolvePlacement(
+  record,
+  field,
+  target = createPlacementTarget(),
+) {
+  return projectToSurface(field, record.sample, target);
 }
 
 export function calculateInstanceScale(record, settings, treeData) {
@@ -103,8 +107,11 @@ export function resolvePosition(
   treeData,
   settings,
   instanceScale,
+  target = new THREE.Vector3(),
+  tangent = new THREE.Vector3(),
+  bitangent = new THREE.Vector3(),
 ) {
-  const position = placement.position.clone();
+  const position = target.copy(placement.position);
 
   position.addScaledVector(
     placement.normal,
@@ -117,6 +124,8 @@ export function resolvePosition(
     record,
     settings,
     instanceScale,
+    tangent,
+    bitangent,
   );
   return position;
 }
