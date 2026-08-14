@@ -6,17 +6,23 @@ import { addFoliageInstanceAttributes } from './instanced-foliage-attributes.js'
 
 const LOCAL_BRIDGE_AXIS = new THREE.Vector3(0, 1, 0);
 
-function crownDirection(position, center) {
+function crownDirection(position, center, result) {
   const x = position.x - center.x;
   const y = position.y - center.y;
   const z = position.z - center.z;
   const length = Math.hypot(x, y, z);
 
   if (length <= Number.EPSILON) {
-    return { x: 0, y: 1, z: 0 };
+    result.x = 0;
+    result.y = 1;
+    result.z = 0;
+    return result;
   }
 
-  return { x: x / length, y: y / length, z: z / length };
+  result.x = x / length;
+  result.y = y / length;
+  result.z = z / length;
+  return result;
 }
 
 export class FoliageCoreBuilder {
@@ -50,8 +56,8 @@ export class FoliageCoreBuilder {
       geometry = this.geometryFactory.create(detail);
       addFoliageInstanceAttributes(geometry, layout.instances, {
         getExposure: (instance) => instance.exposure,
-        getCrownDirection: (instance) =>
-          crownDirection(instance.position, treeData.crownCenter),
+        getCrownDirection: (instance, _index, target) =>
+          crownDirection(instance.position, treeData.crownCenter, target),
       });
 
       material = this.materialFactory.create({
