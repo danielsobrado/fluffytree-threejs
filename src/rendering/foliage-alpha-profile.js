@@ -124,11 +124,21 @@ function calculateGuaranteedRadius(data, resolution, alphaTest) {
 
   if (!Number.isFinite(nearestRejectedTexel)) return MAXIMUM_CARD_RADIUS;
 
-  // Linear filtering can blend a point with a rejected neighbour. Subtract a
-  // complete texel diagonal so the remaining disk is conservative between
-  // samples as well as at the generated texture's texel centres.
   const filterFootprint = Math.SQRT2 / resolution;
   return clamp(nearestRejectedTexel - filterFootprint, 0, MAXIMUM_CARD_RADIUS);
+}
+
+function calculateOpaqueAreaRatio(data, resolution, alphaTest) {
+  if (alphaTest === 0) return 1;
+
+  let opaqueTexelCount = 0;
+  for (let y = 0; y < resolution; y += 1) {
+    for (let x = 0; x < resolution; x += 1) {
+      if (channel(data, resolution, x, y) >= alphaTest) opaqueTexelCount += 1;
+    }
+  }
+
+  return opaqueTexelCount / (resolution * resolution);
 }
 
 export function createFoliageAlphaProfile({
@@ -156,6 +166,7 @@ export function createFoliageAlphaProfile({
       size,
       threshold,
     ),
+    opaqueAreaRatio: calculateOpaqueAreaRatio(pixels, size, threshold),
     sample(x, y) {
       return sampleLinear(pixels, size, x, y);
     },
