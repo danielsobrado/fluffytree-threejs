@@ -5,10 +5,10 @@ function clamp(value, minimum, maximum) {
 }
 
 export function resolveFoliageCoveragePolicy(alphaProfile, continuity) {
-  const opaqueAreaRatio = Math.max(
-    Number(alphaProfile.opaqueAreaRatio),
-    Number.EPSILON,
-  );
+  const opaqueAreaRatio = Number(alphaProfile?.opaqueAreaRatio);
+  if (!Number.isFinite(opaqueAreaRatio) || opaqueAreaRatio <= 0 || opaqueAreaRatio > 1) {
+    throw new RangeError('Foliage alpha opaqueAreaRatio must be within (0, 1].');
+  }
   const sparseShapeMultiplier = clamp(
     FOLIAGE_SHELL_CONSTANTS.referenceOpaqueAreaRatio / opaqueAreaRatio,
     1,
