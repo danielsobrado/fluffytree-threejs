@@ -1,16 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  calculateFoliageRepairProbeCount,
+  calculateFoliageRepairBudget,
   resolveFoliageCoveragePolicy,
 } from '../src/generation/foliage-coverage-policy.js';
 
 const CONTINUITY = Object.freeze({
-  shellCoverageRepairProbeRatio: 0.2,
+  shellCoverageRepairBudgetRatio: 0.10,
   shellCoverageRepairStopRatio: 0.5,
+  shellCoverageRepairMaximumSubdivisionDepth: 4,
+  shellCoverageRepairMinimumDirectionDiameter: 0.055,
+  shellCoverageRepairPasses: 2,
+  shellCoverageRepairNormalUncertaintyScale: 1,
 });
 
-test('sparser alpha shapes receive more probes and tighter overlap', () => {
+test('sparser alpha shapes receive more adaptive budget and tighter certification', () => {
   const broad = resolveFoliageCoveragePolicy(
     { opaqueAreaRatio: 0.425 },
     CONTINUITY,
@@ -20,18 +24,27 @@ test('sparser alpha shapes receive more probes and tighter overlap', () => {
     CONTINUITY,
   );
 
-  assert.equal(broad.probeRatio, CONTINUITY.shellCoverageRepairProbeRatio);
+  assert.equal(
+    broad.repairBudgetRatio,
+    CONTINUITY.shellCoverageRepairBudgetRatio,
+  );
   assert.equal(
     broad.stopCoverageRatio,
     CONTINUITY.shellCoverageRepairStopRatio,
   );
-  assert.ok(sparse.probeRatio > broad.probeRatio);
+  assert.equal(
+    broad.minimumDirectionDiameter,
+    CONTINUITY.shellCoverageRepairMinimumDirectionDiameter,
+  );
+  assert.ok(sparse.repairBudgetRatio > broad.repairBudgetRatio);
   assert.ok(sparse.stopCoverageRatio < broad.stopCoverageRatio);
-  assert.equal(sparse.passCount, broad.passCount);
+  assert.ok(sparse.minimumDirectionDiameter < broad.minimumDirectionDiameter);
+  assert.equal(sparse.maximumSubdivisionDepth, broad.maximumSubdivisionDepth);
+  assert.equal(sparse.maximumPasses, broad.maximumPasses);
 });
 
-test('repair probe count is deterministic and bounded', () => {
-  assert.equal(calculateFoliageRepairProbeCount(256, 0.2), 52);
-  assert.equal(calculateFoliageRepairProbeCount(256, 0), 0);
-  assert.equal(calculateFoliageRepairProbeCount(256, 1), 256);
+test('adaptive repair budget is deterministic and bounded', () => {
+  assert.equal(calculateFoliageRepairBudget(640, 0.10), 64);
+  assert.equal(calculateFoliageRepairBudget(256, 0), 0);
+  assert.equal(calculateFoliageRepairBudget(256, 1), 256);
 });

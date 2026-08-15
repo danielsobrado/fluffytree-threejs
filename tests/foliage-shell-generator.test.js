@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { resolveFoliageContinuityProfile } from '../src/domain/foliage-continuity-config.js';
+import {
+  calculateFoliageRepairBudget,
+  resolveFoliageCoveragePolicy,
+} from '../src/generation/foliage-coverage-policy.js';
 import { normalizedRotatedPointDistance } from '../src/generation/lobe-geometry.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
 import { createFoliageAlphaProfile } from '../src/rendering/foliage-alpha-profile.js';
@@ -21,10 +26,33 @@ function groupByLobe(instances) {
   return groups;
 }
 
+function maximumClustersPerLobe(preset) {
+  const alphaProfile = createFoliageAlphaProfile({
+    shapeId: preset.foliage.leafShape,
+    alphaTest: preset.foliage.shell.alphaTest,
+    planesPerCluster: preset.foliage.shell.planesPerCluster,
+  });
+  const continuity = resolveFoliageContinuityProfile(
+    preset.continuity,
+    preset.crown.profile,
+  );
+  const policy = resolveFoliageCoveragePolicy(alphaProfile, continuity);
+  const repairBudget = calculateFoliageRepairBudget(
+    preset.foliage.shell.candidatesPerLobe,
+    policy.repairBudgetRatio,
+  );
+
+  return (
+    preset.foliage.shell.candidatesPerLobe +
+    repairBudget * policy.maximumPasses
+  );
+}
+
 test('every lobe carries clusters and exposed candidates satisfy max-cover', () => {
   const preset = createTestPreset();
   const tree = new TreeGenerator().generate(preset, 8128);
   const groups = groupByLobe(tree.shell);
+  const maximumPerLobe = maximumClustersPerLobe(preset);
 
   assert.ok(tree.shell.length > 0);
   assert.ok(
@@ -34,7 +62,7 @@ test('every lobe carries clusters and exposed candidates satisfy max-cover', () 
   for (const lobe of tree.lobes) {
     const count = groups.get(lobe.id)?.length ?? 0;
     assert.ok(count >= 1, `lobe ${lobe.id} rendered as bare core`);
-    assert.ok(count <= preset.foliage.shell.candidatesPerLobe);
+    assert.ok(count <= maximumPerLobe);
   }
   assert.ok(
     tree.shell.every(

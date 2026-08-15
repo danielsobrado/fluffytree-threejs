@@ -9,8 +9,12 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     sameMacroOnly: false,
     verticalBias: 0.04,
     maximumShellCardWidthSpread: 1.4,
-    shellCoverageRepairProbeRatio: 0.2,
+    shellCoverageRepairBudgetRatio: 0.10,
     shellCoverageRepairStopRatio: 0.5,
+    shellCoverageRepairMaximumSubdivisionDepth: 4,
+    shellCoverageRepairMinimumDirectionDiameter: 0.055,
+    shellCoverageRepairPasses: 2,
+    shellCoverageRepairNormalUncertaintyScale: 1,
     lod: Object.freeze([
       Object.freeze({ coreScale: 1, bridges: true }),
       Object.freeze({ coreScale: 1.04, bridges: true }),
@@ -24,8 +28,12 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     sameMacroOnly: false,
     verticalBias: 0.38,
     maximumShellCardWidthSpread: 2.5,
-    shellCoverageRepairProbeRatio: 0.12,
+    shellCoverageRepairBudgetRatio: 0.08,
     shellCoverageRepairStopRatio: 0.5,
+    shellCoverageRepairMaximumSubdivisionDepth: 4,
+    shellCoverageRepairMinimumDirectionDiameter: 0.05,
+    shellCoverageRepairPasses: 2,
+    shellCoverageRepairNormalUncertaintyScale: 1,
     lod: Object.freeze([
       Object.freeze({ coreScale: 1.02, bridges: true }),
       Object.freeze({ coreScale: 1.09, bridges: true }),
@@ -39,8 +47,12 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     sameMacroOnly: false,
     verticalBias: 0.14,
     maximumShellCardWidthSpread: 2.6,
-    shellCoverageRepairProbeRatio: 0.24,
+    shellCoverageRepairBudgetRatio: 0.12,
     shellCoverageRepairStopRatio: 0.5,
+    shellCoverageRepairMaximumSubdivisionDepth: 5,
+    shellCoverageRepairMinimumDirectionDiameter: 0.045,
+    shellCoverageRepairPasses: 2,
+    shellCoverageRepairNormalUncertaintyScale: 1,
     lod: Object.freeze([
       Object.freeze({ coreScale: 1, bridges: true }),
       Object.freeze({ coreScale: 1.06, bridges: true }),
@@ -54,8 +66,12 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     sameMacroOnly: true,
     verticalBias: 0.08,
     maximumShellCardWidthSpread: 2.5,
-    shellCoverageRepairProbeRatio: 0.28,
+    shellCoverageRepairBudgetRatio: 0.14,
     shellCoverageRepairStopRatio: 0.5,
+    shellCoverageRepairMaximumSubdivisionDepth: 5,
+    shellCoverageRepairMinimumDirectionDiameter: 0.04,
+    shellCoverageRepairPasses: 3,
+    shellCoverageRepairNormalUncertaintyScale: 1,
     lod: Object.freeze([
       Object.freeze({ coreScale: 1, bridges: true }),
       Object.freeze({ coreScale: 1.05, bridges: true }),
@@ -85,6 +101,14 @@ function requireRange(value, minimum, maximum, path) {
     throw new RangeError(`${path} must be a finite number within [${minimum}, ${maximum}].`);
   }
   return value;
+}
+
+function requireIntegerRange(value, minimum, maximum, path) {
+  const number = requireRange(value, minimum, maximum, path);
+  if (!Number.isSafeInteger(number)) {
+    throw new RangeError(`${path} must be an integer.`);
+  }
+  return number;
 }
 
 function requireBoolean(value, path) {
@@ -133,6 +157,17 @@ function sourceForProfile(config, profile) {
   return requireObject(source, `foliageContinuity.profiles.${profile}`);
 }
 
+function repairBudgetRatio(source, fallback, path) {
+  return requireRange(
+    source.shellCoverageRepairBudgetRatio ??
+      source.shellCoverageRepairProbeRatio ??
+      fallback.shellCoverageRepairBudgetRatio,
+    0,
+    1,
+    `${path}.shellCoverageRepairBudgetRatio`,
+  );
+}
+
 export function resolveFoliageContinuityProfile(config, profile) {
   const profileId = PROFILE_IDS.includes(profile) ? profile : 'round';
   const fallback = DEFAULT_PROFILE_CONFIGS[profileId];
@@ -176,19 +211,40 @@ export function resolveFoliageContinuityProfile(config, profile) {
       4,
       `${path}.maximumShellCardWidthSpread`,
     ),
-    shellCoverageRepairProbeRatio: requireRange(
-      source.shellCoverageRepairProbeRatio ??
-        fallback.shellCoverageRepairProbeRatio,
-      0,
-      1,
-      `${path}.shellCoverageRepairProbeRatio`,
-    ),
+    shellCoverageRepairBudgetRatio: repairBudgetRatio(source, fallback, path),
     shellCoverageRepairStopRatio: requireRange(
       source.shellCoverageRepairStopRatio ??
         fallback.shellCoverageRepairStopRatio,
       0.1,
       1,
       `${path}.shellCoverageRepairStopRatio`,
+    ),
+    shellCoverageRepairMaximumSubdivisionDepth: requireIntegerRange(
+      source.shellCoverageRepairMaximumSubdivisionDepth ??
+        fallback.shellCoverageRepairMaximumSubdivisionDepth,
+      1,
+      8,
+      `${path}.shellCoverageRepairMaximumSubdivisionDepth`,
+    ),
+    shellCoverageRepairMinimumDirectionDiameter: requireRange(
+      source.shellCoverageRepairMinimumDirectionDiameter ??
+        fallback.shellCoverageRepairMinimumDirectionDiameter,
+      0.005,
+      0.25,
+      `${path}.shellCoverageRepairMinimumDirectionDiameter`,
+    ),
+    shellCoverageRepairPasses: requireIntegerRange(
+      source.shellCoverageRepairPasses ?? fallback.shellCoverageRepairPasses,
+      1,
+      4,
+      `${path}.shellCoverageRepairPasses`,
+    ),
+    shellCoverageRepairNormalUncertaintyScale: requireRange(
+      source.shellCoverageRepairNormalUncertaintyScale ??
+        fallback.shellCoverageRepairNormalUncertaintyScale,
+      0.25,
+      2,
+      `${path}.shellCoverageRepairNormalUncertaintyScale`,
     ),
     lod: createLodConfig(source.lod, fallback.lod, `${path}.lod`),
   });

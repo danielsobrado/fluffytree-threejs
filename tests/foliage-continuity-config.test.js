@@ -9,8 +9,12 @@ test('continuity configuration resolves profile overrides over safe defaults', (
         columnar: {
           verticalBias: 0.5,
           maximumShellCardWidthSpread: 1.8,
-          shellCoverageRepairProbeRatio: 0.3,
+          shellCoverageRepairBudgetRatio: 0.09,
           shellCoverageRepairStopRatio: 0.46,
+          shellCoverageRepairMaximumSubdivisionDepth: 5,
+          shellCoverageRepairMinimumDirectionDiameter: 0.04,
+          shellCoverageRepairPasses: 3,
+          shellCoverageRepairNormalUncertaintyScale: 1.2,
           lod: [
             { coreScale: 1, bridges: true },
             { coreScale: 1.1, bridges: true },
@@ -26,17 +30,34 @@ test('continuity configuration resolves profile overrides over safe defaults', (
   assert.equal(policy.verticalBias, 0.5);
   assert.equal(policy.bridgeRadiusRatio, 0.36);
   assert.equal(policy.maximumShellCardWidthSpread, 1.8);
-  assert.equal(policy.shellCoverageRepairProbeRatio, 0.3);
+  assert.equal(policy.shellCoverageRepairBudgetRatio, 0.09);
   assert.equal(policy.shellCoverageRepairStopRatio, 0.46);
+  assert.equal(policy.shellCoverageRepairMaximumSubdivisionDepth, 5);
+  assert.equal(policy.shellCoverageRepairMinimumDirectionDiameter, 0.04);
+  assert.equal(policy.shellCoverageRepairPasses, 3);
+  assert.equal(policy.shellCoverageRepairNormalUncertaintyScale, 1.2);
   assert.equal(policy.lod[2].bridges, false);
 });
 
-test('round continuity defaults to certified shell coverage settings', () => {
+test('legacy probe ratio remains accepted as the adaptive repair budget', () => {
+  const policy = resolveFoliageContinuityProfile(
+    { shellCoverageRepairProbeRatio: 0.07 },
+    'round',
+  );
+
+  assert.equal(policy.shellCoverageRepairBudgetRatio, 0.07);
+});
+
+test('round continuity defaults to adaptive shell coverage settings', () => {
   const policy = resolveFoliageContinuityProfile(null, 'round');
 
   assert.equal(policy.maximumShellCardWidthSpread, 1.4);
-  assert.equal(policy.shellCoverageRepairProbeRatio, 0.2);
+  assert.equal(policy.shellCoverageRepairBudgetRatio, 0.10);
   assert.equal(policy.shellCoverageRepairStopRatio, 0.5);
+  assert.equal(policy.shellCoverageRepairMaximumSubdivisionDepth, 4);
+  assert.equal(policy.shellCoverageRepairMinimumDirectionDiameter, 0.055);
+  assert.equal(policy.shellCoverageRepairPasses, 2);
+  assert.equal(policy.shellCoverageRepairNormalUncertaintyScale, 1);
 });
 
 test('continuity configuration rejects invalid core scale', () => {
@@ -67,14 +88,14 @@ test('continuity configuration rejects card width spread below one', () => {
   );
 });
 
-test('continuity configuration rejects invalid coverage repair tuning', () => {
+test('continuity configuration rejects invalid adaptive coverage tuning', () => {
   assert.throws(
     () =>
       resolveFoliageContinuityProfile(
-        { shellCoverageRepairProbeRatio: 1.1 },
+        { shellCoverageRepairBudgetRatio: 1.1 },
         'round',
       ),
-    /shellCoverageRepairProbeRatio/,
+    /shellCoverageRepairBudgetRatio/,
   );
   assert.throws(
     () =>
@@ -83,6 +104,22 @@ test('continuity configuration rejects invalid coverage repair tuning', () => {
         'round',
       ),
     /shellCoverageRepairStopRatio/,
+  );
+  assert.throws(
+    () =>
+      resolveFoliageContinuityProfile(
+        { shellCoverageRepairMaximumSubdivisionDepth: 2.5 },
+        'round',
+      ),
+    /MaximumSubdivisionDepth.*integer/,
+  );
+  assert.throws(
+    () =>
+      resolveFoliageContinuityProfile(
+        { shellCoverageRepairPasses: 0 },
+        'round',
+      ),
+    /shellCoverageRepairPasses/,
   );
 });
 

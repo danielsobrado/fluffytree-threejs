@@ -20,7 +20,9 @@ export class FoliageShellMaterialFactory {
       alphaTest: foliage.shell.alphaTest,
       transparent: false,
       depthWrite: true,
-      side: THREE.FrontSide,
+      // Coverage certification is view-independent, so the rendered foliage
+      // must remain valid when a card is seen from either side at crown edges.
+      side: THREE.DoubleSide,
       roughness: FOLIAGE_RENDERING_CONSTANTS.shellRoughness,
       metalness: 0,
     });

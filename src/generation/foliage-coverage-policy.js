@@ -6,17 +6,18 @@ function clamp(value, minimum, maximum) {
 
 export function resolveFoliageCoveragePolicy(alphaProfile, continuity) {
   const opaqueAreaRatio = Number(alphaProfile?.opaqueAreaRatio);
-  if (!Number.isFinite(opaqueAreaRatio) || opaqueAreaRatio <= 0 || opaqueAreaRatio > 1) {
+  if (
+    !Number.isFinite(opaqueAreaRatio) ||
+    opaqueAreaRatio <= 0 ||
+    opaqueAreaRatio > 1
+  ) {
     throw new RangeError('Foliage alpha opaqueAreaRatio must be within (0, 1].');
   }
+
   const sparseShapeMultiplier = clamp(
     FOLIAGE_SHELL_CONSTANTS.referenceOpaqueAreaRatio / opaqueAreaRatio,
     1,
-    FOLIAGE_SHELL_CONSTANTS.maximumSparseShapeProbeMultiplier,
-  );
-  const probeRatio = Math.min(
-    1,
-    continuity.shellCoverageRepairProbeRatio * sparseShapeMultiplier,
+    FOLIAGE_SHELL_CONSTANTS.maximumSparseShapeRepairMultiplier,
   );
   const stopMultiplier = Math.max(
     FOLIAGE_SHELL_CONSTANTS.minimumSparseShapeStopMultiplier,
@@ -24,21 +25,31 @@ export function resolveFoliageCoveragePolicy(alphaProfile, continuity) {
   );
 
   return Object.freeze({
-    probeRatio,
+    repairBudgetRatio: Math.min(
+      1,
+      continuity.shellCoverageRepairBudgetRatio * sparseShapeMultiplier,
+    ),
     stopCoverageRatio:
       continuity.shellCoverageRepairStopRatio * stopMultiplier,
-    passCount: FOLIAGE_SHELL_CONSTANTS.coverageRepairPassCount,
+    maximumSubdivisionDepth:
+      continuity.shellCoverageRepairMaximumSubdivisionDepth,
+    minimumDirectionDiameter:
+      continuity.shellCoverageRepairMinimumDirectionDiameter /
+      Math.sqrt(sparseShapeMultiplier),
+    maximumPasses: continuity.shellCoverageRepairPasses,
+    normalUncertaintyScale:
+      continuity.shellCoverageRepairNormalUncertaintyScale,
     sparseShapeMultiplier,
   });
 }
 
-export function calculateFoliageRepairProbeCount(candidateCount, probeRatio) {
+export function calculateFoliageRepairBudget(candidateCount, budgetRatio) {
   if (!Number.isSafeInteger(candidateCount) || candidateCount < 0) {
     throw new RangeError('Foliage repair candidateCount must be non-negative.');
   }
-  if (!Number.isFinite(probeRatio) || probeRatio < 0 || probeRatio > 1) {
-    throw new RangeError('Foliage repair probeRatio must be within [0, 1].');
+  if (!Number.isFinite(budgetRatio) || budgetRatio < 0 || budgetRatio > 1) {
+    throw new RangeError('Foliage repair budgetRatio must be within [0, 1].');
   }
 
-  return Math.ceil(candidateCount * probeRatio);
+  return Math.ceil(candidateCount * budgetRatio);
 }
