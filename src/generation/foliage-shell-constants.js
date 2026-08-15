@@ -12,7 +12,13 @@ export const FOLIAGE_SHELL_CONSTANTS = Object.freeze({
   upwardWeight: 0.08,
   scoreJitter: 0.0001,
   primaryCoverageStopRatio: 0.5,
+  coverageRepairPassCount: 3,
   coverageRepairPhaseOffset: GOLDEN_ANGLE * 0.5,
+  coverageRepairPhaseStep: GOLDEN_ANGLE * 0.6180339887498948,
+  coverageRepairMaximumVerticalOffset: 0.24,
+  referenceOpaqueAreaRatio: 0.425,
+  maximumSparseShapeProbeMultiplier: 1.5,
+  minimumSparseShapeStopMultiplier: 0.78,
   // A cluster only counts as covering a candidate when both face roughly the
   // same way, so a card on the far side of a thin crown cannot claim the near
   // side is covered. cos(75 degrees).
