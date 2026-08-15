@@ -27,6 +27,25 @@ test('default foliage alpha profile resolves to the canonical broadleaf shape', 
   assert.equal(implicit, explicit);
 });
 
+test('alpha profiles expose stable opaque area for shape-aware coverage', () => {
+  const ratios = new Map();
+
+  for (const shapeId of LEAF_SHAPE_IDS) {
+    const profile = createFoliageAlphaProfile({
+      shapeId,
+      alphaTest: ALPHA_TEST,
+      planesPerCluster: 2,
+    });
+
+    assert.ok(profile.opaqueAreaRatio > 0, shapeId);
+    assert.ok(profile.opaqueAreaRatio <= 1, shapeId);
+    ratios.set(shapeId, profile.opaqueAreaRatio);
+  }
+
+  assert.ok(ratios.get('needle') < ratios.get('broadleaf'));
+  assert.ok(ratios.get('maple') < ratios.get('oval'));
+});
+
 test('guaranteed alpha radius is opaque for every leaf shape', () => {
   for (const shapeId of LEAF_SHAPE_IDS) {
     const profile = createFoliageAlphaProfile({
