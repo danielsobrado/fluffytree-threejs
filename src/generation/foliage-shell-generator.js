@@ -211,11 +211,10 @@ function repairCoverage(
   settings,
   maximumCardWidthSpread,
   alphaProfile,
-  continuity,
+  coveragePolicy,
   random,
   initialCoverageRatio,
 ) {
-  const coveragePolicy = resolveFoliageCoveragePolicy(alphaProfile, continuity);
   const probeCount = calculateFoliageRepairProbeCount(
     settings.candidatesPerLobe,
     coveragePolicy.probeRatio,
@@ -262,6 +261,7 @@ export class FoliageShellGenerator {
       alphaTest: settings.alphaTest,
       planesPerCluster: settings.planesPerCluster,
     });
+    const coveragePolicy = resolveFoliageCoveragePolicy(alphaProfile, continuity);
     const lobes = prepareExposureLobes(sourceLobes);
     const crownCenter = calculateCrownCenter(lobes);
     const bestByLobe = new Map();
@@ -295,7 +295,10 @@ export class FoliageShellGenerator {
 
     const maxCover = selectDeterministicFoliageMaxCover(exposed, {
       targetCount: exposed.length,
-      stopCoverageRatio: FOLIAGE_SHELL_CONSTANTS.primaryCoverageStopRatio,
+      stopCoverageRatio: Math.min(
+        FOLIAGE_SHELL_CONSTANTS.primaryCoverageStopRatio,
+        coveragePolicy.stopCoverageRatio,
+      ),
       minimumPerLobe: false,
     });
     const selected = [...maxCover.selected];
@@ -309,7 +312,7 @@ export class FoliageShellGenerator {
       settings,
       maximumCardWidthSpread,
       alphaProfile,
-      continuity,
+      coveragePolicy,
       random,
       maxCover.maximumCoverageRatio,
     );
