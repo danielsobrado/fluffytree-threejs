@@ -4,6 +4,7 @@ import { validateSceneConfig } from './config/scene-config-validator.js';
 import { parseTreeShowcaseLayout } from './config/tree-showcase-layout-config.js';
 import { YamlConfigLoader } from './config/yaml-config-loader.js';
 import { logger } from './core/logger.js';
+import { markNativeRenderSmokeBootstrapFailure } from './diagnostics/native-render-smoke-probe.js';
 import { PresetLibrary } from './domain/preset-library.js';
 import { TreeGenerator } from './generation/tree-generator.js';
 import { SceneFactory } from './rendering/scene-factory.js';
@@ -73,6 +74,7 @@ async function bootstrap() {
     showcase.start(container, sceneConfig, library, layout);
   } catch (error) {
     showcase?.destroy();
+    markNativeRenderSmokeBootstrapFailure(error);
     logger.error('Universal Tree IR showcase bootstrap failed.', error);
     if (container) showFatalError(container, error);
   }
