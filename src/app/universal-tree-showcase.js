@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { logger } from '../core/logger.js';
+import { NativeRenderSmokeProbe } from '../diagnostics/native-render-smoke-probe.js';
 import { FrameBudgetQueue } from '../generation/frame-budget-queue.js';
 import { TreeBillboardBatchManager } from '../rendering/tree-billboard-batch-manager.js';
 import { TreeImpostorRenderer } from '../rendering/tree-impostor-renderer.js';
@@ -9,7 +10,12 @@ import { disposeObject } from '../rendering/object-disposer.js';
 import { createDemoOverlay, showFatalError } from '../ui/demo-overlay.js';
 
 export class UniversalTreeShowcase {
-  constructor({ sceneFactory, treeGenerator, treeMeshBuilder }) {
+  constructor({
+    sceneFactory,
+    treeGenerator,
+    treeMeshBuilder,
+    renderSmokeProbe = new NativeRenderSmokeProbe(),
+  }) {
     if (!sceneFactory || typeof sceneFactory.create !== 'function') {
       throw new TypeError('UniversalTreeShowcase requires a SceneFactory.');
     }
@@ -22,6 +28,7 @@ export class UniversalTreeShowcase {
     this.sceneFactory = sceneFactory;
     this.treeGenerator = treeGenerator;
     this.treeMeshBuilder = treeMeshBuilder;
+    this.renderSmokeProbe = renderSmokeProbe;
     this.generationQueue = new FrameBudgetQueue();
     this.treeRoots = [];
     this.clock = new THREE.Clock();
@@ -48,6 +55,7 @@ export class UniversalTreeShowcase {
       sceneConfig.lod,
       this.generationQueue,
     );
+    this.renderSmokeProbe.install(this.context.renderer);
 
     const labels = [];
     for (const entry of layout) {
@@ -66,6 +74,11 @@ export class UniversalTreeShowcase {
     );
     window.addEventListener('resize', this.handleResize);
     this.context.renderer.setAnimationLoop(this.render);
+    void this.renderSmokeProbe.compile(
+      this.context.renderer,
+      this.context.scene,
+      this.context.camera,
+    );
     logger.info('Universal Tree IR showcase started.', {
       treeCount: this.treeRoots.length,
       presets: labels,
@@ -79,7 +92,7 @@ export class UniversalTreeShowcase {
       root = this.treeMeshBuilder.build(treeIr, {
         sunDirection: this.context.sun.position.clone().normalize(),
         impostorRenderer: this.impostorRenderer,
-        deferHero: true,
+        deferHero: !this.renderSmokeProbe.enabled,
         minimumLod: 0,
       });
       root.position.fromArray(entry.position);
@@ -118,6 +131,7 @@ export class UniversalTreeShowcase {
       );
       this.context.renderer.render(this.context.scene, this.context.camera);
     } catch (error) {
+      this.renderSmokeProbe.fail(error);
       logger.error('Universal Tree IR showcase render failed.', error);
       const container = this.container;
       this.destroy();
