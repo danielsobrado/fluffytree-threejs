@@ -5,6 +5,8 @@ import {
 } from './tree-generation-model.js';
 import { adaptTreeIrToLegacyTreeData } from './tree-ir-legacy-adapter.js';
 import { validateTreeIr } from './tree-ir-validator.js';
+import { PALM_TREE_MODEL_ID } from './palm-tree-constants.js';
+import { PalmTreeGenerator } from './palm-tree-generator.js';
 import { WHORLED_CONIFER_MODEL_ID } from './whorled-conifer-constants.js';
 import { WhorledConiferTreeGenerator } from './whorled-conifer-tree-generator.js';
 
@@ -33,6 +35,7 @@ export class TreeGenerator {
         WHORLED_CONIFER_MODEL_ID,
         new WhorledConiferTreeGenerator(defaultModelOptions),
       ],
+      [PALM_TREE_MODEL_ID, new PalmTreeGenerator(defaultModelOptions)],
     ]);
 
     for (const [modelId, generator] of modelEntries(modelGenerators)) {

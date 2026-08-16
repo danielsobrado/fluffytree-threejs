@@ -1,0 +1,54 @@
+presets:
+  coconutPalm:
+    label: Coconut palm
+    generationModel: palm
+    height: 14.0
+    morphology:
+      frondCount: 18
+      frondSegments: 14
+      frondLength: [4.4, 5.6]
+      frondWidth: [0.65, 0.95]
+      frondDroop: 0.48
+      frondRise: 0.46
+      skirtRatio: 0.08
+      spiralOffset: 0.36
+    trunk:
+      baseRadius: 0.38
+      topRadius: 0.24
+      segments: 16
+      flare: 0.22
+      taperPower: 0.72
+      curve: 0.2
+      lean: [0.28, -0.08]
+      color: '#65594a'
+      barkPalette: ['#403a32', '#66594a', '#8a7965']
+    foliage:
+      palette: ['#1f4a32', '#347044', '#559157', '#7bae68']
+      roughness: 0.82
+
+  datePalm:
+    label: Date palm
+    generationModel: palm
+    height: 11.5
+    morphology:
+      frondCount: 24
+      frondSegments: 16
+      frondLength: [3.3, 4.4]
+      frondWidth: [0.58, 0.82]
+      frondDroop: 0.38
+      frondRise: 0.38
+      skirtRatio: 0.2
+      spiralOffset: 0.58
+    trunk:
+      baseRadius: 0.52
+      topRadius: 0.34
+      segments: 15
+      flare: 0.3
+      taperPower: 0.82
+      curve: 0.08
+      lean: [0.05, 0.03]
+      color: '#6b5845'
+      barkPalette: ['#43382f', '#6f5c49', '#927a61']
+    foliage:
+      palette: ['#263e2f', '#3f6140', '#668457', '#8ba16b']
+      roughness: 0.86

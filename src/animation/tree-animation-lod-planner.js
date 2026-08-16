@@ -12,26 +12,34 @@ export class TreeAnimationLodPlanner {
   compile(treeIr, geometryRole, policy) {
     validateTreeIr(treeIr);
     const rolePolicy = requireRolePolicy(policy, geometryRole);
-    const stemByWindNode = new Map(
-      treeIr.stems
-        .filter((stem) => stem.windNodeId)
-        .map((stem) => [stem.windNodeId, stem]),
-    );
+    const selected = new Set();
+
+    for (const stem of treeIr.stems) {
+      if (!stem.windNodeId) continue;
+      if (
+        rolePolicy.maximumStemOrder === null ||
+        stem.order <= rolePolicy.maximumStemOrder
+      ) {
+        selected.add(stem.windNodeId);
+      }
+    }
+    if (rolePolicy.includeFoliageNodes) {
+      for (const site of treeIr.foliageSites) {
+        if (typeof site.windNodeId === 'string' && site.windNodeId !== '') {
+          selected.add(site.windNodeId);
+        }
+      }
+    }
+
     const windNodeIds = treeIr.windNodes
-      .filter((node) => {
-        const stem = stemByWindNode.get(node.id);
-        if (!stem) return false;
-        return (
-          rolePolicy.maximumStemOrder === null ||
-          stem.order <= rolePolicy.maximumStemOrder
-        );
-      })
+      .filter((node) => selected.has(node.id))
       .map((node) => node.id);
 
     return Object.freeze({
       geometryRole,
       animationMode: rolePolicy.mode,
       maximumStemOrder: rolePolicy.maximumStemOrder,
+      includeFoliageNodes: rolePolicy.includeFoliageNodes,
       windNodeIds: Object.freeze(windNodeIds),
       sourceWindNodeCount: treeIr.windNodes.length,
       activeWindNodeCount: windNodeIds.length,

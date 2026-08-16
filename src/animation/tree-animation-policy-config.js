@@ -28,6 +28,13 @@ function requireStemOrder(value, path) {
   return requireNonNegativeInteger(value, path);
 }
 
+function requireBoolean(value, path) {
+  if (typeof value !== 'boolean') {
+    throw new TypeError(`${path} must be a boolean.`);
+  }
+  return value;
+}
+
 function parseRolePolicy(source, path) {
   requireObject(source, path);
   if (!TREE_ANIMATION_MODE_IDS.includes(source.mode)) {
@@ -38,6 +45,10 @@ function parseRolePolicy(source, path) {
     maximumStemOrder: requireStemOrder(
       source.maximumStemOrder,
       `${path}.maximumStemOrder`,
+    ),
+    includeFoliageNodes: requireBoolean(
+      source.includeFoliageNodes,
+      `${path}.includeFoliageNodes`,
     ),
   });
 }

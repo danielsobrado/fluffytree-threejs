@@ -5,15 +5,20 @@ animation:
     hero:
       mode: hierarchical
       maximumStemOrder: null
+      includeFoliageNodes: true
     near:
       mode: reduced
       maximumStemOrder: 2
+      includeFoliageNodes: true
     aggregate:
       mode: primary-sway
       maximumStemOrder: 1
+      includeFoliageNodes: false
     impostor:
       mode: cheap-sway
       maximumStemOrder: 0
+      includeFoliageNodes: false
     culled:
       mode: static
       maximumStemOrder: 0
+      includeFoliageNodes: false

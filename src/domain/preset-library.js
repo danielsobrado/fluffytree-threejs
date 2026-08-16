@@ -1,16 +1,7 @@
-import { resolveFoliageContinuityProfile } from './foliage-continuity-config.js';
-import { createTreePreset } from './tree-preset.js';
-import { resolveTreeGenerationModelId } from '../generation/tree-generation-model.js';
+import { compileTreePreset } from './tree-preset-compiler.js';
 
 function clone(value) {
   return structuredClone(value);
-}
-
-function deepFreeze(value) {
-  if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
-  Object.freeze(value);
-  for (const child of Object.values(value)) deepFreeze(child);
-  return value;
 }
 
 function configEntries(config) {
@@ -84,29 +75,7 @@ export class PresetLibrary {
   }
 
   validate(id, value) {
-    const basePreset = createTreePreset(id, value);
-    const generationModel = resolveTreeGenerationModelId(
-      value?.generationModel,
-      `${id}.generationModel`,
-    );
-    const continuity = resolveFoliageContinuityProfile(
-      this.continuityConfig,
-      basePreset.crown.profile,
-    );
-    const morphology = value?.morphology ?? {};
-    if (
-      !morphology ||
-      typeof morphology !== 'object' ||
-      Array.isArray(morphology)
-    ) {
-      throw new Error(`Configuration '${id}.morphology' must be an object.`);
-    }
-    return Object.freeze({
-      ...basePreset,
-      generationModel,
-      continuity,
-      morphology: deepFreeze(clone(morphology)),
-    });
+    return compileTreePreset(id, value, this.continuityConfig);
   }
 
   set(id, value) {
