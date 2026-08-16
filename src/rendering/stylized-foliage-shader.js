@@ -17,6 +17,7 @@ function createVertexDeclarations() {
     varying float vFoliageHeight;
     varying vec3 vFoliageRadialWorld;
     varying float vFoliagePatch;
+    varying float vFoliageStylePhase;
     varying vec3 vFoliageLocalPosition;
     uniform float uFoliageVariation;
     uniform float uFoliagePaletteBase;
@@ -34,6 +35,7 @@ function createFragmentDeclarations() {
     varying float vFoliageHeight;
     varying vec3 vFoliageRadialWorld;
     varying float vFoliagePatch;
+    varying float vFoliageStylePhase;
     varying vec3 vFoliageLocalPosition;
     uniform sampler2D uFoliagePalette;
     uniform vec3 uFoliageSunDirection;
@@ -80,7 +82,7 @@ function createColorShader() {
   return `
     vec3 foliagePaletteColor = texture2D(
       uFoliagePalette,
-      vec2( clamp( vFoliagePaletteCoordinate + vFoliagePatch * 0.055, 0.0, 1.0 ), 0.5 )
+      vec2( clamp( vFoliagePaletteCoordinate + vFoliagePatch * 0.045, 0.0, 1.0 ), 0.5 )
     ).rgb;
     vec3 foliageRadial = normalize( vFoliageRadialWorld );
     float foliageWrappedLight = clamp(
@@ -96,10 +98,15 @@ function createColorShader() {
       1.0 + uFoliageSkyLightStrength * ${skyHighlight},
       foliageSkyAlignment
     );
+    float foliageExposure = smoothstep(
+      0.08,
+      0.92,
+      clamp( vFoliageExposure, 0.0, 1.0 )
+    );
     float foliageCavityFactor = mix(
       1.0 - uFoliageCavityStrength,
       1.0,
-      clamp( vFoliageExposure, 0.0, 1.0 )
+      foliageExposure
     );
     float foliageHeightFactor = mix(
       1.0 - uFoliageHeightLightStrength,
@@ -107,11 +114,19 @@ function createColorShader() {
       clamp( vFoliageHeight, 0.0, 1.0 )
     );
     float foliageFinePattern =
-      sin(vFoliageLocalPosition.x * 17.0 + vFoliageLocalPosition.y * 11.0) *
-      sin(vFoliageLocalPosition.z * 19.0 - vFoliageLocalPosition.y * 13.0);
+      sin(
+        vFoliageLocalPosition.x * 8.5 +
+        vFoliageLocalPosition.y * 6.1 +
+        vFoliageStylePhase * 1.7
+      ) *
+      sin(
+        vFoliageLocalPosition.z * 9.2 -
+        vFoliageLocalPosition.y * 6.7 -
+        vFoliageStylePhase * 1.3
+      );
     float foliageFineLight = mix(
       1.0,
-      mix(0.78, 1.12, smoothstep(-0.45, 0.55, foliageFinePattern)),
+      mix(0.84, 1.08, smoothstep(-0.5, 0.5, foliageFinePattern)),
       uFoliageSurfaceBreakup
     );
     diffuseColor.rgb = foliagePaletteColor * foliageSunFactor * foliageSkyFactor *
@@ -142,7 +157,7 @@ export function configureStylizedFoliageShader(
     heightExpression,
     forceRadialFragmentNormal = false,
     colorMultiplier = 1,
-    surfaceBreakup = 0.04,
+    surfaceBreakup = 0.035,
     cacheKey,
   },
 ) {
@@ -193,6 +208,12 @@ export function configureStylizedFoliageShader(
             #include <begin_vertex>
             vFoliageHeight = clamp( ${heightExpression}, 0.0, 1.0 );
             vFoliageLocalPosition = position;
+            vFoliageStylePhase =
+              dot(
+                normalize( instanceCrownDirection + vec3( 0.0001 ) ),
+                vec3( 1.31, 2.17, 2.83 )
+              ) * 6.2831853 +
+              instanceColorMix * 3.17;
             vFoliageExposure = instanceExposure;
             vFoliagePaletteCoordinate = clamp(
               uFoliagePaletteBase +
@@ -203,8 +224,16 @@ export function configureStylizedFoliageShader(
               1.0
             );
             vFoliagePatch =
-              sin(position.x * 5.3 + position.y * 3.7) * 0.55 +
-              sin(position.z * 6.1 - position.y * 4.9) * 0.45;
+              sin(
+                position.x * 4.1 +
+                position.y * 3.2 +
+                vFoliageStylePhase
+              ) * 0.62 +
+              sin(
+                position.z * 4.7 -
+                position.y * 3.6 -
+                vFoliageStylePhase * 1.37
+              ) * 0.38;
           `,
         )
         .replace(

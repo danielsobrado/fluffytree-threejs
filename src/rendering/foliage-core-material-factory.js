@@ -28,8 +28,8 @@ export class FoliageCoreMaterialFactory {
       heightExpression: 'position.y * 0.5 + 0.5',
       forceRadialFragmentNormal: true,
       colorMultiplier: foliage.core.brightness,
-      surfaceBreakup: 0.14,
-      cacheKey: 'foliage-core-interior-mass-v3',
+      surfaceBreakup: 0.1,
+      cacheKey: 'foliage-core-interior-mass-v4',
     });
   }
 }

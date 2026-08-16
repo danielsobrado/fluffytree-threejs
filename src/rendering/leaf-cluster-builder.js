@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { CrownVolumeField } from '../generation/crown-volume-field.js';
 import { hashUnit } from './deterministic-hash.js';
+import {
+  calculateHeroClusterStretch,
+  selectHeroLeafSamples,
+} from './hero-leaf-style.js';
 import { LeafClusterGeometryFactory } from './leaf-cluster-geometry-factory.js';
 import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constants.js';
 import { createSurfaceRecords } from './leaf-cluster-record-factory.js';
@@ -17,12 +21,6 @@ import { configureTreeWindMaterial } from './tree-wind-shader.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
-
-function selectSamples(treeData, density) {
-  return treeData.shell.filter(
-    (sample) => hashUnit(treeData.seed, sample.id, 0x9e3779b1) <= density,
-  );
-}
 
 function createEmptyLeafShell(settings) {
   const empty = new THREE.Group();
@@ -53,7 +51,7 @@ export class LeafClusterBuilder {
       return createEmptyLeafShell(settings);
     }
 
-    const selected = selectSamples(treeData, settings.density);
+    const selected = selectHeroLeafSamples(treeData, settings.density);
     if (selected.length === 0) return createEmptyLeafShell(settings);
 
     const surfaceRecords = createSurfaceRecords(selected, settings.layerCount);
@@ -71,10 +69,10 @@ export class LeafClusterBuilder {
         roughness:
           settings.roughness ?? LEAF_DETAIL_RENDERING_CONSTANTS.defaultRoughness,
         metalness: LEAF_DETAIL_RENDERING_CONSTANTS.materialMetalness,
-        side: THREE.FrontSide,
+        side: THREE.DoubleSide,
       });
       material.name = 'leaf-detail-material';
-      configureTreeWindMaterial(material, { cacheKey: 'leaf-detail-wind-v1' });
+      configureTreeWindMaterial(material, { cacheKey: 'leaf-detail-wind-v2' });
 
       const mesh = new THREE.InstancedMesh(geometry, material, records.length);
       const matrix = new THREE.Matrix4();
@@ -110,7 +108,16 @@ export class LeafClusterBuilder {
           record.sample.rotation + record.layer * GOLDEN_ANGLE,
         );
         alignment.multiply(spin);
-        scale.setScalar(instanceScale);
+        const stretch = calculateHeroClusterStretch(
+          treeData.seed,
+          record.sample.id,
+          record.layer,
+        );
+        scale.set(
+          instanceScale * stretch.x,
+          instanceScale,
+          instanceScale * stretch.z,
+        );
         matrix.compose(position, alignment, scale);
         mesh.setMatrixAt(index, matrix);
 
