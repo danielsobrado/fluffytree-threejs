@@ -78,6 +78,7 @@ export class TreeIrStructureMeshBuilder {
           endRadius: stem.endRadius,
           sampleCount: branchCurveSamples,
           radialSegments,
+          taperExponent: stem.taperPower,
           capEnd: stem.exposedTip,
         });
         branchGeometries.push(geometry);
