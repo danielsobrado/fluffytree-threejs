@@ -110,9 +110,17 @@ for (const profile of FOLIAGE_CONTINUITY_PROFILE_IDS) {
 const treePresetConfig = readConfig('config/tree-presets.yaml');
 const coniferPresetConfig = readConfig('config/conifer-presets.yaml');
 const palmPresetConfig = readConfig('config/palm-presets.yaml');
+const advancedBroadleafPresetConfig = readConfig(
+  'config/advanced-broadleaf-presets.yaml',
+);
 const library = PresetLibrary.fromConfig(treePresetConfig, continuityConfig);
 const speciesLibrary = PresetLibrary.fromConfigs(
-  [treePresetConfig, coniferPresetConfig, palmPresetConfig],
+  [
+    treePresetConfig,
+    coniferPresetConfig,
+    palmPresetConfig,
+    advancedBroadleafPresetConfig,
+  ],
   continuityConfig,
 );
 const coniferLibrary = PresetLibrary.fromConfig(

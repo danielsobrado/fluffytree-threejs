@@ -8,6 +8,8 @@ import { validateTreeIr } from './tree-ir-validator.js';
 import { applyTreeEnvironment } from './tree-environment-processor.js';
 import { PALM_TREE_MODEL_ID } from './palm-tree-constants.js';
 import { PalmTreeGenerator } from './palm-tree-generator.js';
+import { SYMPODIAL_BROADLEAF_MODEL_ID } from './sympodial-broadleaf-constants.js';
+import { SympodialBroadleafTreeGenerator } from './sympodial-broadleaf-tree-generator.js';
 import { WHORLED_CONIFER_MODEL_ID } from './whorled-conifer-constants.js';
 import { WhorledConiferTreeGenerator } from './whorled-conifer-tree-generator.js';
 
@@ -37,6 +39,10 @@ export class TreeGenerator {
         new WhorledConiferTreeGenerator(defaultModelOptions),
       ],
       [PALM_TREE_MODEL_ID, new PalmTreeGenerator(defaultModelOptions)],
+      [
+        SYMPODIAL_BROADLEAF_MODEL_ID,
+        new SympodialBroadleafTreeGenerator(defaultModelOptions),
+      ],
     ]);
 
     for (const [modelId, generator] of modelEntries(modelGenerators)) {

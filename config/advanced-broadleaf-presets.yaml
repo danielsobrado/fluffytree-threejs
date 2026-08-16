@@ -1,0 +1,94 @@
+presets:
+  spreadingOak:
+    label: Spreading oak
+    generationModel: sympodial-broadleaf
+    height: 16.0
+    environmentResponse:
+      phototropism: 0.42
+      windShaping: 0.28
+      slopeAdaptation: 0.3
+      competitionSensitivity: 0.78
+      pruningSensitivity: 1.0
+    morphology:
+      crownBaseRatio: 0.28
+      leaderCount: 3
+      branchingDepth: 4
+      childCount: [2, 3]
+      directionCandidates: 10
+      leaderReach: [0.82, 0.98]
+      lengthDecay: 0.58
+      lengthVariation: 0.18
+      radiusDecay: 0.56
+      branchAngle: [0.48, 1.02]
+      upwardBias: 0.36
+      branchSag: 0.22
+      crownSpread: 0.78
+      crownFlattening: 0.42
+      selfOrganization: 0.82
+      lowerLimbLoss: 0.28
+      childAttachmentRange: [0.42, 0.82]
+      foliageSitesPerTerminal: 4
+      foliageScale: 1.0
+      crownVolumeScale: 0.72
+      maximumStemCount: 160
+      stemPathSegments: 4
+    trunk:
+      baseRadius: 0.72
+      topRadius: 0.34
+      segments: 12
+      flare: 0.55
+      taperPower: 0.82
+      curve: 0.18
+      lean: [0.08, -0.03]
+      color: '#59483a'
+      barkPalette: ['#332b26', '#57463a', '#806b58']
+    foliage:
+      palette: ['#274432', '#3f6543', '#63875a', '#8eaa72']
+      roughness: 0.9
+
+  umbrellaBroadleaf:
+    label: Umbrella broadleaf
+    generationModel: sympodial-broadleaf
+    height: 12.5
+    environmentResponse:
+      phototropism: 0.5
+      windShaping: 0.36
+      slopeAdaptation: 0.22
+      competitionSensitivity: 0.84
+      pruningSensitivity: 1.0
+    morphology:
+      crownBaseRatio: 0.36
+      leaderCount: 4
+      branchingDepth: 3
+      childCount: [2, 3]
+      directionCandidates: 12
+      leaderReach: [0.7, 0.9]
+      lengthDecay: 0.64
+      lengthVariation: 0.2
+      radiusDecay: 0.58
+      branchAngle: [0.62, 1.12]
+      upwardBias: 0.2
+      branchSag: 0.16
+      crownSpread: 0.96
+      crownFlattening: 0.78
+      selfOrganization: 0.9
+      lowerLimbLoss: 0.42
+      childAttachmentRange: [0.38, 0.78]
+      foliageSitesPerTerminal: 5
+      foliageScale: 0.92
+      crownVolumeScale: 0.8
+      maximumStemCount: 128
+      stemPathSegments: 4
+    trunk:
+      baseRadius: 0.58
+      topRadius: 0.29
+      segments: 10
+      flare: 0.48
+      taperPower: 0.86
+      curve: 0.12
+      lean: [-0.04, 0.05]
+      color: '#5d4938'
+      barkPalette: ['#382d25', '#5c4939', '#826b54']
+    foliage:
+      palette: ['#244333', '#3c6848', '#67905d', '#92ad73']
+      roughness: 0.88

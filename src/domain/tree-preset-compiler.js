@@ -4,8 +4,10 @@ import {
   resolveTreeGenerationModelId,
 } from '../generation/tree-generation-model.js';
 import { parseTreeEnvironmentResponse } from '../generation/tree-environment-response.js';
+import { SYMPODIAL_BROADLEAF_MODEL_ID } from '../generation/sympodial-broadleaf-constants.js';
 import { resolveFoliageContinuityProfile } from './foliage-continuity-config.js';
 import { createPalmTreePreset } from './palm-tree-preset.js';
+import { createSympodialBroadleafPreset } from './sympodial-broadleaf-preset.js';
 import { createTreePreset } from './tree-preset.js';
 
 function clone(value) {
@@ -50,6 +52,7 @@ function compileLegacyCompatiblePreset(id, value, continuityConfig) {
 
 const BUILTIN_COMPILERS = new Map([
   [PALM_TREE_MODEL_ID, createPalmTreePreset],
+  [SYMPODIAL_BROADLEAF_MODEL_ID, createSympodialBroadleafPreset],
 ]);
 
 export function compileTreePreset(id, value, continuityConfig = null) {
