@@ -21,7 +21,7 @@ const additionalQuery = new URLSearchParams(
   process.env.RENDER_SMOKE_QUERY ?? '',
 );
 additionalQuery.forEach((value, key) => query.set(key, value));
-const url = `http://127.0.0.1:${port}/?${query}`;
+const serverOrigin = `http://127.0.0.1:${port}`;
 const nonScreenshotQaModes = new Set(['solidity', 'manifold']);
 const mimeTypes = new Map([
   ['.css', 'text/css'],
@@ -34,6 +34,12 @@ const mimeTypes = new Map([
   ['.yml', 'text/yaml'],
 ]);
 let activeCapture = null;
+
+function captureUrl(entryPath) {
+  const target = new URL(entryPath, serverOrigin);
+  target.search = query.toString();
+  return target.href;
+}
 
 function findBrowser() {
   const configured = process.env.CHROME_BIN;
@@ -100,7 +106,7 @@ function serve(request, response) {
   let pathname;
 
   try {
-    requestUrl = new URL(request.url ?? '/', url);
+    requestUrl = new URL(request.url ?? '/', serverOrigin);
     pathname = decodeURIComponent(requestUrl.pathname);
   } catch {
     response.writeHead(400).end('Bad Request');
@@ -139,7 +145,7 @@ function serve(request, response) {
   });
 }
 
-function runBrowser(browser, name, size) {
+function runBrowser(browser, name, size, entryPath = '/') {
   return new Promise((resolve, reject) => {
     const screenshot = path.join(outputDirectory, `${name}.png`);
     const profile = path.join(outputDirectory, `${name}-profile`);
@@ -170,7 +176,7 @@ function runBrowser(browser, name, size) {
         `--virtual-time-budget=${qaMode === 'render-smoke' ? 20000 : 120000}`,
         `--screenshot=${screenshot}`,
         '--dump-dom',
-        url,
+        captureUrl(entryPath),
       ],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     );
@@ -279,8 +285,20 @@ try {
   } else {
     await runBrowser(browser, 'desktop', '1440,900');
     await runBrowser(browser, 'mobile', '720,1440');
+    await runBrowser(
+      browser,
+      'universal-desktop',
+      '1440,900',
+      '/universal.html',
+    );
+    await runBrowser(
+      browser,
+      'universal-mobile',
+      '720,1440',
+      '/universal.html',
+    );
     console.log(
-      `Render smoke tests passed: ${path.join(outputDirectory, 'desktop.png')} and mobile.png`,
+      `Render smoke tests passed for legacy and universal entry points in desktop and mobile viewports: ${outputDirectory}`,
     );
   }
 } finally {
