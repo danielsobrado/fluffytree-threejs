@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createFoliageCardSizing } from '../src/generation/foliage-card-sizing.js';
+import {
+  createFoliageCardSizing,
+  createMaximumFoliageCardSizing,
+} from '../src/generation/foliage-card-sizing.js';
 import { FOLIAGE_RENDERING_CONSTANTS } from '../src/rendering/foliage-rendering-constants.js';
 
 const TOLERANCE = 1e-12;
@@ -73,4 +76,30 @@ test('profile spread limits random card widths without changing their center', (
   assert.ok(
     Math.abs(Math.sqrt(minimumFactor * maximumFactor) - center) <= TOLERANCE,
   );
+});
+
+test('maximum foliage sizing deterministically uses the widest permitted card', () => {
+  const settings = {
+    sizeRatio: [0.1, 0.16],
+    widthRatio: [0.72, 1.05],
+    coverageCardRatio: 0.544,
+  };
+  const spread = 1.4;
+  const repair = createMaximumFoliageCardSizing(1, settings, spread);
+  const randomMaximum = createFoliageCardSizing(
+    1,
+    settings,
+    spread,
+    createRandom([1, 1]),
+  );
+  const randomMiddle = createFoliageCardSizing(
+    1,
+    settings,
+    spread,
+    createRandom([0.5, 0.5]),
+  );
+
+  assert.deepEqual(repair, randomMaximum);
+  assert.ok(repair.cardWidth > randomMiddle.cardWidth);
+  assert.ok(repair.coverageRadius > randomMiddle.coverageRadius);
 });

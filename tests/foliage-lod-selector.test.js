@@ -42,6 +42,8 @@ test('full-density foliage selection preserves every source instance', () => {
   assert.equal(selection.actualDensity, 1);
   assert.equal(selection.scaleCompensation, 1);
   assert.equal(selection.maximumCoverageRatio, 0);
+  assert.equal(selection.coverageRepairInvariantCount, 0);
+  assert.equal(selection.coverageLimited, false);
 });
 
 test('reduced foliage selection is deterministic and covers every lobe', () => {
@@ -67,6 +69,7 @@ test('reduced foliage selection is deterministic and covers every lobe', () => {
   assert.ok(counts.get(1) >= 1);
   assert.equal(first.maximumCoverageRatio, second.maximumCoverageRatio);
   assert.ok(Number.isFinite(first.maximumCoverageRatio));
+  assert.equal(first.coverageLimited, false);
 });
 
 test('single-slot lobe selection retains its most exposed anchor', () => {
@@ -111,6 +114,46 @@ test('reduced foliage compensates projected card area without unbounded growth',
     Math.abs(moderate.scaleCompensation - 1 / Math.sqrt(0.75)) < 1e-12,
   );
   assert.equal(sparse.scaleCompensation, 1.2);
+});
+
+test('coverage repair cards survive LOD reduction and can raise the density floor', () => {
+  const instances = Array.from({ length: 8 }, (_, index) =>
+    createInstance(index, 0, (index / 8) * Math.PI * 2, 0.4 + index * 0.01),
+  );
+  for (const id of [1, 3, 5]) {
+    instances[id].coverageRepairKind = 'witnessed';
+    instances[id].coverageRepairRatio = Number.POSITIVE_INFINITY;
+  }
+
+  const selection = selectFoliageLodInstances(instances, 0.25);
+  const selectedIds = new Set(selection.instances.map((instance) => instance.id));
+
+  assert.equal(selection.coverageRepairInvariantCount, 3);
+  assert.equal(selection.coverageLimited, true);
+  assert.equal(selection.instances.length, 3);
+  assert.equal(selection.actualDensity, 3 / 8);
+  assert.ok(selectedIds.has(1));
+  assert.ok(selectedIds.has(3));
+  assert.ok(selectedIds.has(5));
+});
+
+test('repair invariants do not consume an extra lobe anchor on their own lobe', () => {
+  const instances = [
+    createInstance(0, 0, 0, 0.2),
+    createInstance(1, 0, Math.PI, 0.8),
+    createInstance(2, 1, 0, 0.3),
+    createInstance(3, 1, Math.PI, 0.9),
+  ];
+  instances[0].coverageRepairKind = 'uncertified';
+  instances[0].coverageRepairRatio = 0.6;
+
+  const selection = selectFoliageLodInstances(instances, 0.25);
+  const counts = countByLobe(selection.instances);
+
+  assert.equal(selection.instances.length, 2);
+  assert.ok(selection.instances.includes(instances[0]));
+  assert.equal(counts.get(0), 1);
+  assert.equal(counts.get(1), 1);
 });
 
 test('zero density is empty and invalid densities are rejected', () => {

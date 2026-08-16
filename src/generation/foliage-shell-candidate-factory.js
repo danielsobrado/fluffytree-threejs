@@ -1,4 +1,7 @@
-import { createFoliageCardSizing } from './foliage-card-sizing.js';
+import {
+  createFoliageCardSizing,
+  createMaximumFoliageCardSizing,
+} from './foliage-card-sizing.js';
 import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
 import {
   calculateLobeClearance,
@@ -20,6 +23,27 @@ function averageScale(lobe) {
 
 function normalDot(left, right) {
   return left.x * right.x + left.y * right.y + left.z * right.z;
+}
+
+function createSizing(
+  meanScale,
+  settings,
+  maximumCardWidthSpread,
+  random,
+  preferMaximumCardWidth,
+) {
+  return preferMaximumCardWidth
+    ? createMaximumFoliageCardSizing(
+        meanScale,
+        settings,
+        maximumCardWidthSpread,
+      )
+    : createFoliageCardSizing(
+        meanScale,
+        settings,
+        maximumCardWidthSpread,
+        random,
+      );
 }
 
 export function calculateFoliageCrownCenter(lobes) {
@@ -62,6 +86,11 @@ export function createFoliageShellCandidate(
   alphaProfile,
   random,
   candidateIndex,
+  {
+    preferMaximumCardWidth = false,
+    coverageRepairKind = null,
+    coverageRepairRatio = null,
+  } = {},
 ) {
   const surfacePoint = pointOnLobeSurface(lobe, direction);
   const normal = lobeSurfaceNormal(lobe, direction);
@@ -89,18 +118,18 @@ export function createFoliageShellCandidate(
     outwardAlignment * FOLIAGE_SHELL_CONSTANTS.outwardWeight +
     upwardAlignment * FOLIAGE_SHELL_CONSTANTS.upwardWeight +
     random.next() * FOLIAGE_SHELL_CONSTANTS.scoreJitter;
-  const sizing = createFoliageCardSizing(
+  const sizing = createSizing(
     meanScale,
     settings,
     maximumCardWidthSpread,
     random,
+    preferMaximumCardWidth,
   );
   const outwardRatio = random.range(
     settings.outwardRatio[0],
     settings.outwardRatio[1],
   );
-
-  return {
+  const candidate = {
     candidateIndex,
     lobeId: lobe.id,
     surfacePoint,
@@ -125,4 +154,11 @@ export function createFoliageShellCandidate(
     colorMix: clamp01(lobe.colorMix + random.signed() * settings.colorJitter),
     windPhase: random.range(0, FOLIAGE_SHELL_CONSTANTS.tau),
   };
+
+  if (coverageRepairKind !== null) {
+    candidate.coverageRepairKind = coverageRepairKind;
+    candidate.coverageRepairRatio = Number(coverageRepairRatio);
+  }
+
+  return candidate;
 }

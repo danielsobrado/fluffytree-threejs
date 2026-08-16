@@ -17,17 +17,13 @@ function clampCardWidthFactor(value, settings, maximumSpread) {
   return clamp(value, center / halfSpread, center * halfSpread);
 }
 
-export function createFoliageCardSizing(
+function createSizing(
   meanScale,
   settings,
   maximumSpread,
-  random,
+  scaleRatio,
+  widthRatio,
 ) {
-  const scaleRatio = random.range(settings.sizeRatio[0], settings.sizeRatio[1]);
-  const widthRatio = random.range(
-    settings.widthRatio[0],
-    settings.widthRatio[1],
-  );
   const scale = meanScale * scaleRatio;
   const widthFactor = clampCardWidthFactor(
     scaleRatio * widthRatio,
@@ -48,4 +44,33 @@ export function createFoliageCardSizing(
     cardWidth,
     coverageRadius: cardWidth * Number(settings.coverageCardRatio),
   });
+}
+
+export function createFoliageCardSizing(
+  meanScale,
+  settings,
+  maximumSpread,
+  random,
+) {
+  return createSizing(
+    meanScale,
+    settings,
+    maximumSpread,
+    random.range(settings.sizeRatio[0], settings.sizeRatio[1]),
+    random.range(settings.widthRatio[0], settings.widthRatio[1]),
+  );
+}
+
+export function createMaximumFoliageCardSizing(
+  meanScale,
+  settings,
+  maximumSpread,
+) {
+  return createSizing(
+    meanScale,
+    settings,
+    maximumSpread,
+    Number(settings.sizeRatio[1]),
+    Number(settings.widthRatio[1]),
+  );
 }

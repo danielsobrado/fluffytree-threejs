@@ -171,6 +171,9 @@ export class FoliageShellBuilder {
         actualDensity: outerSelection.actualDensity,
         scaleCompensation: outerSelection.scaleCompensation,
         maximumCoverageRatio: outerSelection.maximumCoverageRatio,
+        coverageRepairInvariantCount:
+          outerSelection.coverageRepairInvariantCount,
+        coverageLimited: outerSelection.coverageLimited,
       };
 
       geometry = null;

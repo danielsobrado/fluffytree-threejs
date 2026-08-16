@@ -31,6 +31,38 @@ function coverEveryLobe(selected, bestByLobe) {
   return additions;
 }
 
+function createInstance(candidate, index) {
+  const instance = {
+    id: index,
+    lobeId: candidate.lobeId,
+    surfacePoint: candidate.surfacePoint,
+    position: candidate.position,
+    normal: candidate.normal,
+    scale: candidate.scale,
+    shellScale: candidate.shellScale,
+    widthRatio: candidate.widthRatio,
+    outwardRatio: candidate.outwardRatio,
+    cardWidth: candidate.cardWidth,
+    rotation: candidate.rotation,
+    colorMix: candidate.colorMix,
+    exposure: candidate.exposure,
+    clearance: candidate.clearance,
+    coverageRadius: candidate.coverageRadius,
+    alphaCoverageRadius: candidate.alphaCoverageRadius,
+    leafShape: candidate.leafShape,
+    alphaTest: candidate.alphaTest,
+    planesPerCluster: candidate.planesPerCluster,
+    windPhase: candidate.windPhase,
+  };
+
+  if (candidate.coverageRepairKind !== undefined) {
+    instance.coverageRepairKind = candidate.coverageRepairKind;
+    instance.coverageRepairRatio = candidate.coverageRepairRatio;
+  }
+
+  return instance;
+}
+
 function createInstances(selected, lobes) {
   const lobeExposureTotals = new Map();
   const instances = selected.map((candidate, index) => {
@@ -42,28 +74,7 @@ function createInstances(selected, lobes) {
     totals.count += 1;
     lobeExposureTotals.set(candidate.lobeId, totals);
 
-    return {
-      id: index,
-      lobeId: candidate.lobeId,
-      surfacePoint: candidate.surfacePoint,
-      position: candidate.position,
-      normal: candidate.normal,
-      scale: candidate.scale,
-      shellScale: candidate.shellScale,
-      widthRatio: candidate.widthRatio,
-      outwardRatio: candidate.outwardRatio,
-      cardWidth: candidate.cardWidth,
-      rotation: candidate.rotation,
-      colorMix: candidate.colorMix,
-      exposure: candidate.exposure,
-      clearance: candidate.clearance,
-      coverageRadius: candidate.coverageRadius,
-      alphaCoverageRadius: candidate.alphaCoverageRadius,
-      leafShape: candidate.leafShape,
-      alphaTest: candidate.alphaTest,
-      planesPerCluster: candidate.planesPerCluster,
-      windPhase: candidate.windPhase,
-    };
+    return createInstance(candidate, index);
   });
   const lobeExposure = [];
 

@@ -34,6 +34,11 @@ function createRepairCandidates(
       alphaProfile,
       random,
       settings.candidatesPerLobe + passIndex * repairBudget + localIndex,
+      {
+        preferMaximumCardWidth: true,
+        coverageRepairKind: hole.kind,
+        coverageRepairRatio: hole.coverageRatio,
+      },
     );
     candidates.push({
       candidate,
@@ -64,7 +69,11 @@ export function repairAdaptiveFoliageCoverage(
   const lobesById = new Map(lobes.map((lobe) => [lobe.id, lobe]));
   let maximumCoverageRatio = initialCoverageRatio;
 
-  for (let passIndex = 0; passIndex <= coveragePolicy.maximumPasses; passIndex += 1) {
+  for (
+    let passIndex = 0;
+    passIndex <= coveragePolicy.maximumPasses;
+    passIndex += 1
+  ) {
     const inspection = inspectAdaptiveFoliageCoverage(selected, lobes, {
       stopCoverageRatio: coveragePolicy.stopCoverageRatio,
       exposureThreshold: settings.exposureThreshold,
