@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { analyzeBufferGeometryManifold } from '../qa/mesh-manifold-analyzer.js';
 import { TaperedCurveGeometryFactory } from './tapered-curve-geometry-factory.js';
+import { createRenderableTreeIrStemPath } from './tree-ir-render-path.js';
 import { TrunkGeometryFactory } from './trunk-geometry-factory.js';
 import {
   addStylizedBarkColors,
@@ -18,7 +19,7 @@ function rootTreeData(treeIr, stem) {
   return {
     height: treeIr.height,
     trunk: {
-      points: stem.path,
+      points: createRenderableTreeIrStemPath(stem.path),
       startRadius: stem.startRadius,
       endRadius: stem.endRadius,
       flare: Number(stem.metadata?.flare ?? 0),
@@ -82,7 +83,7 @@ export class TreeIrStructureMeshBuilder {
       for (const stem of treeIr.stems) {
         if (stem.id === root.id || !includeStem(stem, maximumStemOrder)) continue;
         const geometry = this.geometryFactory.create({
-          path: stem.path,
+          path: createRenderableTreeIrStemPath(stem.path),
           startRadius: stem.startRadius,
           endRadius: stem.endRadius,
           sampleCount: branchCurveSamples,
