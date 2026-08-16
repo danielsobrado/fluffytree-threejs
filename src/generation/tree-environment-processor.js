@@ -1,5 +1,6 @@
 import { hashCanonicalValue } from '../core/canonical-value-hash.js';
 import { createPathAttachmentFrame, createTreeIrFrame } from './tree-ir-frame.js';
+import { expandTreeIrFrondBounds } from './tree-ir-frond-bounds.js';
 import { validateTreeIr } from './tree-ir-validator.js';
 import { createTreeEnvironmentContext } from './tree-environment-context.js';
 import { TREE_ENVIRONMENT_CONSTANTS } from './tree-environment-constants.js';
@@ -85,15 +86,17 @@ function shouldPrune(site, influence, sensitivity) {
 }
 
 function createBounds(ir) {
-  const minimum = { x: 0, y: 0, z: 0 };
-  const maximum = { x: 0, y: ir.height, z: 0 };
+  const bounds = {
+    minimum: { x: 0, y: 0, z: 0 },
+    maximum: { x: 0, y: ir.height, z: 0 },
+  };
   const include = (point) => {
-    minimum.x = Math.min(minimum.x, point.x);
-    minimum.y = Math.min(minimum.y, point.y);
-    minimum.z = Math.min(minimum.z, point.z);
-    maximum.x = Math.max(maximum.x, point.x);
-    maximum.y = Math.max(maximum.y, point.y);
-    maximum.z = Math.max(maximum.z, point.z);
+    bounds.minimum.x = Math.min(bounds.minimum.x, point.x);
+    bounds.minimum.y = Math.min(bounds.minimum.y, point.y);
+    bounds.minimum.z = Math.min(bounds.minimum.z, point.z);
+    bounds.maximum.x = Math.max(bounds.maximum.x, point.x);
+    bounds.maximum.y = Math.max(bounds.maximum.y, point.y);
+    bounds.maximum.z = Math.max(bounds.maximum.z, point.z);
   };
 
   for (const stem of ir.stems) stem.path.forEach(include);
@@ -109,8 +112,11 @@ function createBounds(ir) {
       z: volume.center.z + Math.abs(volume.scale.z),
     });
   }
-  for (const site of ir.foliageSites) include(site.frame.position);
-  return { minimum, maximum };
+  for (const site of ir.foliageSites) {
+    include(site.frame.position);
+    expandTreeIrFrondBounds(bounds, site);
+  }
+  return bounds;
 }
 
 function updateLegacyCrownCenter(metadata, crownVolumes) {
