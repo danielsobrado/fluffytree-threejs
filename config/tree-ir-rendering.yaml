@@ -1,0 +1,33 @@
+directIr:
+  structure:
+    hero:
+      radialSegments: 10
+      trunkCurveSamples: 18
+      branchCurveSamples: 8
+    near:
+      radialSegments: 8
+      trunkCurveSamples: 12
+      branchCurveSamples: 6
+    aggregate:
+      radialSegments: 6
+      trunkCurveSamples: 8
+      branchCurveSamples: 4
+  crown:
+    heroDetail: 2
+    nearDetail: 1
+    aggregateDetail: 1
+    heroScale: 0.74
+    nearScale: 0.88
+    aggregateScale: 1.0
+  foliage:
+    alphaResolution: 64
+    alphaTest: 0.42
+    heroCardPlanes: 2
+    nearCardPlanes: 1
+    heroScale: 1.0
+    nearScale: 1.12
+    frondNearSegmentRatio: 0.58
+  shadow:
+    radialSegments: 6
+    trunkCurveSamples: 8
+    branchCurveSamples: 4
