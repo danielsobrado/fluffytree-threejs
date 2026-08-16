@@ -3,6 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { analyzeBufferGeometryManifold } from '../qa/mesh-manifold-analyzer.js';
 import { TaperedCurveGeometryFactory } from './tapered-curve-geometry-factory.js';
 import { createRenderableTreeIrStemPath } from './tree-ir-render-path.js';
+import { createTreeIrTrunkRenderData } from './tree-ir-trunk-render-data.js';
 import { TrunkGeometryFactory } from './trunk-geometry-factory.js';
 import {
   addStylizedBarkColors,
@@ -13,20 +14,6 @@ function rootStem(treeIr) {
   const root = treeIr.stems.find((stem) => stem.id === treeIr.root.stemId);
   if (!root) throw new Error(`Tree IR '${treeIr.presetId}' has no root stem.`);
   return root;
-}
-
-function rootTreeData(treeIr, stem) {
-  return {
-    height: treeIr.height,
-    trunk: {
-      points: createRenderableTreeIrStemPath(stem.path),
-      startRadius: stem.startRadius,
-      endRadius: stem.endRadius,
-      flare: Number(stem.metadata?.flare ?? 0),
-      taperPower: stem.taperPower,
-      nebari: Number(stem.metadata?.nebari ?? 1),
-    },
-  };
 }
 
 function includeStem(stem, maximumStemOrder) {
@@ -65,10 +52,13 @@ export class TreeIrStructureMeshBuilder {
     let material = null;
 
     try {
-      trunkGeometry = this.trunkGeometryFactory.create(rootTreeData(treeIr, root), {
-        radialSegments,
-        trunkCurveSamples,
-      });
+      trunkGeometry = this.trunkGeometryFactory.create(
+        createTreeIrTrunkRenderData(treeIr, root),
+        {
+          radialSegments,
+          trunkCurveSamples,
+        },
+      );
       const trunkManifold = analyzeManifold
         ? analyzeBufferGeometryManifold(trunkGeometry)
         : null;
