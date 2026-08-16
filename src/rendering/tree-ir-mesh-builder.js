@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import { FOLIAGE_PRIMITIVE_FAMILIES } from '../generation/tree-ir-schema.js';
 import { configureObjectLodFade, setObjectLodFade } from './lod-dither-fade.js';
 import { disposeObject } from './object-disposer.js';
-import { TreeImpostorBuilder } from './tree-impostor-builder.js';
 import { TreeIrCrownVolumeBuilder } from './tree-ir-crown-volume-builder.js';
 import { TreeIrFoliageBuilder } from './tree-ir-foliage-builder.js';
+import { TreeIrImpostorBuilder } from './tree-ir-impostor-builder.js';
 import {
   TREE_RENDER_REPRESENTATION_ROLES,
   TREE_REPRESENTATION_ROLES,
@@ -213,7 +213,7 @@ export class TreeIrMeshBuilder {
     structureBuilder = new TreeIrStructureMeshBuilder(),
     crownBuilder = new TreeIrCrownVolumeBuilder(),
     foliageBuilder = new TreeIrFoliageBuilder(),
-    impostorBuilder = new TreeImpostorBuilder(),
+    impostorBuilder = new TreeIrImpostorBuilder(),
   } = {}) {
     if (!qualityProfile?.representations) {
       throw new TypeError('TreeIrMeshBuilder requires a quality profile.');
