@@ -9,16 +9,12 @@ import { LeafClusterBuilder } from './leaf-cluster-builder.js';
 import { configureObjectLodFade, setObjectLodFade } from './lod-dither-fade.js';
 import { disposeObject } from './object-disposer.js';
 import { TreeImpostorBuilder } from './tree-impostor-builder.js';
+import {
+  TREE_RENDER_REPRESENTATION_ROLES,
+  TREE_REPRESENTATION_ROLES,
+  treeRepresentationIndex,
+} from './tree-representation-role.js';
 
-/**
- * Core scale for the level that carries no leaf cards.
- *
- * Levels 0 and 1 draw cards centred on the lobe surface, so the canopy they
- * render reaches about half a card beyond it. Level 2 is cores only, so its
- * cores have to stand in for that whole extent. Sharing the near-level scale
- * shrinks the silhouette at the switch, and the complementary dither crossfade
- * with the impostor then leaves holes in the difference.
- */
 function coverOnlyCoreScale(treeData) {
   const shell = treeData.palette.shell;
   const canopyExtent =
@@ -29,9 +25,10 @@ function coverOnlyCoreScale(treeData) {
   return canopyExtent / treeData.palette.core.scale;
 }
 
-function createLevel(name) {
+function createLevel(name, role) {
   const group = new THREE.Group();
   group.name = name;
+  group.userData.lod = { role };
   return group;
 }
 
@@ -127,8 +124,15 @@ function createEmptyShadowProxy() {
 }
 
 function validateMinimumLod(minimumLod) {
-  if (!Number.isSafeInteger(minimumLod) || minimumLod < 0 || minimumLod > 3) {
-    throw new RangeError('Tree minimumLod must be an integer within [0, 3].');
+  const maximum = TREE_RENDER_REPRESENTATION_ROLES.length - 1;
+  if (
+    !Number.isSafeInteger(minimumLod) ||
+    minimumLod < 0 ||
+    minimumLod > maximum
+  ) {
+    throw new RangeError(
+      `Tree minimumLod must be an integer within [0, ${maximum}].`,
+    );
   }
 }
 
@@ -163,11 +167,19 @@ export class TreeMeshBuilder {
     } = {},
   ) {
     validateMinimumLod(minimumLod);
+    const heroIndex = treeRepresentationIndex(TREE_REPRESENTATION_ROLES.HERO);
+    const nearIndex = treeRepresentationIndex(TREE_REPRESENTATION_ROLES.NEAR);
+    const aggregateIndex = treeRepresentationIndex(
+      TREE_REPRESENTATION_ROLES.AGGREGATE,
+    );
+    const impostorIndex = treeRepresentationIndex(
+      TREE_REPRESENTATION_ROLES.IMPOSTOR,
+    );
     const root = new THREE.Group();
     root.name = `tree-${treeData.presetId}`;
     const textures = this.textureSetFactory.create(treeData.palette, {
-      palette: minimumLod <= 2,
-      alpha: minimumLod <= 1,
+      palette: minimumLod <= aggregateIndex,
+      alpha: minimumLod <= nearIndex,
     });
     const sharedFoliageResources = [textures.palette, textures.alpha].filter(Boolean);
     root.userData.disposables = sharedFoliageResources;
@@ -178,15 +190,27 @@ export class TreeMeshBuilder {
     };
 
     try {
-      const lod0 = createLevel('tree-lod-0');
-      const lod1 = createLevel('tree-lod-1');
-      const lod2 = createLevel('tree-lod-2');
-      const lod3 = createLevel('tree-lod-3');
-      root.add(lod0, lod1, lod2, lod3);
+      const heroLevel = createLevel(
+        'tree-lod-0',
+        TREE_REPRESENTATION_ROLES.HERO,
+      );
+      const nearLevel = createLevel(
+        'tree-lod-1',
+        TREE_REPRESENTATION_ROLES.NEAR,
+      );
+      const aggregateLevel = createLevel(
+        'tree-lod-2',
+        TREE_REPRESENTATION_ROLES.AGGREGATE,
+      );
+      const impostorLevel = createLevel(
+        'tree-lod-3',
+        TREE_REPRESENTATION_ROLES.IMPOSTOR,
+      );
+      root.add(heroLevel, nearLevel, aggregateLevel, impostorLevel);
 
       populateLevel(
-        lod1,
-        minimumLod <= 1
+        nearLevel,
+        minimumLod <= nearIndex
           ? [
               () =>
                 this.branchMeshBuilder.build(treeData, {
@@ -202,7 +226,7 @@ export class TreeMeshBuilder {
                 this.foliageCoreBuilder.build(treeData, {
                   ...foliageResources,
                   detail: 1,
-                  lodIndex: 1,
+                  lodIndex: nearIndex,
                   scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.coreScaleMultiplier,
                   name: 'foliage-core-lod1',
                 }),
@@ -218,8 +242,8 @@ export class TreeMeshBuilder {
           : [],
       );
       populateLevel(
-        lod2,
-        minimumLod <= 2
+        aggregateLevel,
+        minimumLod <= aggregateIndex
           ? [
               () =>
                 this.branchMeshBuilder.build(treeData, {
@@ -235,7 +259,7 @@ export class TreeMeshBuilder {
                 this.foliageCoreBuilder.build(treeData, {
                   ...foliageResources,
                   detail: 0,
-                  lodIndex: 2,
+                  lodIndex: aggregateIndex,
                   scaleMultiplier: coverOnlyCoreScale(treeData),
                   name: 'foliage-core-lod2',
                 }),
@@ -243,21 +267,21 @@ export class TreeMeshBuilder {
           : [],
       );
 
-      // Level 2 is the level the impostor crossfades with, so capturing that is
-      // what makes the two silhouettes agree.
       const captureLevel = (layout, rotationY) =>
-        impostorRenderer.capture(lod2, layout, rotationY);
+        impostorRenderer.capture(aggregateLevel, layout, rotationY);
       const capture =
-        impostorRenderer && lod2.children.length > 0 ? captureLevel : null;
+        impostorRenderer && aggregateLevel.children.length > 0
+          ? captureLevel
+          : null;
       let impostor = this.impostorBuilder.build(treeData, {
         rotationY: impostorRotationY,
         capture,
       });
-      lod3.add(impostor);
-      configureObjectLodFade(lod3);
+      impostorLevel.add(impostor);
+      configureObjectLodFade(impostorLevel);
 
       const shadowProxy =
-        minimumLod <= 1
+        minimumLod <= nearIndex
           ? createShadowProxy(
               treeData,
               this.branchMeshBuilder,
@@ -265,19 +289,21 @@ export class TreeMeshBuilder {
             )
           : createEmptyShadowProxy();
       root.add(shadowProxy);
-      configureObjectLodFade(lod0);
+      configureObjectLodFade(heroLevel);
 
-      const levels = [lod0, lod1, lod2, lod3];
+      const levels = [heroLevel, nearLevel, aggregateLevel, impostorLevel];
+      const initialLevel = Math.max(nearIndex, minimumLod);
       levels.forEach((level, index) => {
         level.userData.lod = {
+          ...level.userData.lod,
           index,
           ...collectLevelMetrics(level),
         };
-        setObjectLodFade(level, index === Math.max(1, minimumLod) ? 1 : 0);
+        setObjectLodFade(level, index === initialLevel ? 1 : 0);
       });
 
       const buildHero = () => {
-        if (root.userData.lod?.heroReady || minimumLod > 0) return;
+        if (root.userData.lod?.heroReady || minimumLod > heroIndex) return;
 
         const heroObjects = buildDetachedObjects(
           [
@@ -293,7 +319,7 @@ export class TreeMeshBuilder {
               this.foliageCoreBuilder.build(treeData, {
                 ...foliageResources,
                 detail: 1,
-                lodIndex: 0,
+                lodIndex: heroIndex,
                 scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.coreScaleMultiplier,
                 name: 'foliage-core-lod0',
               }),
@@ -315,23 +341,27 @@ export class TreeMeshBuilder {
         const heroLeaves = heroObjects.at(-1);
 
         try {
-          lod0.add(...heroObjects);
-          configureObjectLodFade(lod0);
-          lod0.userData.lod = { index: 0, ...collectLevelMetrics(lod0) };
-          setObjectLodFade(lod0, 0);
+          heroLevel.add(...heroObjects);
+          configureObjectLodFade(heroLevel);
+          heroLevel.userData.lod = {
+            role: TREE_REPRESENTATION_ROLES.HERO,
+            index: heroIndex,
+            ...collectLevelMetrics(heroLevel),
+          };
+          setObjectLodFade(heroLevel, 0);
           root.userData.lod.heroReady = true;
           root.userData.tree.leafClusterCount =
             heroLeaves.userData.heroLeaves?.clusterCount ?? 0;
           root.userData.tree.leafCount = heroLeaves.userData.heroLeaves?.leafCount ?? 0;
-          root.userData.tree.lodCosts[0] = lod0.userData.lod;
+          root.userData.tree.lodCosts[heroIndex] = heroLevel.userData.lod;
         } catch (error) {
           root.userData.lod.heroReady = false;
-          for (const object of heroObjects) lod0.remove(object);
+          for (const object of heroObjects) heroLevel.remove(object);
           disposeDetachedObjects(heroObjects, sharedFoliageResources);
           throw error;
         }
 
-        onHeroBuilt?.(lod0);
+        onHeroBuilt?.(heroLevel);
       };
 
       const rebuildImpostor = (rotationY) => {
@@ -346,18 +376,22 @@ export class TreeMeshBuilder {
 
         try {
           configureObjectLodFade(nextImpostor);
-          lod3.add(nextImpostor);
-          lod3.remove(previousImpostor);
-          const nextMetrics = { index: 3, ...collectLevelMetrics(lod3) };
-          lod3.userData.lod = nextMetrics;
+          impostorLevel.add(nextImpostor);
+          impostorLevel.remove(previousImpostor);
+          const nextMetrics = {
+            role: TREE_REPRESENTATION_ROLES.IMPOSTOR,
+            index: impostorIndex,
+            ...collectLevelMetrics(impostorLevel),
+          };
+          impostorLevel.userData.lod = nextMetrics;
           if (root.userData.tree) {
-            root.userData.tree.lodCosts[3] = nextMetrics;
+            root.userData.tree.lodCosts[impostorIndex] = nextMetrics;
           }
           impostor = nextImpostor;
           disposeImpostor(previousImpostor);
         } catch (error) {
-          lod3.remove(nextImpostor);
-          if (!previousImpostor.parent) lod3.add(previousImpostor);
+          impostorLevel.remove(nextImpostor);
+          if (!previousImpostor.parent) impostorLevel.add(previousImpostor);
           disposeImpostor(nextImpostor);
           throw error;
         }
@@ -365,6 +399,7 @@ export class TreeMeshBuilder {
 
       root.userData.tree = {
         presetId: treeData.presetId,
+        generationModel: treeData.generationModel,
         seed: treeData.seed,
         height: treeData.height,
         controlLobeCount: treeData.lobes.length,
@@ -376,13 +411,14 @@ export class TreeMeshBuilder {
       root.userData.lod = {
         levels,
         shadowProxy,
-        currentLevel: Math.max(1, minimumLod),
+        currentLevel: initialLevel,
+        currentRole: levels[initialLevel].userData.lod.role,
         minimumLevel: minimumLod,
         heroReady: false,
         buildHero,
         rebuildImpostor,
       };
-      if (!deferHero && minimumLod === 0) buildHero();
+      if (!deferHero && minimumLod <= heroIndex) buildHero();
       return root;
     } catch (error) {
       disposeObject(root);

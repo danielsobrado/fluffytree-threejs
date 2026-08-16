@@ -6,6 +6,13 @@ import {
   remapUnavailableLodWeights,
   resolveStableLod,
 } from './tree-lod-math.js';
+import {
+  isImpostorRepresentation,
+  TREE_REPRESENTATION_ROLES,
+  treeRepresentationIndex,
+  treeRepresentationRoleAt,
+} from './tree-representation-role.js';
+import { shouldRenderTreeShadowProxy } from './tree-shadow-lod-policy.js';
 
 const VISIBLE_FADE_THRESHOLD = 0.001;
 
@@ -19,6 +26,17 @@ function findFirstVisibleLevel(weights) {
     if (weights[index] > VISIBLE_FADE_THRESHOLD) return index;
   }
   return -1;
+}
+
+function representationRole(level, index) {
+  return level.userData?.lod?.role ?? treeRepresentationRoleAt(index);
+}
+
+function findRoleIndex(levels, role) {
+  const index = levels.findIndex(
+    (level, levelIndex) => representationRole(level, levelIndex) === role,
+  );
+  return index >= 0 ? index : treeRepresentationIndex(role);
 }
 
 export class TreeLodController {
@@ -55,6 +73,10 @@ export class TreeLodController {
     this.entries.push({
       tree,
       stableLevel: lodState.currentLevel ?? 1,
+      heroLevelIndex: findRoleIndex(
+        lodState.levels,
+        TREE_REPRESENTATION_ROLES.HERO,
+      ),
       appliedFades: new Array(lodState.levels.length).fill(Number.NaN),
       appliedInverts: new Array(lodState.levels.length).fill(null),
       weights: new Array(lodState.levels.length).fill(0),
@@ -96,8 +118,9 @@ export class TreeLodController {
 
   applyLevelFade(entry, lodState, index, fade, invert) {
     const level = lodState.levels[index];
+    const role = representationRole(level, index);
 
-    if (index === 3 && lodState.billboardBatch) {
+    if (isImpostorRepresentation(role) && lodState.billboardBatch) {
       if (entry.appliedFades[index] !== 0 || entry.appliedInverts[index] !== false) {
         setObjectLodFade(level, 0);
         entry.appliedFades[index] = 0;
@@ -201,7 +224,7 @@ export class TreeLodController {
       );
 
       if (
-        minimumLevel === 0 &&
+        minimumLevel <= entry.heroLevelIndex &&
         !lodState.heroReady &&
         !lodState.heroBuildFailed &&
         projectedPixels >= prewarmPixels
@@ -227,14 +250,20 @@ export class TreeLodController {
         this.applyLevelFade(entry, lodState, index, weights[index], invert);
       }
 
-      const castsShadow =
-        projectedPixels >= this.settings.shadowPixels && entry.stableLevel <= 1;
+      const activeLevel = lodState.levels[entry.stableLevel];
+      const activeRole = representationRole(activeLevel, entry.stableLevel);
+      const castsShadow = shouldRenderTreeShadowProxy(
+        activeRole,
+        projectedPixels,
+        this.settings.shadowPixels,
+      );
       const proxy = lodState.shadowProxy;
       if (proxy.visible !== castsShadow) {
         proxy.visible = castsShadow;
         shadowChanged = true;
       }
       lodState.currentLevel = entry.stableLevel;
+      lodState.currentRole = activeRole;
       lodState.projectedPixels = projectedPixels;
     }
 
