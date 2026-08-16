@@ -79,6 +79,13 @@ function structureSettings(role, config) {
   return settings;
 }
 
+function foliageDensityForRole(treeIr, role, representation, config) {
+  if (role === TREE_REPRESENTATION_ROLES.AGGREGATE && isFrondOnly(treeIr)) {
+    return config.frondAggregateDensity;
+  }
+  return representation.foliageDensity;
+}
+
 function createDetachedLevelObjects({
   treeIr,
   role,
@@ -104,9 +111,10 @@ function createDetachedLevelObjects({
       }),
     );
 
+    const frondOnly = isFrondOnly(treeIr);
     const useCrownVolumes =
       treeIr.crownVolumes.length > 0 &&
-      (role === TREE_REPRESENTATION_ROLES.AGGREGATE || !isFrondOnly(treeIr));
+      (role === TREE_REPRESENTATION_ROLES.AGGREGATE || !frondOnly);
     if (useCrownVolumes && representation.crownVolumeDensity > 0) {
       objects.push(
         crownBuilder.build(treeIr, {
@@ -118,15 +126,20 @@ function createDetachedLevelObjects({
       );
     }
 
-    if (
-      role !== TREE_REPRESENTATION_ROLES.AGGREGATE &&
-      representation.foliageDensity > 0
-    ) {
+    const foliageDensity = foliageDensityForRole(
+      treeIr,
+      role,
+      representation,
+      renderingConfig.foliage,
+    );
+    const allowFoliage =
+      role !== TREE_REPRESENTATION_ROLES.AGGREGATE || frondOnly;
+    if (allowFoliage && foliageDensity > 0) {
       objects.push(
         foliageBuilder.build(
           treeIr,
           role,
-          representation.foliageDensity,
+          foliageDensity,
           renderingConfig.foliage,
         ),
       );
