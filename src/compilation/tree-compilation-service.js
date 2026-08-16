@@ -35,7 +35,11 @@ export class TreeCompilationService {
   getTreeIr(
     preset,
     seed,
-    { generationOptions = {}, environmentSignature = null } = {},
+    {
+      generationOptions = {},
+      environment = null,
+      environmentSignature = environment,
+    } = {},
   ) {
     const key = createTreeIrCacheKey({
       preset,
@@ -44,7 +48,10 @@ export class TreeCompilationService {
       environmentSignature,
     });
     return this.treeIrCache.getOrCreate(key, () =>
-      this.treeGenerator.generateIr(preset, seed, generationOptions),
+      this.treeGenerator.generateIr(preset, seed, {
+        ...generationOptions,
+        ...(environment === null ? {} : { environment }),
+      }),
     );
   }
 

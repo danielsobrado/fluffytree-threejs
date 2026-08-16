@@ -3,6 +3,7 @@ import {
   DEFAULT_TREE_GENERATION_MODEL,
   resolveTreeGenerationModelId,
 } from '../generation/tree-generation-model.js';
+import { parseTreeEnvironmentResponse } from '../generation/tree-environment-response.js';
 import { resolveFoliageContinuityProfile } from './foliage-continuity-config.js';
 import { createPalmTreePreset } from './palm-tree-preset.js';
 import { createTreePreset } from './tree-preset.js';
@@ -40,6 +41,10 @@ function compileLegacyCompatiblePreset(id, value, continuityConfig) {
     ),
     continuity,
     morphology: deepFreeze(clone(morphology)),
+    environmentResponse: parseTreeEnvironmentResponse(
+      value?.environmentResponse,
+      `${id}.environmentResponse`,
+    ),
   });
 }
 

@@ -3,6 +3,12 @@ presets:
     label: Coconut palm
     generationModel: palm
     height: 14.0
+    environmentResponse:
+      phototropism: 0.18
+      windShaping: 0.55
+      slopeAdaptation: 0.22
+      competitionSensitivity: 0.58
+      pruningSensitivity: 1.0
     morphology:
       frondCount: 18
       frondSegments: 14
@@ -30,6 +36,12 @@ presets:
     label: Date palm
     generationModel: palm
     height: 11.5
+    environmentResponse:
+      phototropism: 0.14
+      windShaping: 0.36
+      slopeAdaptation: 0.16
+      competitionSensitivity: 0.5
+      pruningSensitivity: 1.0
     morphology:
       frondCount: 24
       frondSegments: 16

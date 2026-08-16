@@ -1,4 +1,5 @@
 import { PALM_TREE_LIMITS, PALM_TREE_MODEL_ID } from '../generation/palm-tree-constants.js';
+import { parseTreeEnvironmentResponse } from '../generation/tree-environment-response.js';
 
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
@@ -99,7 +100,8 @@ export function createPalmTreePreset(id, value) {
 
   return Object.freeze({
     id,
-    label: value.label ?? id,
+    label:
+      value.label === undefined ? id : requireString(value.label, `${id}.label`),
     generationModel: PALM_TREE_MODEL_ID,
     height,
     morphology: Object.freeze({
@@ -167,5 +169,9 @@ export function createPalmTreePreset(id, value) {
       palette: requirePalette(foliage.palette, `${id}.foliage.palette`),
       roughness: requireRange(foliage.roughness, [0, 1], `${id}.foliage.roughness`),
     }),
+    environmentResponse: parseTreeEnvironmentResponse(
+      value.environmentResponse,
+      `${id}.environmentResponse`,
+    ),
   });
 }

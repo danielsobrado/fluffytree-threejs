@@ -5,6 +5,7 @@ import {
 } from './tree-generation-model.js';
 import { adaptTreeIrToLegacyTreeData } from './tree-ir-legacy-adapter.js';
 import { validateTreeIr } from './tree-ir-validator.js';
+import { applyTreeEnvironment } from './tree-environment-processor.js';
 import { PALM_TREE_MODEL_ID } from './palm-tree-constants.js';
 import { PalmTreeGenerator } from './palm-tree-generator.js';
 import { WHORLED_CONIFER_MODEL_ID } from './whorled-conifer-constants.js';
@@ -64,13 +65,19 @@ export class TreeGenerator {
       throw new Error(`Unsupported tree generation model '${modelId}'.`);
     }
 
-    const ir = generator.generate(preset, seed, options);
-    validateTreeIr(ir);
-    if (ir.generationModel !== modelId) {
+    const generatedIr = generator.generate(preset, seed, options);
+    validateTreeIr(generatedIr);
+    if (generatedIr.generationModel !== modelId) {
       throw new Error(
-        `Tree generation model '${modelId}' returned IR for '${ir.generationModel}'.`,
+        `Tree generation model '${modelId}' returned IR for '${generatedIr.generationModel}'.`,
       );
     }
+    const ir = applyTreeEnvironment(
+      generatedIr,
+      preset?.environmentResponse,
+      options.environment,
+    );
+    validateTreeIr(ir);
     return ir;
   }
 
