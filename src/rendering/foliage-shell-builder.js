@@ -1,30 +1,9 @@
-import * as THREE from 'three';
+import { resolveFoliageCoverageGuard } from './foliage-coverage-guard-plan.js';
 import { FoliageShellGeometryFactory } from './foliage-shell-geometry-factory.js';
+import { buildFoliageShellInstanceMesh } from './foliage-shell-instance-mesh-builder.js';
 import { FoliageShellMaterialFactory } from './foliage-shell-material-factory.js';
-import { addFoliageInstanceAttributes } from './instanced-foliage-attributes.js';
 import { hashUnit } from './deterministic-hash.js';
 import { selectFoliageLodInstances } from './foliage-lod-selector.js';
-
-const LOCAL_OUTWARD = new THREE.Vector3(0, 0, 1);
-
-function crownDirection(position, center, result) {
-  const x = position.x - center.x;
-  const y = position.y - center.y;
-  const z = position.z - center.z;
-  const length = Math.hypot(x, y, z);
-
-  if (length <= Number.EPSILON) {
-    result.x = 0;
-    result.y = 1;
-    result.z = 0;
-    return result;
-  }
-
-  result.x = x / length;
-  result.y = y / length;
-  result.z = z / length;
-  return result;
-}
 
 function averageLobeScale(lobe) {
   return (lobe.scale.x + lobe.scale.y + lobe.scale.z) / 3;
@@ -101,67 +80,62 @@ export class FoliageShellBuilder {
       interiorInstances.length === 0
         ? outerInstances
         : outerInstances.concat(interiorInstances);
+    const coverageGuardPlan = resolveFoliageCoverageGuard(
+      outerInstances,
+      planesPerCluster,
+    );
+    const repairInstances = coverageGuardPlan.repairInstances;
+    const certifiedPlaneCount = coverageGuardPlan.certifiedPlaneCount;
+    const coverageGuardPlaneCount = coverageGuardPlan.planeCount;
+    const compensatedScaleMultiplier =
+      scaleMultiplier * outerSelection.scaleCompensation;
     let geometry = null;
+    let coverageGuardGeometry = null;
     let material = null;
 
     try {
       geometry = this.geometryFactory.create(planesPerCluster);
-      addFoliageInstanceAttributes(geometry, instances, {
-        getExposure: (instance) => instance.exposure,
-        getCrownDirection: (instance, _index, target) =>
-          crownDirection(instance.position, treeData.crownCenter, target),
-      });
-
       material = this.materialFactory.create({
         foliage: treeData.palette,
         paletteTexture,
         alphaTexture,
         sunDirection,
       });
-      const shell = new THREE.InstancedMesh(
+      const shell = buildFoliageShellInstanceMesh(
+        treeData,
         geometry,
         material,
-        instances.length,
+        instances,
+        {
+          scaleMultiplier: compensatedScaleMultiplier,
+          name,
+        },
       );
-      const matrix = new THREE.Matrix4();
-      const position = new THREE.Vector3();
-      const normal = new THREE.Vector3();
-      const quaternion = new THREE.Quaternion();
-      const twist = new THREE.Quaternion();
-      const scale = new THREE.Vector3();
-      const compensatedScaleMultiplier =
-        scaleMultiplier * outerSelection.scaleCompensation;
 
-      instances.forEach((instance, index) => {
-        position.set(
-          instance.position.x,
-          instance.position.y,
-          instance.position.z,
+      if (repairInstances.length > 0 && coverageGuardPlaneCount > 0) {
+        coverageGuardGeometry = this.geometryFactory.create(certifiedPlaneCount, {
+          firstPlaneIndex: coverageGuardPlan.firstPlaneIndex,
+          planeCount: coverageGuardPlaneCount,
+        });
+        const coverageGuardMesh = buildFoliageShellInstanceMesh(
+          treeData,
+          coverageGuardGeometry,
+          material,
+          repairInstances,
+          {
+            scaleMultiplier: compensatedScaleMultiplier,
+            name: `${name}-coverage-guard`,
+          },
         );
-        normal
-          .set(instance.normal.x, instance.normal.y, instance.normal.z)
-          .normalize();
-        quaternion.setFromUnitVectors(LOCAL_OUTWARD, normal);
-        twist.setFromAxisAngle(LOCAL_OUTWARD, instance.rotation);
-        quaternion.multiply(twist);
-        const shellScale = instance.shellScale ?? instance.scale;
-        scale.set(
-          shellScale * instance.widthRatio * compensatedScaleMultiplier,
-          shellScale * instance.widthRatio * compensatedScaleMultiplier,
-          shellScale * instance.outwardRatio * compensatedScaleMultiplier,
-        );
-        matrix.compose(position, quaternion, scale);
-        shell.setMatrixAt(index, matrix);
-      });
+        coverageGuardMesh.userData.foliageCoverageGuard = Object.freeze({
+          instanceCount: repairInstances.length,
+          firstPlaneIndex: coverageGuardPlan.firstPlaneIndex,
+          planeCount: coverageGuardPlaneCount,
+          certifiedPlaneCount,
+        });
+        shell.add(coverageGuardMesh);
+      }
 
-      shell.instanceMatrix.setUsage(THREE.StaticDrawUsage);
-      shell.instanceMatrix.needsUpdate = true;
-      shell.name = name;
-      shell.castShadow = false;
-      shell.receiveShadow = true;
-      shell.renderOrder = 1;
-      shell.computeBoundingBox();
-      shell.computeBoundingSphere();
       shell.userData.foliageShell = {
         instanceCount: instances.length,
         exteriorInstanceCount: outerInstances.length,
@@ -174,13 +148,19 @@ export class FoliageShellBuilder {
         coverageRepairInvariantCount:
           outerSelection.coverageRepairInvariantCount,
         coverageLimited: outerSelection.coverageLimited,
+        coverageGuardInstanceCount:
+          coverageGuardPlaneCount > 0 ? repairInstances.length : 0,
+        coverageGuardPlaneCount: Math.max(0, coverageGuardPlaneCount),
+        certifiedRepairPlaneCount: certifiedPlaneCount,
       };
 
       geometry = null;
+      coverageGuardGeometry = null;
       material = null;
       return shell;
     } catch (error) {
       geometry?.dispose();
+      coverageGuardGeometry?.dispose();
       material?.dispose();
       throw error;
     }

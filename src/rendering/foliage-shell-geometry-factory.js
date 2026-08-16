@@ -45,10 +45,38 @@ function appendCard(buffers, cardIndex, cardCount) {
   buffers.indices.push(offset, offset + 1, offset + 2, offset, offset + 2, offset + 3);
 }
 
+function requirePlaneRange(planesPerCluster, options) {
+  if (!Number.isSafeInteger(planesPerCluster) || planesPerCluster < 1) {
+    throw new RangeError('Foliage shell plane count must be a positive integer.');
+  }
+
+  const firstPlaneIndex = options.firstPlaneIndex ?? 0;
+  const planeCount = options.planeCount ?? planesPerCluster - firstPlaneIndex;
+  if (
+    !Number.isSafeInteger(firstPlaneIndex) ||
+    firstPlaneIndex < 0 ||
+    firstPlaneIndex >= planesPerCluster
+  ) {
+    throw new RangeError('Foliage shell firstPlaneIndex is outside the cluster.');
+  }
+  if (
+    !Number.isSafeInteger(planeCount) ||
+    planeCount < 1 ||
+    firstPlaneIndex + planeCount > planesPerCluster
+  ) {
+    throw new RangeError('Foliage shell plane range is outside the cluster.');
+  }
+
+  return { firstPlaneIndex, planeCount };
+}
+
 export class FoliageShellGeometryFactory {
-  create(planesPerCluster) {
+  create(planesPerCluster, options = {}) {
+    const range = requirePlaneRange(planesPerCluster, options);
     const buffers = { positions: [], normals: [], uvs: [], indices: [] };
-    for (let index = 0; index < planesPerCluster; index += 1) {
+    const lastPlaneIndex = range.firstPlaneIndex + range.planeCount;
+
+    for (let index = range.firstPlaneIndex; index < lastPlaneIndex; index += 1) {
       appendCard(buffers, index, planesPerCluster);
     }
 
