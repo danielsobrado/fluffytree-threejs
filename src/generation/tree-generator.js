@@ -5,6 +5,8 @@ import {
 } from './tree-generation-model.js';
 import { adaptTreeIrToLegacyTreeData } from './tree-ir-legacy-adapter.js';
 import { validateTreeIr } from './tree-ir-validator.js';
+import { WHORLED_CONIFER_MODEL_ID } from './whorled-conifer-constants.js';
+import { WhorledConiferTreeGenerator } from './whorled-conifer-tree-generator.js';
 
 function modelEntries(modelGenerators) {
   if (modelGenerators === null || modelGenerators === undefined) return [];
@@ -27,6 +29,10 @@ export class TreeGenerator {
   constructor({ modelGenerators = null, ...defaultModelOptions } = {}) {
     this.modelGenerators = new Map([
       [DEFAULT_TREE_GENERATION_MODEL, new CrownLobeTreeGenerator(defaultModelOptions)],
+      [
+        WHORLED_CONIFER_MODEL_ID,
+        new WhorledConiferTreeGenerator(defaultModelOptions),
+      ],
     ]);
 
     for (const [modelId, generator] of modelEntries(modelGenerators)) {
