@@ -1,0 +1,22 @@
+profiles:
+  default:
+    cache:
+      treeIrMaximumEntries: 128
+      representationMaximumEntries: 256
+    representations:
+      hero:
+        maximumStemOrder: null
+        foliageDensity: 1.0
+        crownVolumeDensity: 1.0
+      near:
+        maximumStemOrder: 2
+        foliageDensity: 0.58
+        crownVolumeDensity: 1.0
+      aggregate:
+        maximumStemOrder: 1
+        foliageDensity: 0.0
+        crownVolumeDensity: 1.0
+      impostor:
+        maximumStemOrder: 0
+        foliageDensity: 0.0
+        crownVolumeDensity: 1.0

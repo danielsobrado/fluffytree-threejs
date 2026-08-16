@@ -1,0 +1,137 @@
+import { FOLIAGE_PRIMITIVE_FAMILIES } from '../generation/tree-ir-schema.js';
+import { TREE_REPRESENTATION_ROLES } from '../rendering/tree-representation-role.js';
+import {
+  FOLIAGE_BACKEND_IDS,
+  FOLIAGE_COVERAGE_POLICIES,
+  FOLIAGE_REPRESENTATION_KINDS,
+} from './foliage-compilation-constants.js';
+
+function policy(kind, coveragePolicy) {
+  return Object.freeze({ kind, coveragePolicy });
+}
+
+const BAKED = policy(
+  FOLIAGE_REPRESENTATION_KINDS.BAKED_IMPOSTOR,
+  FOLIAGE_COVERAGE_POLICIES.BAKED,
+);
+const VOLUME = policy(
+  FOLIAGE_REPRESENTATION_KINDS.CROWN_VOLUME,
+  FOLIAGE_COVERAGE_POLICIES.VOLUME,
+);
+const NONE = policy(
+  FOLIAGE_REPRESENTATION_KINDS.NONE,
+  FOLIAGE_COVERAGE_POLICIES.NONE,
+);
+
+const BACKENDS = Object.freeze({
+  [FOLIAGE_PRIMITIVE_FAMILIES.BROADLEAF]: Object.freeze({
+    id: FOLIAGE_BACKEND_IDS.BROADLEAF,
+    family: FOLIAGE_PRIMITIVE_FAMILIES.BROADLEAF,
+    roles: Object.freeze({
+      [TREE_REPRESENTATION_ROLES.HERO]: policy(
+        FOLIAGE_REPRESENTATION_KINDS.HYBRID_LEAF_CARD,
+        FOLIAGE_COVERAGE_POLICIES.CERTIFIED,
+      ),
+      [TREE_REPRESENTATION_ROLES.NEAR]: policy(
+        FOLIAGE_REPRESENTATION_KINDS.CARD_CLUSTER,
+        FOLIAGE_COVERAGE_POLICIES.CERTIFIED,
+      ),
+      [TREE_REPRESENTATION_ROLES.AGGREGATE]: VOLUME,
+      [TREE_REPRESENTATION_ROLES.IMPOSTOR]: BAKED,
+    }),
+  }),
+  [FOLIAGE_PRIMITIVE_FAMILIES.NEEDLE_CLUSTER]: Object.freeze({
+    id: FOLIAGE_BACKEND_IDS.NEEDLE,
+    family: FOLIAGE_PRIMITIVE_FAMILIES.NEEDLE_CLUSTER,
+    roles: Object.freeze({
+      [TREE_REPRESENTATION_ROLES.HERO]: policy(
+        FOLIAGE_REPRESENTATION_KINDS.NEEDLE_CLUSTER,
+        FOLIAGE_COVERAGE_POLICIES.FAMILY_DENSITY,
+      ),
+      [TREE_REPRESENTATION_ROLES.NEAR]: policy(
+        FOLIAGE_REPRESENTATION_KINDS.NEEDLE_CLUSTER,
+        FOLIAGE_COVERAGE_POLICIES.FAMILY_DENSITY,
+      ),
+      [TREE_REPRESENTATION_ROLES.AGGREGATE]: VOLUME,
+      [TREE_REPRESENTATION_ROLES.IMPOSTOR]: BAKED,
+    }),
+  }),
+  [FOLIAGE_PRIMITIVE_FAMILIES.FROND]: Object.freeze({
+    id: FOLIAGE_BACKEND_IDS.FROND,
+    family: FOLIAGE_PRIMITIVE_FAMILIES.FROND,
+    roles: Object.freeze({
+      [TREE_REPRESENTATION_ROLES.HERO]: policy(
+        FOLIAGE_REPRESENTATION_KINDS.FROND_GEOMETRY,
+        FOLIAGE_COVERAGE_POLICIES.FAMILY_DENSITY,
+      ),
+      [TREE_REPRESENTATION_ROLES.NEAR]: policy(
+        FOLIAGE_REPRESENTATION_KINDS.FROND_CARD,
+        FOLIAGE_COVERAGE_POLICIES.FAMILY_DENSITY,
+      ),
+      [TREE_REPRESENTATION_ROLES.AGGREGATE]: policy(
+        FOLIAGE_REPRESENTATION_KINDS.FROND_PROXY,
+        FOLIAGE_COVERAGE_POLICIES.VOLUME,
+      ),
+      [TREE_REPRESENTATION_ROLES.IMPOSTOR]: BAKED,
+    }),
+  }),
+  [FOLIAGE_PRIMITIVE_FAMILIES.NONE]: Object.freeze({
+    id: FOLIAGE_BACKEND_IDS.NONE,
+    family: FOLIAGE_PRIMITIVE_FAMILIES.NONE,
+    roles: Object.freeze({
+      [TREE_REPRESENTATION_ROLES.HERO]: NONE,
+      [TREE_REPRESENTATION_ROLES.NEAR]: NONE,
+      [TREE_REPRESENTATION_ROLES.AGGREGATE]: NONE,
+      [TREE_REPRESENTATION_ROLES.IMPOSTOR]: NONE,
+    }),
+  }),
+});
+
+const GENERIC_FAMILIES = new Set([
+  FOLIAGE_PRIMITIVE_FAMILIES.COMPOUND_LEAF,
+  FOLIAGE_PRIMITIVE_FAMILIES.SPRAY,
+  FOLIAGE_PRIMITIVE_FAMILIES.GENERIC_CLUSTER,
+  FOLIAGE_PRIMITIVE_FAMILIES.FLOWER_FRUIT,
+]);
+
+const GENERIC_BACKEND = Object.freeze({
+  id: FOLIAGE_BACKEND_IDS.GENERIC,
+  family: FOLIAGE_PRIMITIVE_FAMILIES.GENERIC_CLUSTER,
+  roles: Object.freeze({
+    [TREE_REPRESENTATION_ROLES.HERO]: policy(
+      FOLIAGE_REPRESENTATION_KINDS.CARD_CLUSTER,
+      FOLIAGE_COVERAGE_POLICIES.FAMILY_DENSITY,
+    ),
+    [TREE_REPRESENTATION_ROLES.NEAR]: policy(
+      FOLIAGE_REPRESENTATION_KINDS.CARD_CLUSTER,
+      FOLIAGE_COVERAGE_POLICIES.FAMILY_DENSITY,
+    ),
+    [TREE_REPRESENTATION_ROLES.AGGREGATE]: VOLUME,
+    [TREE_REPRESENTATION_ROLES.IMPOSTOR]: BAKED,
+  }),
+});
+
+export function resolveFoliagePrimitiveBackend(family) {
+  const backend = BACKENDS[family];
+  if (backend) return backend;
+  if (GENERIC_FAMILIES.has(family)) {
+    return Object.freeze({ ...GENERIC_BACKEND, family });
+  }
+  throw new Error(`Unsupported foliage primitive family '${family}'.`);
+}
+
+export function resolveFoliageBackendRolePolicy(family, role) {
+  const backend = resolveFoliagePrimitiveBackend(family);
+  const rolePolicy = backend.roles[role];
+  if (!rolePolicy) {
+    throw new Error(
+      `Foliage backend '${backend.id}' does not support representation role '${role}'.`,
+    );
+  }
+  return Object.freeze({
+    backendId: backend.id,
+    family,
+    role,
+    ...rolePolicy,
+  });
+}
