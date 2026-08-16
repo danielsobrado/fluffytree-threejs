@@ -5,7 +5,11 @@ import {
   setObjectLodFade,
   snapshotObjectLodFade,
 } from '../rendering/lod-dither-fade.js';
-import { TREE_RENDER_REPRESENTATION_ROLES } from '../rendering/tree-representation-role.js';
+import {
+  TREE_RENDER_REPRESENTATION_ROLES,
+  TREE_REPRESENTATION_ROLES,
+  treeRepresentationIndex,
+} from '../rendering/tree-representation-role.js';
 
 const RENDER_SMOKE_QUERY_VALUE = 'render-smoke';
 const STATUS_ATTRIBUTE = 'renderStatus';
@@ -34,11 +38,22 @@ function hasDrawableImpostor(lodState) {
   return Boolean(lodState.billboardBatch?.batch?.atlas?.texture?.image);
 }
 
+function hasUserDataMarker(root, marker) {
+  let found = false;
+  root.traverse((object) => {
+    if (object.userData?.[marker]) found = true;
+  });
+  return found;
+}
+
 function collectNativeMetrics(trees) {
   if (trees.length === 0) {
     throw new Error('Native render smoke found no Tree IR trees.');
   }
 
+  const aggregateIndex = treeRepresentationIndex(
+    TREE_REPRESENTATION_ROLES.AGGREGATE,
+  );
   const metrics = {
     treeCount: trees.length,
     palmCount: 0,
@@ -48,6 +63,7 @@ function collectNativeMetrics(trees) {
     aggregateDrawCalls: 0,
     impostorDrawCalls: 0,
     frondBatchCount: 0,
+    aggregateFrondProxyCount: 0,
     foliageCardBatchCount: 0,
     billboardBatchTreeCount: 0,
   };
@@ -103,6 +119,12 @@ function collectNativeMetrics(trees) {
       if (!hasFronds) {
         throw new Error(`Palm '${treeState.presetId}' has no native frond batch.`);
       }
+      if (!hasUserDataMarker(lodState.levels[aggregateIndex], 'fronds')) {
+        throw new Error(
+          `Palm '${treeState.presetId}' aggregate representation has no frond proxy.`,
+        );
+      }
+      metrics.aggregateFrondProxyCount += 1;
     }
     if (treeState.generationModel === 'sympodial-broadleaf') {
       metrics.broadleafCount += 1;
