@@ -23,19 +23,29 @@ export function resolveFoliageCoveragePolicy(alphaProfile, continuity) {
     FOLIAGE_SHELL_CONSTANTS.minimumSparseShapeStopMultiplier,
     1 / sparseShapeMultiplier,
   );
+  const directionScale = Math.sqrt(sparseShapeMultiplier);
 
   return Object.freeze({
     repairBudgetRatio: Math.min(
       1,
       continuity.shellCoverageRepairBudgetRatio * sparseShapeMultiplier,
     ),
+    emergencyRepairBudgetRatio: Math.min(
+      1,
+      continuity.shellCoverageEmergencyBudgetRatio * sparseShapeMultiplier,
+    ),
     stopCoverageRatio:
       continuity.shellCoverageRepairStopRatio * stopMultiplier,
     maximumSubdivisionDepth:
       continuity.shellCoverageRepairMaximumSubdivisionDepth,
+    certificationMaximumSubdivisionDepth:
+      continuity.shellCoverageCertificationMaximumSubdivisionDepth,
     minimumDirectionDiameter:
-      continuity.shellCoverageRepairMinimumDirectionDiameter /
-      Math.sqrt(sparseShapeMultiplier),
+      continuity.shellCoverageRepairMinimumDirectionDiameter / directionScale,
+    certificationMinimumDirectionDiameter:
+      (continuity.shellCoverageRepairMinimumDirectionDiameter *
+        FOLIAGE_SHELL_CONSTANTS.coverageCertificationMinimumDirectionScale) /
+      directionScale,
     maximumPasses: continuity.shellCoverageRepairPasses,
     normalUncertaintyScale:
       continuity.shellCoverageRepairNormalUncertaintyScale,

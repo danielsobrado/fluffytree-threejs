@@ -10,8 +10,10 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     verticalBias: 0.04,
     maximumShellCardWidthSpread: 1.4,
     shellCoverageRepairBudgetRatio: 0.10,
+    shellCoverageEmergencyBudgetRatio: 0.24,
     shellCoverageRepairStopRatio: 0.5,
     shellCoverageRepairMaximumSubdivisionDepth: 4,
+    shellCoverageCertificationMaximumSubdivisionDepth: 6,
     shellCoverageRepairMinimumDirectionDiameter: 0.055,
     shellCoverageRepairPasses: 2,
     shellCoverageRepairNormalUncertaintyScale: 1,
@@ -29,8 +31,10 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     verticalBias: 0.38,
     maximumShellCardWidthSpread: 2.5,
     shellCoverageRepairBudgetRatio: 0.08,
+    shellCoverageEmergencyBudgetRatio: 0.20,
     shellCoverageRepairStopRatio: 0.5,
     shellCoverageRepairMaximumSubdivisionDepth: 4,
+    shellCoverageCertificationMaximumSubdivisionDepth: 6,
     shellCoverageRepairMinimumDirectionDiameter: 0.05,
     shellCoverageRepairPasses: 2,
     shellCoverageRepairNormalUncertaintyScale: 1,
@@ -48,8 +52,10 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     verticalBias: 0.14,
     maximumShellCardWidthSpread: 2.6,
     shellCoverageRepairBudgetRatio: 0.12,
+    shellCoverageEmergencyBudgetRatio: 0.28,
     shellCoverageRepairStopRatio: 0.5,
     shellCoverageRepairMaximumSubdivisionDepth: 5,
+    shellCoverageCertificationMaximumSubdivisionDepth: 7,
     shellCoverageRepairMinimumDirectionDiameter: 0.045,
     shellCoverageRepairPasses: 2,
     shellCoverageRepairNormalUncertaintyScale: 1,
@@ -67,8 +73,10 @@ const DEFAULT_PROFILE_CONFIGS = Object.freeze({
     verticalBias: 0.08,
     maximumShellCardWidthSpread: 2.5,
     shellCoverageRepairBudgetRatio: 0.14,
+    shellCoverageEmergencyBudgetRatio: 0.32,
     shellCoverageRepairStopRatio: 0.5,
     shellCoverageRepairMaximumSubdivisionDepth: 5,
+    shellCoverageCertificationMaximumSubdivisionDepth: 7,
     shellCoverageRepairMinimumDirectionDiameter: 0.04,
     shellCoverageRepairPasses: 3,
     shellCoverageRepairNormalUncertaintyScale: 1,
@@ -168,11 +176,55 @@ function repairBudgetRatio(source, fallback, path) {
   );
 }
 
+function resolveCoverageLimits(source, fallback, path) {
+  const repairBudget = repairBudgetRatio(source, fallback, path);
+  const emergencyBudget = requireRange(
+    source.shellCoverageEmergencyBudgetRatio ??
+      fallback.shellCoverageEmergencyBudgetRatio,
+    0,
+    1,
+    `${path}.shellCoverageEmergencyBudgetRatio`,
+  );
+  if (emergencyBudget < repairBudget) {
+    throw new RangeError(
+      `${path}.shellCoverageEmergencyBudgetRatio must be >= shellCoverageRepairBudgetRatio.`,
+    );
+  }
+
+  const repairDepth = requireIntegerRange(
+    source.shellCoverageRepairMaximumSubdivisionDepth ??
+      fallback.shellCoverageRepairMaximumSubdivisionDepth,
+    1,
+    8,
+    `${path}.shellCoverageRepairMaximumSubdivisionDepth`,
+  );
+  const certificationDepth = requireIntegerRange(
+    source.shellCoverageCertificationMaximumSubdivisionDepth ??
+      fallback.shellCoverageCertificationMaximumSubdivisionDepth,
+    1,
+    10,
+    `${path}.shellCoverageCertificationMaximumSubdivisionDepth`,
+  );
+  if (certificationDepth < repairDepth) {
+    throw new RangeError(
+      `${path}.shellCoverageCertificationMaximumSubdivisionDepth must be >= shellCoverageRepairMaximumSubdivisionDepth.`,
+    );
+  }
+
+  return Object.freeze({
+    repairBudget,
+    emergencyBudget,
+    repairDepth,
+    certificationDepth,
+  });
+}
+
 export function resolveFoliageContinuityProfile(config, profile) {
   const profileId = PROFILE_IDS.includes(profile) ? profile : 'round';
   const fallback = DEFAULT_PROFILE_CONFIGS[profileId];
   const source = sourceForProfile(config, profileId);
   const path = `foliageContinuity.profiles.${profileId}`;
+  const coverage = resolveCoverageLimits(source, fallback, path);
 
   return Object.freeze({
     profile: profileId,
@@ -211,7 +263,8 @@ export function resolveFoliageContinuityProfile(config, profile) {
       4,
       `${path}.maximumShellCardWidthSpread`,
     ),
-    shellCoverageRepairBudgetRatio: repairBudgetRatio(source, fallback, path),
+    shellCoverageRepairBudgetRatio: coverage.repairBudget,
+    shellCoverageEmergencyBudgetRatio: coverage.emergencyBudget,
     shellCoverageRepairStopRatio: requireRange(
       source.shellCoverageRepairStopRatio ??
         fallback.shellCoverageRepairStopRatio,
@@ -219,13 +272,8 @@ export function resolveFoliageContinuityProfile(config, profile) {
       1,
       `${path}.shellCoverageRepairStopRatio`,
     ),
-    shellCoverageRepairMaximumSubdivisionDepth: requireIntegerRange(
-      source.shellCoverageRepairMaximumSubdivisionDepth ??
-        fallback.shellCoverageRepairMaximumSubdivisionDepth,
-      1,
-      8,
-      `${path}.shellCoverageRepairMaximumSubdivisionDepth`,
-    ),
+    shellCoverageRepairMaximumSubdivisionDepth: coverage.repairDepth,
+    shellCoverageCertificationMaximumSubdivisionDepth: coverage.certificationDepth,
     shellCoverageRepairMinimumDirectionDiameter: requireRange(
       source.shellCoverageRepairMinimumDirectionDiameter ??
         fallback.shellCoverageRepairMinimumDirectionDiameter,

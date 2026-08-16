@@ -140,7 +140,7 @@ export class FoliageShellGenerator {
     const selected = [...maxCover.selected];
     selected.push(...coverEveryLobe(selected, bestByLobe));
 
-    const maximumCandidateCoverageRatio = repairAdaptiveFoliageCoverage(
+    const coverageCertification = repairAdaptiveFoliageCoverage(
       selected,
       lobes,
       crownCenter,
@@ -157,7 +157,9 @@ export class FoliageShellGenerator {
     return {
       instances: result.instances,
       lobeExposure: result.lobeExposure,
-      maximumCandidateCoverageRatio,
+      maximumCandidateCoverageRatio:
+        coverageCertification.maximumCoverageRatio,
+      coverageCertification,
     };
   }
 }

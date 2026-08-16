@@ -7,8 +7,10 @@ profiles:
     verticalBias: 0.04
     maximumShellCardWidthSpread: 1.40
     shellCoverageRepairBudgetRatio: 0.10
+    shellCoverageEmergencyBudgetRatio: 0.24
     shellCoverageRepairStopRatio: 0.50
     shellCoverageRepairMaximumSubdivisionDepth: 4
+    shellCoverageCertificationMaximumSubdivisionDepth: 6
     shellCoverageRepairMinimumDirectionDiameter: 0.055
     shellCoverageRepairPasses: 2
     shellCoverageRepairNormalUncertaintyScale: 1.00
@@ -28,8 +30,10 @@ profiles:
     verticalBias: 0.38
     maximumShellCardWidthSpread: 2.50
     shellCoverageRepairBudgetRatio: 0.08
+    shellCoverageEmergencyBudgetRatio: 0.20
     shellCoverageRepairStopRatio: 0.50
     shellCoverageRepairMaximumSubdivisionDepth: 4
+    shellCoverageCertificationMaximumSubdivisionDepth: 6
     shellCoverageRepairMinimumDirectionDiameter: 0.050
     shellCoverageRepairPasses: 2
     shellCoverageRepairNormalUncertaintyScale: 1.00
@@ -49,8 +53,10 @@ profiles:
     verticalBias: 0.14
     maximumShellCardWidthSpread: 2.60
     shellCoverageRepairBudgetRatio: 0.12
+    shellCoverageEmergencyBudgetRatio: 0.28
     shellCoverageRepairStopRatio: 0.50
     shellCoverageRepairMaximumSubdivisionDepth: 5
+    shellCoverageCertificationMaximumSubdivisionDepth: 7
     shellCoverageRepairMinimumDirectionDiameter: 0.045
     shellCoverageRepairPasses: 2
     shellCoverageRepairNormalUncertaintyScale: 1.00
@@ -70,8 +76,10 @@ profiles:
     verticalBias: 0.08
     maximumShellCardWidthSpread: 2.50
     shellCoverageRepairBudgetRatio: 0.14
+    shellCoverageEmergencyBudgetRatio: 0.32
     shellCoverageRepairStopRatio: 0.50
     shellCoverageRepairMaximumSubdivisionDepth: 5
+    shellCoverageCertificationMaximumSubdivisionDepth: 7
     shellCoverageRepairMinimumDirectionDiameter: 0.040
     shellCoverageRepairPasses: 3
     shellCoverageRepairNormalUncertaintyScale: 1.00

@@ -13,11 +13,25 @@ function createShellSeed(seed) {
   return (Number(seed) ^ FOLIAGE_SHELL_CONSTANTS.seedSalt) >>> 0;
 }
 
+function createEmptyCoverageCertification() {
+  return Object.freeze({
+    maximumCoverageRatio: 0,
+    certified: true,
+    emergencyUsed: false,
+    normalRepairCount: 0,
+    emergencyRepairCount: 0,
+    remainingHoleCount: 0,
+    unresolvedTriangleCount: 0,
+    maximumSubdivisionDepthReached: 0,
+  });
+}
+
 function createEmptySurfaceSamples(lobes) {
   return {
     instances: [],
     lobeExposure: lobes.map(() => 1),
     maximumCandidateCoverageRatio: 0,
+    coverageCertification: createEmptyCoverageCertification(),
   };
 }
 
@@ -124,6 +138,7 @@ export class TreeGenerator {
       lobeExposure: Object.freeze(shell.lobeExposure),
       shell: Object.freeze(shell.instances),
       shellCandidateCoverageRatio: shell.maximumCandidateCoverageRatio,
+      shellCoverageDiagnostics: shell.coverageCertification,
       trunk: Object.freeze(structure.trunk),
       branches: Object.freeze(structure.branches),
       branchGraph: Object.freeze({

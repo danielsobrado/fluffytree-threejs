@@ -7,8 +7,10 @@ import {
 
 const CONTINUITY = Object.freeze({
   shellCoverageRepairBudgetRatio: 0.10,
+  shellCoverageEmergencyBudgetRatio: 0.24,
   shellCoverageRepairStopRatio: 0.5,
   shellCoverageRepairMaximumSubdivisionDepth: 4,
+  shellCoverageCertificationMaximumSubdivisionDepth: 6,
   shellCoverageRepairMinimumDirectionDiameter: 0.055,
   shellCoverageRepairPasses: 2,
   shellCoverageRepairNormalUncertaintyScale: 1,
@@ -29,6 +31,10 @@ test('sparser alpha shapes receive more adaptive budget and tighter certificatio
     CONTINUITY.shellCoverageRepairBudgetRatio,
   );
   assert.equal(
+    broad.emergencyRepairBudgetRatio,
+    CONTINUITY.shellCoverageEmergencyBudgetRatio,
+  );
+  assert.equal(
     broad.stopCoverageRatio,
     CONTINUITY.shellCoverageRepairStopRatio,
   );
@@ -36,10 +42,29 @@ test('sparser alpha shapes receive more adaptive budget and tighter certificatio
     broad.minimumDirectionDiameter,
     CONTINUITY.shellCoverageRepairMinimumDirectionDiameter,
   );
+  assert.equal(
+    broad.certificationMaximumSubdivisionDepth,
+    CONTINUITY.shellCoverageCertificationMaximumSubdivisionDepth,
+  );
+  assert.ok(
+    broad.certificationMinimumDirectionDiameter <
+      broad.minimumDirectionDiameter,
+  );
   assert.ok(sparse.repairBudgetRatio > broad.repairBudgetRatio);
+  assert.ok(
+    sparse.emergencyRepairBudgetRatio > broad.emergencyRepairBudgetRatio,
+  );
   assert.ok(sparse.stopCoverageRatio < broad.stopCoverageRatio);
   assert.ok(sparse.minimumDirectionDiameter < broad.minimumDirectionDiameter);
+  assert.ok(
+    sparse.certificationMinimumDirectionDiameter <
+      broad.certificationMinimumDirectionDiameter,
+  );
   assert.equal(sparse.maximumSubdivisionDepth, broad.maximumSubdivisionDepth);
+  assert.equal(
+    sparse.certificationMaximumSubdivisionDepth,
+    broad.certificationMaximumSubdivisionDepth,
+  );
   assert.equal(sparse.maximumPasses, broad.maximumPasses);
 });
 
