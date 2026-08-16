@@ -25,7 +25,8 @@
     "deploy:pages:no-qa": "node tools/deploy-pages.js"
   },
   "devDependencies": {
-    "js-yaml": "4.3.0"
+    "js-yaml": "4.3.0",
+    "three": "0.164.1"
   },
   "engines": {
     "node": ">=20"
