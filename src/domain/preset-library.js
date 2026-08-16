@@ -1,5 +1,6 @@
 import { resolveFoliageContinuityProfile } from './foliage-continuity-config.js';
 import { createTreePreset } from './tree-preset.js';
+import { resolveTreeGenerationModelId } from '../generation/tree-generation-model.js';
 
 /**
  * The editable side of the preset configuration.
@@ -66,11 +67,15 @@ export class PresetLibrary {
 
   validate(id, value) {
     const basePreset = createTreePreset(id, value);
+    const generationModel = resolveTreeGenerationModelId(
+      value.generationModel,
+      `${id}.generationModel`,
+    );
     const continuity = resolveFoliageContinuityProfile(
       this.continuityConfig,
       basePreset.crown.profile,
     );
-    return Object.freeze({ ...basePreset, continuity });
+    return Object.freeze({ ...basePreset, generationModel, continuity });
   }
 
   /** Validates before storing, so a rejected edit leaves the library untouched. */
