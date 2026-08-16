@@ -1,0 +1,6 @@
+variants:
+  maximumPerSpecies: 16
+  scaleRange: [0.94, 1.06]
+  colorOffsetRange: [-0.06, 0.06]
+  windStrengthRange: [0.9, 1.1]
+  rotationJitter: 0.18
