@@ -73,12 +73,20 @@ export class UniversalTreeShowcase {
       'Universal Tree IR Showcase',
     );
     window.addEventListener('resize', this.handleResize);
-    this.context.renderer.setAnimationLoop(this.render);
-    void this.renderSmokeProbe.compile(
+    const smokeCompilation = this.renderSmokeProbe.compile(
       this.context.renderer,
       this.context.scene,
       this.context.camera,
     );
+    void smokeCompilation.finally(() => {
+      if (
+        !this.destroyed &&
+        this.context &&
+        !this.renderSmokeProbe.failed
+      ) {
+        this.context.renderer.setAnimationLoop(this.render);
+      }
+    });
     logger.info('Universal Tree IR showcase started.', {
       treeCount: this.treeRoots.length,
       presets: labels,
