@@ -27,6 +27,8 @@ directIr:
     heroScale: 1.0
     nearScale: 1.12
     frondNearSegmentRatio: 0.58
+    frondAggregateDensity: 0.72
+    frondAggregateSegmentRatio: 0.35
   shadow:
     radialSegments: 6
     trunkCurveSamples: 8
