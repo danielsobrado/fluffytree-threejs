@@ -19,7 +19,8 @@
     "qa:solidity": "node tools/run-canopy-solidity-qa.js",
     "qa:coverage": "node tools/run-shell-coverage-qa.js",
     "qa:manifold": "node tools/run-stem-manifold-qa.js",
-    "verify": "npm run check && npm run qa:manifold && npm run qa:render && npm run qa:solidity && npm run qa:coverage && npm run qa:shape && npm run qa:crown && npm run qa:lod && npm run qa:stress && npm run qa:stress:render",
+    "qa:native": "node tools/run-native-tree-qa.js",
+    "verify": "npm run check && npm run qa:native && npm run qa:manifold && npm run qa:render && npm run qa:solidity && npm run qa:coverage && npm run qa:shape && npm run qa:crown && npm run qa:lod && npm run qa:stress && npm run qa:stress:render",
     "deploy:pages": "npm run verify && node tools/deploy-pages.js",
     "deploy:pages:no-qa": "node tools/deploy-pages.js"
   },
