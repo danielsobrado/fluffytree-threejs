@@ -129,18 +129,33 @@ export class UniversalTreeShowcase {
     if (this.destroyed) return;
     this.destroyed = true;
     window.removeEventListener('resize', this.handleResize);
-    this.context?.renderer?.setAnimationLoop(null);
+    const context = this.context;
+    context?.renderer?.setAnimationLoop(null);
     this.generationQueue.clear();
     this.lodController?.clear();
     this.billboardBatchManager?.clear();
+
     for (const root of this.treeRoots) {
-      this.context?.scene?.remove(root);
+      context?.scene?.remove(root);
       disposeObject(root);
     }
     this.treeRoots.length = 0;
+
+    if (context?.ground) {
+      context.scene.remove(context.ground);
+      disposeObject(context.ground);
+    }
+
+    this.impostorRenderer?.dispose();
     this.overlay?.remove?.();
-    this.context?.controls?.dispose?.();
-    this.context?.renderer?.dispose?.();
+    context?.controls?.dispose?.();
+    context?.renderer?.dispose?.();
+    context?.renderer?.domElement?.remove?.();
+
     this.context = null;
+    this.container = null;
+    this.impostorRenderer = null;
+    this.billboardBatchManager = null;
+    this.lodController = null;
   }
 }
