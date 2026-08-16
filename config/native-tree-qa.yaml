@@ -1,0 +1,8 @@
+nativeTreeQa:
+  seedsPerPreset: 12
+  baseSeed: 47017
+  maximumStemCount: 2048
+  maximumFoliageSiteCount: 20000
+  maximumHorizontalSpanRatio: 4.0
+  maximumVerticalSpanRatio: 1.8
+  minimumBoundsExtent: 0.001
