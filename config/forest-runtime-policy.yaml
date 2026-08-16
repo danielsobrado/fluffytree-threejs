@@ -1,0 +1,3 @@
+runtime:
+  chunkSize: 64
+  visibilityRadius: 320

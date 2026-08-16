@@ -8,7 +8,7 @@ function blendAtThreshold(value, threshold, band) {
   return smoothstep((value - (threshold - halfWidth)) / (halfWidth * 2));
 }
 
-function rawLevel(projectedPixels, settings) {
+export function resolveRawLod(projectedPixels, settings) {
   if (projectedPixels >= settings.nearPixels) return 0;
   if (projectedPixels >= settings.mediumPixels) return 1;
   if (projectedPixels >= settings.farPixels) return 2;
@@ -33,7 +33,7 @@ function resetWeights(target) {
 }
 
 export function resolveStableLod(projectedPixels, previousLevel, settings) {
-  const candidate = rawLevel(projectedPixels, settings);
+  const candidate = resolveRawLod(projectedPixels, settings);
   if (candidate === previousLevel) return candidate;
 
   if (candidate > previousLevel && previousLevel < 4) {
