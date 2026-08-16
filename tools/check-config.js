@@ -8,6 +8,7 @@ import {
 import { parseTreeAnimationPolicy } from '../src/animation/tree-animation-policy-config.js';
 import { parseTreeQualityProfiles } from '../src/compilation/tree-quality-profile-config.js';
 import { validateSceneConfig } from '../src/config/scene-config-validator.js';
+import { parseTreeShowcaseLayout } from '../src/config/tree-showcase-layout-config.js';
 import {
   FOLIAGE_CONTINUITY_PROFILE_IDS,
   resolveFoliageContinuityProfile,
@@ -18,10 +19,12 @@ import { parseForestVariantPolicy } from '../src/forest/forest-variant-policy.js
 import { parseWhorledConiferConfig } from '../src/generation/whorled-conifer-config.js';
 import { parseCanopySolidityQaConfig } from '../src/qa/canopy-solidity-qa-config.js';
 import { parseCrownVolumeQaConfig } from '../src/qa/crown-volume-qa-config.js';
+import { parseNativeTreeQaConfig } from '../src/qa/native-tree-qa-config.js';
 import { parseShellCoverageQaConfig } from '../src/qa/shell-coverage-qa-config.js';
 import { parseStemManifoldQaConfig } from '../src/qa/stem-manifold-qa-config.js';
 import { parseTreeShapeQaConfig } from '../src/qa/tree-shape-qa-config.js';
 import { parseTreeStressQaPolicy } from '../src/qa/tree-stress-qa-policy.js';
+import { parseTreeIrRenderingConfig } from '../src/rendering/tree-ir-rendering-config.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
 import { parsePagesConfig } from './pages-config.js';
 import { assertReleaseSourceConsistency } from './release-source-check.js';
@@ -132,9 +135,21 @@ for (const preset of coniferLibrary.presets.values()) {
 }
 
 parseTreeQualityProfiles(readConfig('config/tree-quality-profiles.yaml'));
+parseTreeIrRenderingConfig(readConfig('config/tree-ir-rendering.yaml'));
 parseForestVariantPolicy(readConfig('config/forest-variant-policy.yaml'));
 parseForestRuntimePolicy(readConfig('config/forest-runtime-policy.yaml'));
 parseTreeAnimationPolicy(readConfig('config/tree-animation-policy.yaml'));
+parseNativeTreeQaConfig(readConfig('config/native-tree-qa.yaml'));
+const showcaseLayout = parseTreeShowcaseLayout(
+  readConfig('config/universal-showcase-layout.yaml'),
+);
+for (const entry of showcaseLayout) {
+  if (!speciesLibrary.has(entry.preset)) {
+    throw new Error(
+      `Universal showcase layout references unknown tree preset '${entry.preset}'.`,
+    );
+  }
+}
 
 for (const entry of sceneConfig.layout) {
   if (!library.has(entry.preset)) {
@@ -179,5 +194,5 @@ parseTreeStressQaPolicy(readConfig('config/tree-stress-qa.yaml'));
 const pagesConfig = parsePagesConfig(readConfig('pages.config.yml'));
 assertRequiredFilesExist(pagesConfig.requiredFiles);
 console.log(
-  `Validated ${configFiles.length} YAML config files, ${speciesLibrary.ids.length} species presets (${library.ids.length} demo presets), ${sceneConfig.layout.length} scene entries, and ${pagesConfig.requiredFiles.length} Pages files.`,
+  `Validated ${configFiles.length} YAML config files, ${speciesLibrary.ids.length} species presets (${library.ids.length} demo presets), ${sceneConfig.layout.length} scene entries, ${showcaseLayout.length} showcase entries, and ${pagesConfig.requiredFiles.length} Pages files.`,
 );
