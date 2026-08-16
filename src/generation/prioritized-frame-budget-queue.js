@@ -19,6 +19,7 @@ export class PrioritizedFrameBudgetQueue {
     this.lastProcessDuration = 0;
     this.maximumTaskDuration = 0;
     this.staleSkipCount = 0;
+    this.supersededCount = 0;
   }
 
   swap(left, right) {
@@ -77,6 +78,7 @@ export class PrioritizedFrameBudgetQueue {
     if (typeof task !== 'function') {
       throw new TypeError('Prioritized task must be a function.');
     }
+    if (this.entries.has(key)) this.supersededCount += 1;
     const entry = {
       key,
       priority: validatePriority(priority),
@@ -137,8 +139,11 @@ export class PrioritizedFrameBudgetQueue {
   clear() {
     this.heap.length = 0;
     this.entries.clear();
+    this.sequence = 0;
     this.lastProcessDuration = 0;
     this.maximumTaskDuration = 0;
+    this.staleSkipCount = 0;
+    this.supersededCount = 0;
   }
 
   get length() {

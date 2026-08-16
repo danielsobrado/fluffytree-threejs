@@ -1,3 +1,4 @@
+import { assertCanonicalValue } from '../core/canonical-value-hash.js';
 import {
   FOLIAGE_PRIMITIVE_FAMILY_IDS,
   TREE_IR_SCHEMA_VERSION,
@@ -191,6 +192,9 @@ function validateFoliageSites(ir, stemIds) {
     if (!FOLIAGE_PRIMITIVE_FAMILY_IDS.includes(site.primitiveFamily)) {
       fail(`${path}.primitiveFamily`, 'is not supported');
     }
+    if (site.windNodeId !== undefined && site.windNodeId !== null) {
+      requireString(site.windNodeId, `${path}.windNodeId`);
+    }
     requireObject(site.metadata, `${path}.metadata`);
   }
   return ids;
@@ -255,6 +259,23 @@ function validateWindNodes(ir) {
   return ids;
 }
 
+function validateWindReferences(ir, windNodeIds) {
+  for (const [index, stem] of ir.stems.entries()) {
+    if (stem.windNodeId !== null && !windNodeIds.has(stem.windNodeId)) {
+      fail(`stems[${index}].windNodeId`, 'references an unknown wind node');
+    }
+  }
+  for (const [index, site] of ir.foliageSites.entries()) {
+    if (
+      site.windNodeId !== undefined &&
+      site.windNodeId !== null &&
+      !windNodeIds.has(site.windNodeId)
+    ) {
+      fail(`foliageSites[${index}].windNodeId`, 'references an unknown wind node');
+    }
+  }
+}
+
 export function validateTreeIr(ir) {
   requireObject(ir, 'rootValue');
   if (ir.schemaVersion !== TREE_IR_SCHEMA_VERSION) {
@@ -262,8 +283,8 @@ export function validateTreeIr(ir) {
   }
   requireString(ir.presetId, 'presetId');
   requireString(ir.generationModel, 'generationModel');
-  if (!Number.isSafeInteger(ir.seed) || ir.seed < 0) {
-    fail('seed', 'must be a non-negative safe integer');
+  if (!Number.isSafeInteger(ir.seed) || ir.seed < 0 || ir.seed > 0xffffffff) {
+    fail('seed', 'must be an unsigned 32-bit integer');
   }
   if (requireFinite(ir.height, 'height') <= 0) fail('height', 'must be positive');
   validateBounds(ir.bounds);
@@ -271,13 +292,9 @@ export function validateTreeIr(ir) {
   const volumeIds = validateCrownVolumes(ir, stemIds);
   const siteIds = validateFoliageSites(ir, stemIds);
   validateFoliageGroups(ir, stemIds, volumeIds, siteIds);
-  validateWindNodes(ir);
+  const windNodeIds = validateWindNodes(ir);
+  validateWindReferences(ir, windNodeIds);
   requireObject(ir.metadata, 'metadata');
-
-  try {
-    JSON.stringify(ir);
-  } catch (error) {
-    throw new Error('Tree IR must be JSON serializable.', { cause: error });
-  }
+  assertCanonicalValue(ir, 'Tree IR');
   return ir;
 }

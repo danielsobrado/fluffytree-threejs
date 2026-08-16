@@ -54,7 +54,7 @@ test('environmental growth is deterministic and changes structure only when enab
   assert.equal(first.metadata.environment.applied, true);
 });
 
-test('competition reduces foliage potential and pruning removes deterministic sites', () => {
+test('competition reduces foliage potential and pruning invalidates old coverage certification', () => {
   const generator = new TreeGenerator();
   const baseline = generator.generateIr(responsivePreset(), 881);
   const adapted = generator.generateIr(responsivePreset(), 881, {
@@ -67,6 +67,32 @@ test('competition reduces foliage potential and pruning removes deterministic si
   assert.equal(
     adapted.metadata.environment.prunedFoliageSiteCount,
     baseline.foliageSites.length - adapted.foliageSites.length,
+  );
+  assert.equal(adapted.metadata.legacy.shellCoverageDiagnostics.certified, false);
+  assert.equal(
+    adapted.metadata.legacy.shellCoverageDiagnostics.environmentInvalidated,
+    true,
+  );
+});
+
+test('legacy foliage render positions and coverage surface points move together', () => {
+  const generator = new TreeGenerator();
+  const baseline = generator.generateIr(responsivePreset(), 442);
+  const adapted = generator.generateIr(responsivePreset(), 442, {
+    environment: { ...ENVIRONMENT, pruningVolumes: [] },
+  });
+  const adaptedSite = adapted.foliageSites[0];
+  const baselineSite = baseline.foliageSites.find(
+    (site) => site.id === adaptedSite.id,
+  );
+
+  assert.notDeepEqual(
+    adaptedSite.metadata.render.position,
+    baselineSite.metadata.render.position,
+  );
+  assert.notDeepEqual(
+    adaptedSite.metadata.render.surfacePoint,
+    baselineSite.metadata.render.surfacePoint,
   );
 });
 

@@ -5,12 +5,17 @@ import {
   formatOverlayTitle,
   formatReleaseVersion,
 } from '../src/app/release-title.js';
+import { parseTreeAnimationPolicy } from '../src/animation/tree-animation-policy-config.js';
+import { parseTreeQualityProfiles } from '../src/compilation/tree-quality-profile-config.js';
 import { validateSceneConfig } from '../src/config/scene-config-validator.js';
 import {
   FOLIAGE_CONTINUITY_PROFILE_IDS,
   resolveFoliageContinuityProfile,
 } from '../src/domain/foliage-continuity-config.js';
 import { PresetLibrary } from '../src/domain/preset-library.js';
+import { parseForestRuntimePolicy } from '../src/forest/forest-runtime-policy.js';
+import { parseForestVariantPolicy } from '../src/forest/forest-variant-policy.js';
+import { parseWhorledConiferConfig } from '../src/generation/whorled-conifer-config.js';
 import { parseCanopySolidityQaConfig } from '../src/qa/canopy-solidity-qa-config.js';
 import { parseCrownVolumeQaConfig } from '../src/qa/crown-volume-qa-config.js';
 import { parseShellCoverageQaConfig } from '../src/qa/shell-coverage-qa-config.js';
@@ -102,10 +107,27 @@ for (const profile of FOLIAGE_CONTINUITY_PROFILE_IDS) {
   resolveFoliageContinuityProfile(continuityConfig, profile);
 }
 
-const library = PresetLibrary.fromConfig(
-  readConfig('config/tree-presets.yaml'),
+const treePresetConfig = readConfig('config/tree-presets.yaml');
+const coniferPresetConfig = readConfig('config/conifer-presets.yaml');
+const palmPresetConfig = readConfig('config/palm-presets.yaml');
+const library = PresetLibrary.fromConfig(treePresetConfig, continuityConfig);
+const speciesLibrary = PresetLibrary.fromConfigs(
+  [treePresetConfig, coniferPresetConfig, palmPresetConfig],
   continuityConfig,
 );
+const coniferLibrary = PresetLibrary.fromConfig(
+  coniferPresetConfig,
+  continuityConfig,
+);
+for (const preset of coniferLibrary.presets.values()) {
+  parseWhorledConiferConfig(preset);
+}
+
+parseTreeQualityProfiles(readConfig('config/tree-quality-profiles.yaml'));
+parseForestVariantPolicy(readConfig('config/forest-variant-policy.yaml'));
+parseForestRuntimePolicy(readConfig('config/forest-runtime-policy.yaml'));
+parseTreeAnimationPolicy(readConfig('config/tree-animation-policy.yaml'));
+
 for (const entry of sceneConfig.layout) {
   if (!library.has(entry.preset)) {
     throw new Error(`Scene layout references unknown tree preset '${entry.preset}'.`);
@@ -149,5 +171,5 @@ parseTreeStressQaPolicy(readConfig('config/tree-stress-qa.yaml'));
 const pagesConfig = parsePagesConfig(readConfig('pages.config.yml'));
 assertRequiredFilesExist(pagesConfig.requiredFiles);
 console.log(
-  `Validated ${configFiles.length} YAML config files, ${library.ids.length} tree presets, ${sceneConfig.layout.length} scene entries, and ${pagesConfig.requiredFiles.length} Pages files.`,
+  `Validated ${configFiles.length} YAML config files, ${speciesLibrary.ids.length} species presets (${library.ids.length} demo presets), ${sceneConfig.layout.length} scene entries, and ${pagesConfig.requiredFiles.length} Pages files.`,
 );

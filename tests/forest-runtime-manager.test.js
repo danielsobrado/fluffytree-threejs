@@ -47,7 +47,7 @@ test('chunk state tracker rejects stale completion tokens', () => {
   assert.equal(tracker.get('0:0').currentState, FOREST_CHUNK_STATES.HERO_READY);
 });
 
-test('prioritized queue replaces stale keyed tasks and runs highest priority first', () => {
+test('prioritized queue replaces keyed tasks and runs highest priority first', () => {
   let time = 0;
   const queue = new PrioritizedFrameBudgetQueue({ now: () => time++ });
   const calls = [];
@@ -59,7 +59,7 @@ test('prioritized queue replaces stale keyed tasks and runs highest priority fir
 
   assert.deepEqual(calls, ['replacement', 'other']);
   assert.equal(queue.length, 0);
-  assert.equal(queue.staleSkipCount, 1);
+  assert.equal(queue.supersededCount, 1);
 });
 
 test('forest runtime classifies only nearby candidates with screen-space LOD', () => {

@@ -62,3 +62,33 @@ test('Tree IR validation rejects broken parent references', () => {
 
   assert.throws(() => validateTreeIr(ir), /unknown parent/);
 });
+
+test('Tree IR validation rejects unknown stem and foliage wind references', () => {
+  const stemIr = structuredClone(
+    new TreeGenerator().generateIr(preset, 44, { includeSurfaceSamples: false }),
+  );
+  stemIr.stems[0].windNodeId = 'wind:missing';
+  assert.throws(() => validateTreeIr(stemIr), /unknown wind node/);
+
+  const siteIr = structuredClone(new TreeGenerator().generateIr(preset, 44));
+  siteIr.foliageSites[0].windNodeId = 'wind:missing';
+  assert.throws(() => validateTreeIr(siteIr), /unknown wind node/);
+});
+
+test('Tree IR validation rejects values JSON serialization would silently discard', () => {
+  const ir = structuredClone(
+    new TreeGenerator().generateIr(preset, 44, { includeSurfaceSamples: false }),
+  );
+  ir.metadata.invalidCallback = () => {};
+
+  assert.throws(() => validateTreeIr(ir), /canonical serializable data/);
+});
+
+test('Tree IR seed remains a strict unsigned 32-bit value', () => {
+  const ir = structuredClone(
+    new TreeGenerator().generateIr(preset, 44, { includeSurfaceSamples: false }),
+  );
+  ir.seed = 0x100000000;
+
+  assert.throws(() => validateTreeIr(ir), /unsigned 32-bit integer/);
+});

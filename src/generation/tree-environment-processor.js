@@ -130,6 +130,25 @@ function updateLegacyCrownCenter(metadata, crownVolumes) {
   };
 }
 
+function invalidateLegacyCoverage(metadata, prunedCount) {
+  if (prunedCount <= 0 || !metadata?.legacy?.shellCoverageDiagnostics) return;
+  metadata.legacy.shellCoverageDiagnostics = {
+    ...metadata.legacy.shellCoverageDiagnostics,
+    certified: false,
+    environmentInvalidated: true,
+    environmentPrunedSiteCount: prunedCount,
+  };
+}
+
+function translateLegacyRenderMetadata(site, displacement) {
+  const render = site.metadata?.render;
+  if (!render) return;
+  if (render.position) render.position = translated(render.position, displacement);
+  if (render.surfacePoint) {
+    render.surfacePoint = translated(render.surfacePoint, displacement);
+  }
+}
+
 function hasResponse(response) {
   return Object.values(response).some((value) => value > 0);
 }
@@ -167,7 +186,10 @@ export function applyTreeEnvironment(treeIr, responseInput, environmentInput) {
       environment,
     );
     volume.center = translated(volume.center, displacement);
-    volumeDisplacements.set(volume.metadata?.legacyId, displacement);
+    const legacyId = volume.metadata?.legacyId;
+    if (legacyId !== undefined && legacyId !== null) {
+      volumeDisplacements.set(legacyId, displacement);
+    }
     const competition = volumeInfluence(
       volume.center,
       environment.competitionVolumes,
@@ -193,9 +215,7 @@ export function applyTreeEnvironment(treeIr, responseInput, environmentInput) {
       );
     const position = translated(site.frame.position, displacement);
     site.frame = createTreeIrFrame(position, site.frame.tangent);
-    if (site.metadata?.render?.position) {
-      site.metadata.render.position = { ...position };
-    }
+    translateLegacyRenderMetadata(site, displacement);
     const competition = volumeInfluence(position, environment.competitionVolumes);
     const pruning = volumeInfluence(position, environment.pruningVolumes);
     site.vigor *= 1 - competition * response.competitionSensitivity;
@@ -213,12 +233,14 @@ export function applyTreeEnvironment(treeIr, responseInput, environmentInput) {
     group.foliageSiteIds = group.foliageSiteIds.filter((id) => siteIds.has(id));
   }
 
+  const prunedFoliageSiteCount = treeIr.foliageSites.length - keptSites.length;
   ir.metadata.environment = {
     applied: true,
     response,
     context: environment,
-    prunedFoliageSiteCount: treeIr.foliageSites.length - keptSites.length,
+    prunedFoliageSiteCount,
   };
+  invalidateLegacyCoverage(ir.metadata, prunedFoliageSiteCount);
   updateLegacyCrownCenter(ir.metadata, ir.crownVolumes);
   ir.bounds = createBounds(ir);
   validateTreeIr(ir);
