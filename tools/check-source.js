@@ -13,7 +13,7 @@ const BROWSER_SOURCE_DIRECTORY = 'src';
 const JAVASCRIPT_EXTENSION = '.js';
 const GITHUB_WORKFLOW_DIRECTORY = '.github/workflows';
 const GITHUB_WORKFLOW_PLACEHOLDER = '.gitkeep';
-const ENTRY_HTML = 'index.html';
+const ENTRY_HTML_FILES = Object.freeze(['index.html', 'universal.html']);
 
 function collectJavaScriptFiles(directory) {
   const files = [];
@@ -71,7 +71,9 @@ assertModuleDependencies(importFiles, REPOSITORY_ROOT);
 for (const file of browserFiles) {
   assertNoRelativeDynamicImports(readFileSync(file, 'utf8'), file);
 }
-assertLocalHtmlAssets(join(REPOSITORY_ROOT, ENTRY_HTML), REPOSITORY_ROOT);
+for (const entryHtml of ENTRY_HTML_FILES) {
+  assertLocalHtmlAssets(join(REPOSITORY_ROOT, entryHtml), REPOSITORY_ROOT);
+}
 console.log(
-  `Syntax checked ${files.length} JavaScript files, parsed ${importFiles.length} source module imports, and checked local HTML assets.`,
+  `Syntax checked ${files.length} JavaScript files, parsed ${importFiles.length} source module imports, and checked ${ENTRY_HTML_FILES.length} HTML entry points.`,
 );
