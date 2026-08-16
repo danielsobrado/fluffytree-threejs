@@ -67,7 +67,9 @@ export class FoliageShellBuilder {
       name = 'foliage-shell',
     },
   ) {
-    const outerSelection = selectFoliageLodInstances(treeData.shell, density);
+    const outerSelection = selectFoliageLodInstances(treeData.shell, density, {
+      renderedPlaneCount: planesPerCluster,
+    });
     const outerInstances = outerSelection.instances;
     const interiorInstances = createInteriorInstances(
       treeData,

@@ -1,5 +1,9 @@
 import { FoliageCoverageIndex } from '../generation/foliage-coverage-index.js';
 import { selectDeterministicFoliageMaxCover } from '../generation/foliage-max-cover-selector.js';
+import {
+  createFoliageLodCoverageRepresentation,
+  foliageLodCoverageCacheKey,
+} from './foliage-lod-coverage-representation.js';
 import { FOLIAGE_LOD_CONSTANTS } from './foliage-lod-constants.js';
 
 const SELECTION_CACHE = new WeakMap();
@@ -24,13 +28,13 @@ function calculateScaleCompensation(actualDensity) {
   );
 }
 
-function getCachedSelection(instances, density) {
-  return SELECTION_CACHE.get(instances)?.get(density) ?? null;
+function getCachedSelection(instances, key) {
+  return SELECTION_CACHE.get(instances)?.get(key) ?? null;
 }
 
-function cacheSelection(instances, density, selection) {
+function cacheSelection(instances, key, selection) {
   const entries = SELECTION_CACHE.get(instances) ?? new Map();
-  entries.set(density, selection);
+  entries.set(key, selection);
   SELECTION_CACHE.set(instances, entries);
   return selection;
 }
@@ -110,8 +114,28 @@ function calculateMaximumCoverageRatio(instances, selected) {
   return maximum;
 }
 
-export function selectFoliageLodInstances(instances, density) {
+function mapCoverageSelectionToSource(
+  sourceInstances,
+  coverageInstances,
+  selectedCoverageInstances,
+) {
+  if (coverageInstances === sourceInstances) return selectedCoverageInstances;
+
+  const sourceIndexes = new Map(
+    coverageInstances.map((instance, index) => [instance, index]),
+  );
+  return selectedCoverageInstances.map(
+    (instance) => sourceInstances[sourceIndexes.get(instance)],
+  );
+}
+
+export function selectFoliageLodInstances(
+  instances,
+  density,
+  { renderedPlaneCount = null } = {},
+) {
   validateDensity(density);
+  const cacheKey = foliageLodCoverageCacheKey(density, renderedPlaneCount);
 
   if (instances.length === 0 || density === 0) {
     return Object.freeze({
@@ -121,52 +145,77 @@ export function selectFoliageLodInstances(instances, density) {
       maximumCoverageRatio: 0,
       coverageRepairInvariantCount: 0,
       coverageLimited: false,
+      renderedPlaneCount,
     });
   }
+
+  const coverageInstances = createFoliageLodCoverageRepresentation(
+    instances,
+    renderedPlaneCount,
+  );
 
   if (density === 1) {
     return Object.freeze({
       instances,
       actualDensity: 1,
       scaleCompensation: 1,
-      maximumCoverageRatio: 0,
+      maximumCoverageRatio:
+        coverageInstances === instances
+          ? 0
+          : calculateMaximumCoverageRatio(
+              coverageInstances,
+              coverageInstances,
+            ),
       coverageRepairInvariantCount: instances.filter(isCoverageRepair).length,
       coverageLimited: false,
+      renderedPlaneCount,
     });
   }
 
-  const cached = getCachedSelection(instances, density);
+  const cached = getCachedSelection(instances, cacheKey);
   if (cached) return cached;
 
   const requestedTargetCount = Math.min(
-    instances.length,
-    Math.max(countLobes(instances), Math.round(instances.length * density)),
+    coverageInstances.length,
+    Math.max(
+      countLobes(coverageInstances),
+      Math.round(coverageInstances.length * density),
+    ),
   );
-  const required = selectRequiredCoverageInstances(instances);
+  const required = selectRequiredCoverageInstances(coverageInstances);
   const targetCount = Math.min(
-    instances.length,
+    coverageInstances.length,
     Math.max(requestedTargetCount, required.size),
   );
-  const distribution = selectDeterministicFoliageMaxCover(instances, {
+  const distribution = selectDeterministicFoliageMaxCover(coverageInstances, {
     targetCount,
     stopCoverageRatio: null,
     minimumPerLobe: true,
   });
-  const selected = mergeRequiredWithDistribution(
-    instances,
+  const selectedCoverageInstances = mergeRequiredWithDistribution(
+    coverageInstances,
     required,
     distribution.selected,
     targetCount,
+  );
+  const selected = mapCoverageSelectionToSource(
+    instances,
+    coverageInstances,
+    selectedCoverageInstances,
   );
   const actualDensity = selected.length / instances.length;
   const result = Object.freeze({
     instances: Object.freeze(selected),
     actualDensity,
     scaleCompensation: calculateScaleCompensation(actualDensity),
-    maximumCoverageRatio: calculateMaximumCoverageRatio(instances, selected),
+    maximumCoverageRatio: calculateMaximumCoverageRatio(
+      coverageInstances,
+      selectedCoverageInstances,
+    ),
     coverageRepairInvariantCount: [...required].filter(isCoverageRepair).length,
     coverageLimited: targetCount > requestedTargetCount,
+    renderedPlaneCount,
   });
 
-  return cacheSelection(instances, density, result);
+  return cacheSelection(instances, cacheKey, result);
 }
