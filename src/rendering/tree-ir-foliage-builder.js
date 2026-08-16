@@ -3,6 +3,7 @@ import { FOLIAGE_PRIMITIVE_FAMILIES } from '../generation/tree-ir-schema.js';
 import { TREE_REPRESENTATION_ROLES } from './tree-representation-role.js';
 import { TreeIrFoliageCardBuilder } from './tree-ir-foliage-card-builder.js';
 import { TreeIrFrondBuilder } from './tree-ir-frond-builder.js';
+import { selectTreeIrFrondSites } from './tree-ir-frond-selector.js';
 import { selectTreeIrFoliageSites } from './tree-ir-foliage-selector.js';
 
 function groupByFamily(sites) {
@@ -28,6 +29,20 @@ function cardSettings(role, config) {
   };
 }
 
+function frondSegmentRatio(role, config) {
+  if (role === TREE_REPRESENTATION_ROLES.HERO) return 1;
+  if (role === TREE_REPRESENTATION_ROLES.AGGREGATE) {
+    return config.frondAggregateSegmentRatio;
+  }
+  return config.frondNearSegmentRatio;
+}
+
+function selectFamilySites(treeIr, sites, family, role, density) {
+  return family === FOLIAGE_PRIMITIVE_FAMILIES.FROND
+    ? selectTreeIrFrondSites(treeIr, sites, role, density)
+    : selectTreeIrFoliageSites(treeIr, sites, role, density);
+}
+
 export class TreeIrFoliageBuilder {
   constructor({
     cardBuilder = new TreeIrFoliageCardBuilder(),
@@ -40,25 +55,25 @@ export class TreeIrFoliageBuilder {
   build(treeIr, role, density, config) {
     const group = new THREE.Group();
     group.name = `tree-ir-foliage-${role}`;
-    const selected = selectTreeIrFoliageSites(
-      treeIr,
-      treeIr.foliageSites,
-      role,
-      density,
-    );
-    const familyGroups = groupByFamily(selected);
+    const familyGroups = groupByFamily(treeIr.foliageSites);
+    let selectedSiteCount = 0;
 
-    for (const [family, sites] of familyGroups) {
-      if (family === FOLIAGE_PRIMITIVE_FAMILIES.NONE || sites.length === 0) {
-        continue;
-      }
+    for (const [family, sourceSites] of familyGroups) {
+      if (family === FOLIAGE_PRIMITIVE_FAMILIES.NONE) continue;
+      const sites = selectFamilySites(
+        treeIr,
+        sourceSites,
+        family,
+        role,
+        density,
+      );
+      selectedSiteCount += sites.length;
+      if (sites.length === 0) continue;
+
       if (family === FOLIAGE_PRIMITIVE_FAMILIES.FROND) {
         group.add(
           this.frondBuilder.build(treeIr, sites, {
-            segmentRatio:
-              role === TREE_REPRESENTATION_ROLES.HERO
-                ? 1
-                : config.frondNearSegmentRatio,
+            segmentRatio: frondSegmentRatio(role, config),
             name: `tree-ir-fronds-${role}`,
           }),
         );
@@ -81,7 +96,7 @@ export class TreeIrFoliageBuilder {
     group.userData.foliage = Object.freeze({
       role,
       sourceSiteCount: treeIr.foliageSites.length,
-      selectedSiteCount: selected.length,
+      selectedSiteCount,
       batchCount: group.children.length,
     });
     return group;
