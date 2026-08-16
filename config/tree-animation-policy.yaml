@@ -1,0 +1,19 @@
+animation:
+  maximumHierarchicalTrees: 32
+  maximumReducedTrees: 128
+  roles:
+    hero:
+      mode: hierarchical
+      maximumStemOrder: null
+    near:
+      mode: reduced
+      maximumStemOrder: 2
+    aggregate:
+      mode: primary-sway
+      maximumStemOrder: 1
+    impostor:
+      mode: cheap-sway
+      maximumStemOrder: 0
+    culled:
+      mode: static
+      maximumStemOrder: 0
