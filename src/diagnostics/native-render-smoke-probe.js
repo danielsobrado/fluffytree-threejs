@@ -1,9 +1,6 @@
 import { logger } from '../core/logger.js';
 import { reportQaStatus, serializeQaError } from './qa-status-reporter.js';
-import {
-  TREE_RENDER_REPRESENTATION_ROLES,
-  TREE_REPRESENTATION_ROLES,
-} from '../rendering/tree-representation-role.js';
+import { TREE_RENDER_REPRESENTATION_ROLES } from '../rendering/tree-representation-role.js';
 
 const RENDER_SMOKE_QUERY_VALUE = 'render-smoke';
 const STATUS_ATTRIBUTE = 'renderStatus';
@@ -14,6 +11,14 @@ function isRenderSmokeRequested() {
     new URLSearchParams(window.location.search).get('qa') ===
     RENDER_SMOKE_QUERY_VALUE
   );
+}
+
+function hasDrawableImpostor(lodState) {
+  const impostor = lodState.levels[3].children.find(
+    (child) => child.name === 'tree-impostor',
+  );
+  if (impostor?.material?.map?.image) return true;
+  return Boolean(lodState.billboardBatch?.batch?.atlas?.texture?.image);
 }
 
 function collectNativeMetrics(scene) {
@@ -35,6 +40,7 @@ function collectNativeMetrics(scene) {
     impostorDrawCalls: 0,
     frondBatchCount: 0,
     foliageCardBatchCount: 0,
+    billboardBatchTreeCount: 0,
   };
 
   for (const tree of trees) {
@@ -65,14 +71,10 @@ function collectNativeMetrics(scene) {
       }
     });
 
-    metrics.heroDrawCalls +=
-      lodState.levels[0].userData.lod.drawCalls;
-    metrics.nearDrawCalls +=
-      lodState.levels[1].userData.lod.drawCalls;
-    metrics.aggregateDrawCalls +=
-      lodState.levels[2].userData.lod.drawCalls;
-    metrics.impostorDrawCalls +=
-      lodState.levels[3].userData.lod.drawCalls;
+    metrics.heroDrawCalls += lodState.levels[0].userData.lod.drawCalls;
+    metrics.nearDrawCalls += lodState.levels[1].userData.lod.drawCalls;
+    metrics.aggregateDrawCalls += lodState.levels[2].userData.lod.drawCalls;
+    metrics.impostorDrawCalls += lodState.levels[3].userData.lod.drawCalls;
 
     let hasFronds = false;
     let hasFoliageCards = false;
@@ -105,12 +107,10 @@ function collectNativeMetrics(scene) {
     if (!lodState.shadowProxy) {
       throw new Error(`Native tree '${treeState.presetId}' has no shadow proxy.`);
     }
-    const impostor = lodState.levels[3].children.find(
-      (child) => child.name === 'tree-impostor',
-    );
-    if (!impostor?.material?.map?.image) {
+    if (!hasDrawableImpostor(lodState)) {
       throw new Error(`Native tree '${treeState.presetId}' has no drawable impostor.`);
     }
+    if (lodState.billboardBatch) metrics.billboardBatchTreeCount += 1;
   }
 
   if (metrics.palmCount === 0 || metrics.broadleafCount === 0) {
