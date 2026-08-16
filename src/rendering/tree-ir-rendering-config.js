@@ -120,6 +120,18 @@ export function parseTreeIrRenderingConfig(config) {
         1,
         'treeIrRendering.directIr.foliage.frondNearSegmentRatio',
       ),
+      frondAggregateDensity: requireRange(
+        foliage.frondAggregateDensity,
+        0.2,
+        1,
+        'treeIrRendering.directIr.foliage.frondAggregateDensity',
+      ),
+      frondAggregateSegmentRatio: requireRange(
+        foliage.frondAggregateSegmentRatio,
+        0.2,
+        1,
+        'treeIrRendering.directIr.foliage.frondAggregateSegmentRatio',
+      ),
     }),
     shadow: parseStructure(shadow, 'treeIrRendering.directIr.shadow'),
   });
