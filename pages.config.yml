@@ -3,12 +3,19 @@ sourceBranch: main
 publishBranch: gh-pages
 requiredFiles:
   - index.html
+  - universal.html
   - styles/main.css
   - src/bootstrap-fallback.js
   - src/main.js
+  - src/universal-main.js
   - config/release.yaml
   - config/scene.yaml
   - config/tree-presets.yaml
+  - config/palm-presets.yaml
+  - config/advanced-broadleaf-presets.yaml
+  - config/tree-quality-profiles.yaml
+  - config/tree-ir-rendering.yaml
+  - config/universal-showcase-layout.yaml
   - config/foliage-continuity.yaml
   - config/shell-coverage-qa.yaml
   - config/tree-stress-qa.yaml
