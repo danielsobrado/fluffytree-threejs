@@ -1,0 +1,17 @@
+layout:
+  - preset: spreadingOak
+    seed: 401111
+    position: [-7.0, 0, 0.8]
+    rotationY: 0.28
+  - preset: umbrellaBroadleaf
+    seed: 402211
+    position: [-2.0, 0, -0.8]
+    rotationY: -0.46
+  - preset: coconutPalm
+    seed: 403321
+    position: [4.0, 0, 0.6]
+    rotationY: 0.18
+  - preset: datePalm
+    seed: 404431
+    position: [9.0, 0, -0.4]
+    rotationY: -0.3
