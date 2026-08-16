@@ -3,90 +3,18 @@ import { CrownEnvelope } from './crown-envelope.js';
 import { createCrownSummary } from './crown-summary.js';
 import { FoliageShellGenerator } from './foliage-shell-generator.js';
 import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
-import { lobeAxisAlignedExtents } from './lobe-geometry.js';
 import { LobeConnectionAnalyzer } from './lobe-connection-analyzer.js';
 import { LobeConnectivityEnforcer } from './lobe-connectivity-enforcer.js';
 import { LobeGenerator } from './lobe-generator.js';
+import {
+  createEmptyFoliageShell,
+  createLegacyTreeData,
+} from './legacy-tree-data-factory.js';
 import { SeededRandom } from './seeded-random.js';
-import { DEFAULT_TREE_GENERATION_MODEL } from './tree-generation-model.js';
+import { createTreeIrFromLegacyTreeData } from './tree-ir-from-legacy-data.js';
 
 function createShellSeed(seed) {
   return (Number(seed) ^ FOLIAGE_SHELL_CONSTANTS.seedSalt) >>> 0;
-}
-
-function createEmptyCoverageCertification() {
-  return Object.freeze({
-    maximumCoverageRatio: 0,
-    certified: true,
-    emergencyUsed: false,
-    normalRepairCount: 0,
-    emergencyRepairCount: 0,
-    remainingHoleCount: 0,
-    unresolvedTriangleCount: 0,
-    maximumSubdivisionDepthReached: 0,
-  });
-}
-
-function createEmptySurfaceSamples(lobes) {
-  return {
-    instances: [],
-    lobeExposure: lobes.map(() => 1),
-    maximumCandidateCoverageRatio: 0,
-    coverageCertification: createEmptyCoverageCertification(),
-  };
-}
-
-function createClumpRecords(lobes, branches) {
-  const terminalBranchIds = new Map();
-  for (const branch of branches) {
-    if (!terminalBranchIds.has(branch.macroClumpId)) {
-      terminalBranchIds.set(branch.macroClumpId, []);
-    }
-    terminalBranchIds.get(branch.macroClumpId).push(branch.id);
-  }
-
-  const records = new Map();
-  for (const lobe of lobes) {
-    if (!records.has(lobe.macroClumpId)) {
-      records.set(lobe.macroClumpId, {
-        id: lobe.macroClumpId,
-        lobeIds: [],
-        branchIds: new Set(),
-      });
-    }
-    const record = records.get(lobe.macroClumpId);
-    record.lobeIds.push(lobe.id);
-    record.branchIds.add(lobe.branchId);
-  }
-
-  return Object.freeze(
-    [...records.values()].map((record) =>
-      Object.freeze({
-        id: record.id,
-        lobeIds: Object.freeze(record.lobeIds),
-        branchIds: Object.freeze([...record.branchIds]),
-        terminalBranchIds: Object.freeze(terminalBranchIds.get(record.id) ?? []),
-      }),
-    ),
-  );
-}
-
-function createBounds(height, lobes) {
-  const minimum = { x: 0, y: 0, z: 0 };
-  const maximum = { x: 0, y: height, z: 0 };
-  for (const lobe of lobes) {
-    const extent = lobeAxisAlignedExtents(lobe);
-    minimum.x = Math.min(minimum.x, lobe.position.x - extent.x);
-    minimum.y = Math.min(minimum.y, lobe.position.y - extent.y);
-    minimum.z = Math.min(minimum.z, lobe.position.z - extent.z);
-    maximum.x = Math.max(maximum.x, lobe.position.x + extent.x);
-    maximum.y = Math.max(maximum.y, lobe.position.y + extent.y);
-    maximum.z = Math.max(maximum.z, lobe.position.z + extent.z);
-  }
-  return Object.freeze({
-    minimum: Object.freeze(minimum),
-    maximum: Object.freeze(maximum),
-  });
 }
 
 export class CrownLobeTreeGenerator {
@@ -125,43 +53,19 @@ export class CrownLobeTreeGenerator {
           lobes,
           new SeededRandom(createShellSeed(seed)),
         )
-      : createEmptySurfaceSamples(lobes);
-
-    const tree = {
-      presetId: preset.id,
-      generationModel: preset.generationModel ?? DEFAULT_TREE_GENERATION_MODEL,
+      : createEmptyFoliageShell(lobes);
+    const treeData = createLegacyTreeData({
+      preset,
       seed,
-      height: preset.height,
-      crownProfile: preset.crown.profile,
-      crownCenter: crown.center,
-      continuity: preset.continuity ?? null,
-      lobes: Object.freeze(lobes),
+      lobes,
       lobeConnections,
-      lobeExposure: Object.freeze(shell.lobeExposure),
-      shell: Object.freeze(shell.instances),
-      shellCandidateCoverageRatio: shell.maximumCandidateCoverageRatio,
-      shellCoverageDiagnostics: shell.coverageCertification,
-      trunk: Object.freeze(structure.trunk),
-      branches: Object.freeze(structure.branches),
-      branchGraph: Object.freeze({
-        trunk: Object.freeze(structure.trunk),
-        branches: Object.freeze(structure.branches),
-      }),
-      clumps: createClumpRecords(lobes, structure.branches),
-      sprayRecords: Object.freeze(shell.instances),
-      bounds: createBounds(preset.height, lobes),
-      palette: preset.foliage,
-      trunkColor: preset.trunk.color,
-      barkPalette: preset.trunk.barkPalette,
-    };
+      shell,
+      structure,
+      crownCenter: crown.center,
+      lodCostAnalyzer: this.lodCostAnalyzer,
+      includeLodCostSummaries,
+    });
 
-    if (includeLodCostSummaries) {
-      if (typeof this.lodCostAnalyzer !== 'function') {
-        throw new Error('LOD cost summaries require an injected analyzer.');
-      }
-      tree.lodCostSummaries = this.lodCostAnalyzer(tree);
-    }
-
-    return Object.freeze(tree);
+    return createTreeIrFromLegacyTreeData(treeData);
   }
 }

@@ -3,14 +3,13 @@ import {
   DEFAULT_TREE_GENERATION_MODEL,
   resolveTreeGenerationModelId,
 } from './tree-generation-model.js';
+import { adaptTreeIrToLegacyTreeData } from './tree-ir-legacy-adapter.js';
+import { validateTreeIr } from './tree-ir-validator.js';
 
 function modelEntries(modelGenerators) {
   if (modelGenerators === null || modelGenerators === undefined) return [];
   if (modelGenerators instanceof Map) return modelGenerators.entries();
-  if (
-    typeof modelGenerators === 'object' &&
-    !Array.isArray(modelGenerators)
-  ) {
+  if (typeof modelGenerators === 'object' && !Array.isArray(modelGenerators)) {
     return Object.entries(modelGenerators);
   }
   throw new TypeError('Tree modelGenerators must be a Map or plain object.');
@@ -45,7 +44,7 @@ export class TreeGenerator {
     return this;
   }
 
-  generate(preset, seed, options = {}) {
+  generateIr(preset, seed, options = {}) {
     const modelId = resolveTreeGenerationModelId(
       preset?.generationModel,
       `${preset?.id ?? 'tree'}.generationModel`,
@@ -56,6 +55,17 @@ export class TreeGenerator {
       throw new Error(`Unsupported tree generation model '${modelId}'.`);
     }
 
-    return generator.generate(preset, seed, options);
+    const ir = generator.generate(preset, seed, options);
+    validateTreeIr(ir);
+    if (ir.generationModel !== modelId) {
+      throw new Error(
+        `Tree generation model '${modelId}' returned IR for '${ir.generationModel}'.`,
+      );
+    }
+    return ir;
+  }
+
+  generate(preset, seed, options = {}) {
+    return adaptTreeIrToLegacyTreeData(this.generateIr(preset, seed, options));
   }
 }

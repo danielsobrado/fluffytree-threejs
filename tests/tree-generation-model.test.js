@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { PresetLibrary } from '../src/domain/preset-library.js';
+import { CrownLobeTreeGenerator } from '../src/generation/crown-lobe-tree-generator.js';
 import {
   DEFAULT_TREE_GENERATION_MODEL,
   resolveTreeGenerationModelId,
@@ -49,22 +50,48 @@ test('tree generation model ids are normalized and validated', () => {
 
 test('tree generator dispatches presets to registered generation models', () => {
   const calls = [];
+  const baseGenerator = new CrownLobeTreeGenerator();
   const customGenerator = {
     generate(preset, seed, options) {
       calls.push({ preset, seed, options });
-      return Object.freeze({ presetId: preset.id, seed, custom: true });
+      return baseGenerator.generate(preset, seed, options);
     },
   };
   const generator = new TreeGenerator({
     modelGenerators: { synthetic: customGenerator },
   });
-  const preset = Object.freeze({ id: 'test', generationModel: 'synthetic' });
+  const preset = createTestPreset({
+    root: { generationModel: 'synthetic' },
+  });
   const options = Object.freeze({ includeSurfaceSamples: false });
 
-  const tree = generator.generate(preset, 42, options);
+  const ir = generator.generateIr(preset, 42, options);
 
-  assert.deepEqual(tree, { presetId: 'test', seed: 42, custom: true });
+  assert.equal(ir.presetId, 'test');
+  assert.equal(ir.generationModel, 'synthetic');
   assert.deepEqual(calls, [{ preset, seed: 42, options }]);
+});
+
+test('tree generator rejects a model returning IR for another model id', () => {
+  const generator = new TreeGenerator();
+  const preset = createTestPreset({
+    root: { generationModel: 'synthetic' },
+  });
+  const mismatched = {
+    generate() {
+      return new CrownLobeTreeGenerator().generate(
+        createTestPreset(),
+        1,
+        { includeSurfaceSamples: false },
+      );
+    },
+  };
+  generator.register('synthetic', mismatched);
+
+  assert.throws(
+    () => generator.generateIr(preset, 1),
+    /returned IR for 'crown-lobe'/,
+  );
 });
 
 test('tree generator rejects unsupported generation models', () => {
