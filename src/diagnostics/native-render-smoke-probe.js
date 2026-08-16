@@ -1,5 +1,10 @@
 import { logger } from '../core/logger.js';
 import { reportQaStatus, serializeQaError } from './qa-status-reporter.js';
+import {
+  restoreObjectLodFade,
+  setObjectLodFade,
+  snapshotObjectLodFade,
+} from '../rendering/lod-dither-fade.js';
 import { TREE_RENDER_REPRESENTATION_ROLES } from '../rendering/tree-representation-role.js';
 
 const RENDER_SMOKE_QUERY_VALUE = 'render-smoke';
@@ -13,6 +18,14 @@ function isRenderSmokeRequested() {
   );
 }
 
+function findNativeTrees(scene) {
+  const trees = [];
+  scene.traverse((object) => {
+    if (object.userData?.tree && object.userData?.lod?.levels) trees.push(object);
+  });
+  return trees;
+}
+
 function hasDrawableImpostor(lodState) {
   const impostor = lodState.levels[3].children.find(
     (child) => child.name === 'tree-impostor',
@@ -21,11 +34,7 @@ function hasDrawableImpostor(lodState) {
   return Boolean(lodState.billboardBatch?.batch?.atlas?.texture?.image);
 }
 
-function collectNativeMetrics(scene) {
-  const trees = [];
-  scene.traverse((object) => {
-    if (object.userData?.tree && object.userData?.lod?.levels) trees.push(object);
-  });
+function collectNativeMetrics(trees) {
   if (trees.length === 0) {
     throw new Error('Native render smoke found no Tree IR trees.');
   }
@@ -119,6 +128,37 @@ function collectNativeMetrics(scene) {
   return metrics;
 }
 
+async function compileAllRepresentations(renderer, scene, camera, trees) {
+  const levelSnapshots = [];
+  const batchVisibility = new Map();
+
+  try {
+    for (const tree of trees) {
+      const lodState = tree.userData.lod;
+      for (const level of lodState.levels) {
+        levelSnapshots.push([level, snapshotObjectLodFade(level)]);
+        setObjectLodFade(level, 1);
+      }
+      const batchMesh = lodState.billboardBatch?.batch?.mesh;
+      if (batchMesh && !batchVisibility.has(batchMesh)) {
+        batchVisibility.set(batchMesh, batchMesh.visible);
+        batchMesh.visible = true;
+      }
+    }
+
+    if (typeof renderer.compileAsync === 'function') {
+      await renderer.compileAsync(scene, camera);
+    } else {
+      renderer.compile(scene, camera);
+    }
+  } finally {
+    for (const [level, snapshot] of levelSnapshots) {
+      restoreObjectLodFade(level, snapshot);
+    }
+    for (const [mesh, visible] of batchVisibility) mesh.visible = visible;
+  }
+}
+
 export class NativeRenderSmokeProbe {
   constructor({ root = document.documentElement } = {}) {
     this.root = root;
@@ -143,12 +183,9 @@ export class NativeRenderSmokeProbe {
     if (!this.enabled) return;
 
     try {
-      const metrics = collectNativeMetrics(scene);
-      if (typeof renderer.compileAsync === 'function') {
-        await renderer.compileAsync(scene, camera);
-      } else {
-        renderer.compile(scene, camera);
-      }
+      const trees = findNativeTrees(scene);
+      const metrics = collectNativeMetrics(trees);
+      await compileAllRepresentations(renderer, scene, camera, trees);
       if (this.failed) return;
 
       this.root.dataset[STATUS_ATTRIBUTE] = 'ready';
