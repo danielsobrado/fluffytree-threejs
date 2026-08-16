@@ -20,6 +20,7 @@ const CONFIG_PATH = path.join(REPOSITORY_ROOT, 'pages.config.yml');
 const LOG_PREFIX = '[pages]';
 const SOURCE_MARKER = '.pages-source-sha';
 const RELEASE_PATH = 'config/release.yaml';
+const HTML_ENTRY_PATHS = Object.freeze(['index.html', 'universal.html']);
 
 function log(message) {
   console.log(`${LOG_PREFIX} ${message}`);
@@ -77,11 +78,15 @@ function stampPublishedFiles(workspace, sourceSha) {
     path.join(workspace, 'src'),
     cacheKey,
   );
-  const indexPath = path.join(workspace, 'index.html');
-  const currentIndex = readFileSync(indexPath, 'utf8');
-  writeFileSync(indexPath, versionHtmlAssets(currentIndex, cacheKey));
+  for (const entryPath of HTML_ENTRY_PATHS) {
+    const htmlPath = path.join(workspace, entryPath);
+    const currentHtml = readFileSync(htmlPath, 'utf8');
+    writeFileSync(htmlPath, versionHtmlAssets(currentHtml, cacheKey));
+  }
   writeFileSync(path.join(workspace, SOURCE_MARKER), `${sourceSha}\n`);
-  log(`Versioned ${changedModules} JavaScript modules with ${cacheKey}.`);
+  log(
+    `Versioned ${changedModules} JavaScript modules and ${HTML_ENTRY_PATHS.length} HTML entry points with ${cacheKey}.`,
+  );
 }
 
 function currentPublishedSource(publishRef) {
