@@ -83,6 +83,12 @@ export class TreeIrFoliageBuilder {
         group.add(
           this.frondBuilder.build(treeIr, sites, {
             segmentRatio: frondSegmentRatio(role, config),
+            leaflets:
+              role === TREE_REPRESENTATION_ROLES.HERO &&
+              config.frondHeroLeaflets,
+            rachisWidthRatio: config.frondRachisWidthRatio,
+            leafletLengthRatio: config.frondLeafletLengthRatio,
+            leafletWidthRatio: config.frondLeafletWidthRatio,
             name: `tree-ir-fronds-${role}`,
           }),
         );
