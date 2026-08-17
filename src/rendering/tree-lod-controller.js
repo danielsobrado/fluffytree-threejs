@@ -7,6 +7,7 @@ import {
   resolveStableLod,
 } from './tree-lod-math.js';
 import {
+  calculateCameraFocalPixels,
   calculateProjectedTreePixels,
   resolveTreeWorldScale,
 } from './tree-projection-math.js';
@@ -56,6 +57,7 @@ export class TreeLodController {
     this.entries = [];
     this.worldPosition = new THREE.Vector3();
     this.worldScale = new THREE.Vector3();
+    this.cameraWorldPosition = new THREE.Vector3();
     this.dirty = true;
     this.lastCameraX = Number.NaN;
     this.lastCameraY = Number.NaN;
@@ -153,7 +155,8 @@ export class TreeLodController {
   }
 
   inputsChanged(camera, viewportHeight) {
-    const position = camera.position;
+    camera.getWorldPosition(this.cameraWorldPosition);
+    const position = this.cameraWorldPosition;
     const settings = this.settings;
     return (
       this.dirty ||
@@ -173,7 +176,7 @@ export class TreeLodController {
   }
 
   captureInputs(camera, viewportHeight) {
-    const position = camera.position;
+    const position = this.cameraWorldPosition;
     const settings = this.settings;
     this.lastCameraX = position.x;
     this.lastCameraY = position.y;
@@ -200,9 +203,7 @@ export class TreeLodController {
 
     this.focalCameraFov = camera.fov;
     this.focalViewportHeight = viewportHeight;
-    this.focalPixels =
-      viewportHeight /
-      (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) * 0.5));
+    this.focalPixels = calculateCameraFocalPixels(camera.fov, viewportHeight);
     return this.focalPixels;
   }
 
@@ -220,7 +221,7 @@ export class TreeLodController {
       entry.tree.getWorldScale(this.worldScale);
       const distance = Math.max(
         MINIMUM_TREE_DISTANCE,
-        camera.position.distanceTo(this.worldPosition),
+        this.cameraWorldPosition.distanceTo(this.worldPosition),
       );
       const projectedPixels = calculateProjectedTreePixels(
         treeState.height,
