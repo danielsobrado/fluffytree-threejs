@@ -23,6 +23,7 @@ directIr:
     nearBrightness: 0.78
     aggregateBrightness: 0.88
     shapeVariation: 0.08
+    surfaceVariation: 0.07
   foliage:
     alphaResolution: 96
     alphaTest: 0.38
