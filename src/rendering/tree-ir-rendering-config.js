@@ -227,6 +227,10 @@ function parseFoliage(source) {
       source.frondHeroLeaflets,
       'treeIrRendering.directIr.foliage.frondHeroLeaflets',
     ),
+    frondNearLeaflets: requireBoolean(
+      source.frondNearLeaflets,
+      'treeIrRendering.directIr.foliage.frondNearLeaflets',
+    ),
     frondRachisWidthRatio: requireRange(
       source.frondRachisWidthRatio,
       0.02,
@@ -273,6 +277,11 @@ function parseFoliage(source) {
   if (foliage.nearAlphaTest > foliage.alphaTest) {
     throw new RangeError(
       'treeIrRendering.directIr.foliage.nearAlphaTest must not exceed alphaTest.',
+    );
+  }
+  if (foliage.frondNearLeaflets && !foliage.frondHeroLeaflets) {
+    throw new RangeError(
+      'treeIrRendering.directIr.foliage.frondNearLeaflets requires frondHeroLeaflets.',
     );
   }
   if (foliage.frondAggregateSegmentRatio > foliage.frondNearSegmentRatio) {
