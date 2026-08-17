@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { TreeIrFrondGeometryFactory } from './tree-ir-frond-geometry-factory.js';
+import { configureTreeIrFrondWindMaterial } from './tree-ir-frond-wind-material.js';
 
 export class TreeIrFrondBuilder {
   constructor({ geometryFactory = new TreeIrFrondGeometryFactory() } = {}) {
@@ -33,13 +34,15 @@ export class TreeIrFrondBuilder {
     try {
       merged = mergeGeometries(geometries, false);
       if (!merged) throw new Error('Failed to merge Tree IR frond geometry.');
-      material = new THREE.MeshStandardMaterial({
-        vertexColors: true,
-        side: THREE.DoubleSide,
-        roughness: Number(treeIr.metadata.material.foliageRoughness ?? 0.86),
-        metalness: 0,
-        fog: true,
-      });
+      material = configureTreeIrFrondWindMaterial(
+        new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          side: THREE.DoubleSide,
+          roughness: Number(treeIr.metadata.material.foliageRoughness ?? 0.86),
+          metalness: 0,
+          fog: true,
+        }),
+      );
       const mesh = new THREE.Mesh(merged, material);
       mesh.name = name;
       mesh.castShadow = false;
