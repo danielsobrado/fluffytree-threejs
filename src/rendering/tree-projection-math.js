@@ -17,7 +17,24 @@ export function calculateCameraFocalPixels(fieldOfViewDegrees, viewportHeight) {
   );
 }
 
-export function calculateProjectedTreePixels(height, distance, focalPixels) {
+export function resolveTreeWorldScale(scale) {
+  if (
+    !scale ||
+    !Number.isFinite(scale.x) ||
+    !Number.isFinite(scale.y) ||
+    !Number.isFinite(scale.z)
+  ) {
+    throw new TypeError('Tree world scale must contain finite x, y, and z values.');
+  }
+  return Math.max(Math.abs(scale.x), Math.abs(scale.y), Math.abs(scale.z));
+}
+
+export function calculateProjectedTreePixels(
+  height,
+  distance,
+  focalPixels,
+  worldScale = 1,
+) {
   if (!Number.isFinite(height) || height <= 0) {
     throw new RangeError('Tree height must be positive.');
   }
@@ -27,5 +44,8 @@ export function calculateProjectedTreePixels(height, distance, focalPixels) {
   if (!Number.isFinite(focalPixels) || focalPixels <= 0) {
     throw new RangeError('Camera focal pixels must be positive.');
   }
-  return (height / distance) * focalPixels;
+  if (!Number.isFinite(worldScale) || worldScale < 0) {
+    throw new RangeError('Tree world scale must be a finite non-negative number.');
+  }
+  return (height * worldScale * focalPixels) / distance;
 }
