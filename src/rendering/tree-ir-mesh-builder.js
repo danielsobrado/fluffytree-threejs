@@ -61,14 +61,26 @@ function isFrondOnly(treeIr) {
 
 function crownSettings(role, config) {
   if (role === TREE_REPRESENTATION_ROLES.HERO) {
-    return { detail: config.heroDetail, scaleMultiplier: config.heroScale };
+    return {
+      detail: config.heroDetail,
+      scaleMultiplier: config.heroScale,
+      brightness: config.heroBrightness,
+      shapeVariation: config.shapeVariation,
+    };
   }
   if (role === TREE_REPRESENTATION_ROLES.NEAR) {
-    return { detail: config.nearDetail, scaleMultiplier: config.nearScale };
+    return {
+      detail: config.nearDetail,
+      scaleMultiplier: config.nearScale,
+      brightness: config.nearBrightness,
+      shapeVariation: config.shapeVariation,
+    };
   }
   return {
     detail: config.aggregateDetail,
     scaleMultiplier: config.aggregateScale,
+    brightness: config.aggregateBrightness,
+    shapeVariation: config.shapeVariation,
   };
 }
 
@@ -170,6 +182,8 @@ function createShadowProxy(
       const crown = crownBuilder.build(treeIr, {
         detail: renderingConfig.crown.aggregateDetail,
         scaleMultiplier: renderingConfig.crown.aggregateScale,
+        brightness: 1,
+        shapeVariation: renderingConfig.crown.shapeVariation,
         castShadow: true,
         receiveShadow: false,
         name: 'tree-ir-crown-shadow-proxy',
