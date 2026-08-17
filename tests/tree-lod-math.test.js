@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   calculateLodWeights,
+  calculateProjectedTreePixels,
   remapUnavailableLodWeights,
   resolveStableLod,
+  resolveTreeWorldScale,
 } from '../src/rendering/tree-lod-math.js';
 
 const SETTINGS = Object.freeze({
@@ -67,4 +69,23 @@ test('LOD weights can reuse caller-owned buffers', () => {
     weights,
   );
   assert.deepEqual(weights, [0, 0, 1, 0]);
+});
+
+test('projected tree size accounts for inherited world scale', () => {
+  const worldScale = resolveTreeWorldScale({ x: -2, y: 0.5, z: 1.5 });
+
+  assert.equal(worldScale, 2);
+  assert.equal(calculateProjectedTreePixels(10, 20, 100, worldScale), 100);
+  assert.equal(calculateProjectedTreePixels(10, 20, 100, 1), 50);
+});
+
+test('tree projection helpers reject invalid transform data', () => {
+  assert.throws(
+    () => resolveTreeWorldScale({ x: 1, y: Number.NaN, z: 1 }),
+    /finite x, y, and z/,
+  );
+  assert.throws(
+    () => calculateProjectedTreePixels(10, -1, 100, 1),
+    /distance/,
+  );
 });
