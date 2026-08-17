@@ -36,6 +36,7 @@ directIr:
     cardStretch: 0.12
     cardTwist: 0.32
     frondHeroLeaflets: true
+    frondNearLeaflets: true
     frondRachisWidthRatio: 0.075
     frondLeafletLengthRatio: 0.95
     frondLeafletWidthRatio: 0.68
