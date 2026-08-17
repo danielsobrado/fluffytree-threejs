@@ -3,7 +3,7 @@ import test from 'node:test';
 import * as THREE from 'three';
 import { configureTreeIrFrondWindMaterial } from '../src/rendering/tree-ir-frond-wind-material.js';
 
-test('palm frond wind material compiles anchored zero-based deformation inputs', () => {
+test('palm frond wind material combines coherent sway with zero-based local flutter', () => {
   const material = configureTreeIrFrondWindMaterial(
     new THREE.MeshStandardMaterial(),
   );
@@ -17,11 +17,13 @@ test('palm frond wind material compiles anchored zero-based deformation inputs',
     assert.ok(shader.vertexShader.includes('treeFrondWindWeight'));
     assert.ok(shader.vertexShader.includes('treeFrondWindPhase'));
     assert.ok(shader.vertexShader.includes('uniform float uTreeWindTime'));
-    assert.ok(shader.vertexShader.includes('frondWindSecondary'));
-    assert.ok(shader.vertexShader.includes('-\n          sin(frondWindPhase)'));
+    assert.ok(shader.vertexShader.includes('treePrimary'));
+    assert.ok(shader.vertexShader.includes('treeCross'));
+    assert.ok(shader.vertexShader.includes('frondFlutter'));
+    assert.ok(shader.vertexShader.includes('sin(frondFlutterPhase)'));
     assert.ok(shader.uniforms.uTreeWindTime);
     assert.ok(material.userData.windState);
-    assert.equal(material.customProgramCacheKey(), 'tree-ir-frond-wind-v2');
+    assert.equal(material.customProgramCacheKey(), 'tree-ir-frond-wind-v3');
   } finally {
     material.dispose();
   }
