@@ -6,6 +6,8 @@ import {
 
 const PRIMARY_SCALE = TREE_WIND_PROFILE.primaryTimeScale.toFixed(4);
 const SECONDARY_SCALE = TREE_WIND_PROFILE.secondaryTimeScale.toFixed(4);
+const SECONDARY_PHASE_SCALE =
+  TREE_WIND_PROFILE.secondaryPhaseScale.toFixed(4);
 
 export function configureTreeIrFrondWindMaterial(material) {
   const windState = createTreeWindState();
@@ -25,31 +27,33 @@ export function configureTreeIrFrondWindMaterial(material) {
       `
         #include <begin_vertex>
         float frondWindWeight = clamp(treeFrondWindWeight, 0.0, 1.0);
-        float frondWindPhase = uTreeWindPhase + treeFrondWindPhase;
-        float frondPrimary =
-          sin(uTreeWindTime * ${PRIMARY_SCALE} + frondWindPhase) -
-          sin(frondWindPhase);
-        float frondSecondaryPhase =
-          frondWindPhase * 1.63 + frondWindWeight * 5.4;
-        float frondSecondary =
-          sin(uTreeWindTime * ${SECONDARY_SCALE} * 1.45 + frondSecondaryPhase) -
-          sin(frondSecondaryPhase);
-        float frondCross =
-          cos(uTreeWindTime * ${SECONDARY_SCALE} + frondWindPhase) -
-          cos(frondWindPhase);
+        float treePrimary =
+          sin(uTreeWindTime * ${PRIMARY_SCALE} + uTreeWindPhase) -
+          sin(uTreeWindPhase);
+        float treeCrossPhase =
+          uTreeWindPhase * ${SECONDARY_PHASE_SCALE};
+        float treeCross =
+          sin(uTreeWindTime * ${SECONDARY_SCALE} + treeCrossPhase) -
+          sin(treeCrossPhase);
+        float frondFlutterPhase =
+          treeFrondWindPhase * 1.63 + frondWindWeight * 5.4;
+        float frondFlutter =
+          sin(uTreeWindTime * ${SECONDARY_SCALE} * 1.55 + frondFlutterPhase) -
+          sin(frondFlutterPhase);
         transformed.x +=
-          (frondPrimary * 0.72 + frondSecondary * 0.16) *
+          (treePrimary * 0.72 + frondFlutter * 0.12) *
           uTreeWindStrength * frondWindWeight;
         transformed.z +=
-          (frondCross * 0.52 + frondSecondary * 0.12) *
+          (treeCross * 0.48 +
+          frondFlutter * cos(treeFrondWindPhase) * 0.12) *
           uTreeWindStrength * frondWindWeight;
         transformed.y +=
-          frondSecondary * uTreeWindStrength * frondWindWeight * 0.12;
+          frondFlutter * uTreeWindStrength * frondWindWeight * 0.1;
       `,
     );
     material.userData.shader = shader;
   };
-  material.customProgramCacheKey = () => 'tree-ir-frond-wind-v2';
+  material.customProgramCacheKey = () => 'tree-ir-frond-wind-v3';
   material.needsUpdate = true;
   return material;
 }
