@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { hashCanonicalValue } from '../core/canonical-value-hash.js';
 import { createTreeIrFoliageAlphaTexture } from './tree-ir-foliage-alpha-texture.js';
+import { calculateTreeIrFoliageCardStyle } from './tree-ir-foliage-card-style.js';
 import { setTreeIrPaletteColor } from './tree-ir-palette.js';
 
 function createCardGeometry(planeCount) {
@@ -28,11 +28,6 @@ function siteScale(site) {
   );
 }
 
-function siteColorMix(treeIr, site) {
-  const hash = hashCanonicalValue([treeIr.seed, site.id]);
-  return (Number.parseInt(hash.slice(0, 8), 16) >>> 0) / 0x100000000;
-}
-
 export class TreeIrFoliageCardBuilder {
   build(
     treeIr,
@@ -43,6 +38,9 @@ export class TreeIrFoliageCardBuilder {
       alphaResolution,
       alphaTest,
       scaleMultiplier = 1,
+      cardScaleVariation = 0,
+      cardStretch = 0,
+      cardTwist = 0,
       name = 'tree-ir-foliage-cards',
     },
   ) {
@@ -71,12 +69,19 @@ export class TreeIrFoliageCardBuilder {
       const matrix = new THREE.Matrix4();
       const position = new THREE.Vector3();
       const quaternion = new THREE.Quaternion();
+      const localTwist = new THREE.Quaternion();
       const scale = new THREE.Vector3();
       const xAxis = new THREE.Vector3();
       const yAxis = new THREE.Vector3();
       const zAxis = new THREE.Vector3();
+      const localYAxis = new THREE.Vector3(0, 1, 0);
       const color = new THREE.Color();
       const palette = treeIr.metadata.material.foliagePalette;
+      const styleConfig = {
+        cardScaleVariation,
+        cardStretch,
+        cardTwist,
+      };
 
       sites.forEach((site, index) => {
         position.set(site.frame.position.x, site.frame.position.y, site.frame.position.z);
@@ -85,13 +90,28 @@ export class TreeIrFoliageCardBuilder {
         zAxis.set(site.frame.binormal.x, site.frame.binormal.y, site.frame.binormal.z);
         basisMatrix.makeBasis(xAxis, yAxis, zAxis);
         quaternion.setFromRotationMatrix(basisMatrix);
+        const style = calculateTreeIrFoliageCardStyle(
+          treeIr,
+          site,
+          styleConfig,
+        );
+        localTwist.setFromAxisAngle(localYAxis, style.twist);
+        quaternion.multiply(localTwist);
         const size = Math.max(0.01, siteScale(site) * scaleMultiplier);
-        scale.set(size, size, size);
+        scale.set(
+          size * style.widthScale,
+          size * style.heightScale,
+          size * style.widthScale,
+        );
         matrix.compose(position, quaternion, scale);
         mesh.setMatrixAt(index, matrix);
         mesh.setColorAt(
           index,
-          setTreeIrPaletteColor(color, palette, siteColorMix(treeIr, site)),
+          setTreeIrPaletteColor(
+            color,
+            palette,
+            style.brightness * 0.5 + 0.25,
+          ).multiplyScalar(style.brightness),
         );
       });
 
@@ -111,6 +131,7 @@ export class TreeIrFoliageCardBuilder {
         instanceCount: sites.length,
         planeCount,
         scaleMultiplier,
+        alphaTest,
       });
       geometry = null;
       texture = null;
