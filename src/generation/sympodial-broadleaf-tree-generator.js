@@ -1,3 +1,18 @@
+import {
+  addVector,
+  coneDirection,
+  createDirectionBasis,
+  distanceSquared,
+  lerpVector,
+  normalizeVector3,
+  scaleVector,
+  subtractVector,
+  vectorLength,
+} from './botanical-vector.js';
+import {
+  SYMPODIAL_BROADLEAF_CONSTANTS,
+  SYMPODIAL_BROADLEAF_MODEL_ID,
+} from './sympodial-broadleaf-constants.js';
 import { createPathAttachmentFrame, createTreeIrFrame } from './tree-ir-frame.js';
 import {
   FOLIAGE_PRIMITIVE_FAMILIES,
@@ -5,20 +20,14 @@ import {
   TREE_IR_SCHEMA_VERSION,
 } from './tree-ir-schema.js';
 import { validateTreeIr } from './tree-ir-validator.js';
-import {
-  SYMPODIAL_BROADLEAF_MODEL_ID,
-} from './sympodial-broadleaf-constants.js';
 import { SeededRandom } from './seeded-random.js';
-
-const TAU = Math.PI * 2;
-const ROOT_WIND_NODE_ID = 'wind:stem:root';
-
-function clamp(value, minimum, maximum) {
-  return Math.min(maximum, Math.max(minimum, value));
-}
 
 function lerp(minimum, maximum, ratio) {
   return minimum + (maximum - minimum) * ratio;
+}
+
+function clamp(value, minimum, maximum) {
+  return Math.min(maximum, Math.max(minimum, value));
 }
 
 function deepFreeze(value) {
@@ -28,87 +37,371 @@ function deepFreeze(value) {
   return value;
 }
 
-function vector(x = 0, y = 0, z = 0) {
-  return { x, y, z };
-}
-
-function add(left, right) {
-  return {
-    x: left.x + right.x,
-    y: left.y + right.y,
-    z: left.z + right.z,
-  };
-}
-
-function subtract(left, right) {
-  return {
-    x: left.x - right.x,
-    y: left.y - right.y,
-    z: left.z - right.z,
-  };
-}
-
-function multiply(value, scalar) {
-  return { x: value.x * scalar, y: value.y * scalar, z: value.z * scalar };
-}
-
-function length(value) {
-  return Math.hypot(value.x, value.y, value.z);
-}
-
-function normalize(value, fallback = { x: 0, y: 1, z: 0 }) {
-  const magnitude = length(value);
-  if (magnitude <= Number.EPSILON) return { ...fallback };
-  return multiply(value, 1 / magnitude);
-}
-
-function cross(left, right) {
-  return {
-    x: left.y * right.z - left.z * right.y,
-    y: left.z * right.x - left.x * right.z,
-    z: left.x * right.y - left.y * right.x,
-  };
-}
-
-function directionFromAngles(azimuth, elevation) {
-  const horizontal = Math.cos(elevation);
-  return {
-    x: Math.cos(azimuth) * horizontal,
-    y: Math.sin(elevation),
-    z: Math.sin(azimuth) * horizontal,
-  };
-}
-
-function azimuthOf(direction) {
-  return Math.atan2(direction.z, direction.x);
-}
-
-function elevationOf(direction) {
-  return Math.asin(clamp(direction.y, -1, 1));
-}
-
-function createRootPath(preset, random) {
-  const points = [];
-  const segments = preset.trunk.segments;
-  const phase = random.range(0, TAU);
-  const crownBase = preset.height * preset.morphology.crownBaseRatio;
-  const targetHeight = Math.max(crownBase, preset.height * 0.58);
-
-  for (let index = 0; index <= segments; index += 1) {
-    const t = index / segments;
-    const curveEnvelope = Math.sin(Math.PI * t);
-    const bend = preset.trunk.curve * preset.height * 0.045 * curveEnvelope;
-    points.push({
-      x: preset.trunk.lean[0] * t + Math.cos(phase) * bend,
-      y: targetHeight * t,
-      z: preset.trunk.lean[1] * t + Math.sin(phase) * bend,
+function createTrunkPath(preset, random) {
+  const crownBaseHeight = preset.height * preset.morphology.crownBaseRatio;
+  const phase = random.range(0, Math.PI * 2);
+  const path = [];
+  for (let index = 0; index <= preset.trunk.segments; index += 1) {
+    const t = index / preset.trunk.segments;
+    const curve =
+      Math.sin(t * Math.PI) *
+      preset.trunk.curve *
+      crownBaseHeight *
+      0.08;
+    path.push({
+      x: preset.trunk.lean[0] * t + Math.cos(phase) * curve,
+      y: crownBaseHeight * t,
+      z: preset.trunk.lean[1] * t + Math.sin(phase) * curve,
     });
   }
-  return points;
+  return path;
+}
+
+function createStemPath(start, direction, length, order, preset, random) {
+  const { morphology } = preset;
+  const basis = createDirectionBasis(direction);
+  const phase = random.range(0, Math.PI * 2);
+  const lateral = addVector(
+    scaleVector(basis.normal, Math.cos(phase)),
+    scaleVector(basis.binormal, Math.sin(phase)),
+  );
+  const signedCurve =
+    random.signed() * morphology.lengthVariation * length * 0.18;
+  const sag = morphology.branchSag * length * lerp(0.12, 0.24, order / morphology.branchingDepth);
+  const path = [];
+
+  for (let index = 0; index <= morphology.stemPathSegments; index += 1) {
+    const t = index / morphology.stemPathSegments;
+    const base = addVector(start, scaleVector(direction, length * t));
+    const curve = Math.sin(Math.PI * t) * signedCurve;
+    path.push({
+      x: base.x + lateral.x * curve,
+      y: base.y + lateral.y * curve - sag * t * t,
+      z: base.z + lateral.z * curve,
+    });
+  }
+  return path;
+}
+
+function endpointSeparationScore(endpoint, endpoints, length) {
+  if (endpoints.length === 0) return 1;
+  let minimumSquared = Number.POSITIVE_INFINITY;
+  for (const existing of endpoints) {
+    minimumSquared = Math.min(minimumSquared, distanceSquared(endpoint, existing));
+  }
+  return Math.min(2, Math.sqrt(minimumSquared) / Math.max(length, 0.001));
+}
+
+function scoreDirection(direction, start, length, state, preset) {
+  const { morphology } = preset;
+  const endpoint = addVector(start, scaleVector(direction, length));
+  const separation = endpointSeparationScore(
+    endpoint,
+    state.endpoints,
+    length,
+  );
+  const radial = Math.hypot(endpoint.x, endpoint.z) / preset.height;
+  const normalizedHeight = endpoint.y / preset.height;
+  const targetHeight = lerp(0.92, 0.64, morphology.crownFlattening);
+  const heightPenalty = Math.abs(normalizedHeight - targetHeight);
+  const overflowPenalty =
+    Math.max(0, normalizedHeight - 1) * 5 +
+    Math.max(0, morphology.crownBaseRatio * 0.85 - normalizedHeight) * 4;
+
+  return (
+    separation * morphology.selfOrganization +
+    radial * morphology.crownSpread +
+    direction.y * morphology.upwardBias * 0.45 -
+    heightPenalty * morphology.crownFlattening * 0.55 -
+    overflowPenalty
+  );
+}
+
+function shapeCandidateDirection(direction, start, preset) {
+  const { morphology } = preset;
+  const normalizedHeight = clamp(start.y / preset.height, 0, 1);
+  const flattening =
+    1 -
+    morphology.crownFlattening *
+      clamp((normalizedHeight - morphology.crownBaseRatio) / (1 - morphology.crownBaseRatio), 0, 1) *
+      0.72;
+  return normalizeVector3({
+    x: direction.x * (1 + morphology.crownSpread * 0.55),
+    y: direction.y * flattening + morphology.upwardBias * 0.28,
+    z: direction.z * (1 + morphology.crownSpread * 0.55),
+  });
+}
+
+function selectChildDirection(parentDirection, start, length, childIndex, state, preset, random) {
+  const { morphology } = preset;
+  let best = null;
+  for (let index = 0; index < morphology.directionCandidates; index += 1) {
+    const angle = random.range(
+      morphology.branchAngle[0],
+      morphology.branchAngle[1],
+    );
+    const azimuth =
+      (childIndex * morphology.directionCandidates + index) *
+        SYMPODIAL_BROADLEAF_CONSTANTS.goldenAngle +
+      random.signed() * 0.18;
+    const raw = coneDirection(parentDirection, angle, azimuth);
+    const direction = shapeCandidateDirection(raw, start, preset);
+    const score = scoreDirection(direction, start, length, state, preset);
+    if (!best || score > best.score) best = { direction, score };
+  }
+  return best.direction;
+}
+
+function windNodeIdForStem(stemId) {
+  return `wind:${stemId}`;
+}
+
+function groupForLeader(state, leaderIndex) {
+  if (!state.groups.has(leaderIndex)) {
+    state.groups.set(leaderIndex, {
+      id: `foliage-group:leader:${leaderIndex}`,
+      stemIds: [],
+      crownVolumeIds: [],
+      foliageSiteIds: [],
+      metadata: { leaderIndex },
+    });
+  }
+  return state.groups.get(leaderIndex);
+}
+
+function registerStem({
+  parentStem,
+  order,
+  path,
+  startRadius,
+  endRadius,
+  leaderIndex,
+  state,
+  preset,
+  random,
+}) {
+  const id = `stem:${state.nextStemIndex}`;
+  state.nextStemIndex += 1;
+  const windNodeId = windNodeIdForStem(id);
+  const length = path.reduce(
+    (total, point, index) =>
+      index === 0 ? total : total + vectorLength(subtractVector(point, path[index - 1])),
+    0,
+  );
+  const stem = {
+    id,
+    parentId: parentStem.id,
+    order,
+    attachmentFrame: createPathAttachmentFrame(path),
+    path,
+    startRadius,
+    endRadius,
+    taperPower: preset.trunk.taperPower,
+    exposedTip: true,
+    age: Math.max(0, 1 - order / (preset.morphology.branchingDepth + 2)),
+    importance: 1 / (order + 1),
+    windNodeId,
+    metadata: {
+      kind: order === 1 ? 'leader' : 'sympodial-branch',
+      leaderIndex,
+      length,
+    },
+  };
+  state.stems.push(stem);
+  state.windNodes.push({
+    id: windNodeId,
+    parentId: parentStem.windNodeId,
+    phase: random.next(),
+    stiffness: Math.max(0.12, 1 - order * 0.16),
+    damping: Math.min(0.92, 0.38 + order * 0.09),
+    massAreaProxy: Math.max(0.001, startRadius * startRadius * length),
+  });
+  groupForLeader(state, leaderIndex).stemIds.push(id);
+  return stem;
+}
+
+function createTerminalCrown(stem, leaderIndex, state, preset, random) {
+  const { morphology } = preset;
+  const end = stem.path.at(-1);
+  const beforeEnd = stem.path.at(-2);
+  const direction = normalizeVector3(subtractVector(end, beforeEnd));
+  const branchLength = stem.metadata.length;
+  const horizontalScale = Math.max(
+    SYMPODIAL_BROADLEAF_CONSTANTS.minimumCrownAxis,
+    branchLength * morphology.crownVolumeScale * 0.34,
+  );
+  const verticalScale = Math.max(
+    SYMPODIAL_BROADLEAF_CONSTANTS.minimumCrownAxis,
+    horizontalScale * lerp(1, 0.48, morphology.crownFlattening),
+  );
+  const volumeId = `crown:${state.crownVolumes.length}`;
+  state.crownVolumes.push({
+    id: volumeId,
+    sourceStemId: stem.id,
+    center: { ...end },
+    scale: {
+      x: horizontalScale,
+      y: verticalScale,
+      z: horizontalScale,
+    },
+    rotation: { x: 0, y: Math.atan2(direction.z, direction.x), z: 0 },
+    density: 1,
+    exposure: 1,
+    macroClumpId: leaderIndex,
+    colorMix: random.next(),
+    importance: stem.importance,
+    metadata: { kind: 'terminal-crown', leaderIndex },
+  });
+  const group = groupForLeader(state, leaderIndex);
+  group.crownVolumeIds.push(volumeId);
+
+  const basis = createDirectionBasis(direction);
+  for (
+    let index = 0;
+    index < morphology.foliageSitesPerTerminal;
+    index += 1
+  ) {
+    const ratio =
+      morphology.foliageSitesPerTerminal === 1
+        ? 1
+        : lerp(0.68, 1, index / (morphology.foliageSitesPerTerminal - 1));
+    const center = lerpVector(beforeEnd, end, ratio);
+    const angle =
+      index * SYMPODIAL_BROADLEAF_CONSTANTS.goldenAngle + random.signed() * 0.12;
+    const offsetScale = horizontalScale * 0.32 * Math.sqrt(index / Math.max(1, morphology.foliageSitesPerTerminal - 1));
+    const offset = addVector(
+      scaleVector(basis.normal, Math.cos(angle) * offsetScale),
+      scaleVector(basis.binormal, Math.sin(angle) * offsetScale),
+    );
+    const position = addVector(center, offset);
+    const siteId = `foliage:${state.foliageSites.length}`;
+    state.foliageSites.push({
+      id: siteId,
+      parentStemId: stem.id,
+      frame: createTreeIrFrame(position, direction),
+      branchPosition: ratio,
+      exposure: 1,
+      age: stem.age,
+      vigor: 1,
+      lightFactor: 1,
+      densityPotential: 1,
+      primitiveFamily: FOLIAGE_PRIMITIVE_FAMILIES.BROADLEAF,
+      importance: stem.importance,
+      windNodeId: stem.windNodeId,
+      metadata: {
+        broadleaf: {
+          leaderIndex,
+          terminalStemId: stem.id,
+          foliageScale: morphology.foliageScale,
+        },
+      },
+    });
+    group.foliageSiteIds.push(siteId);
+  }
+}
+
+function childAttachment(parentStem, childIndex, childCount, preset, random) {
+  const range = preset.morphology.childAttachmentRange;
+  const sequence = (childIndex + 0.5) / childCount;
+  const ratio = clamp(
+    lerp(range[0], range[1], sequence) +
+      random.signed() * (range[1] - range[0]) * 0.08,
+    range[0],
+    range[1],
+  );
+  const scaled = ratio * (parentStem.path.length - 1);
+  const index = Math.min(parentStem.path.length - 2, Math.floor(scaled));
+  return lerpVector(
+    parentStem.path[index],
+    parentStem.path[index + 1],
+    scaled - index,
+  );
+}
+
+function shouldLoseLowerLimb(start, preset, random) {
+  const { morphology } = preset;
+  const normalizedHeight = start.y / preset.height;
+  const lowerCrownRatio = clamp(
+    1 - normalizedHeight / Math.max(morphology.crownBaseRatio + 0.35, 0.01),
+    0,
+    1,
+  );
+  return random.next() < morphology.lowerLimbLoss * lowerCrownRatio;
+}
+
+function growChildren(parentStem, leaderIndex, state, preset, random) {
+  const { morphology } = preset;
+  const order = parentStem.order + 1;
+  if (
+    order > morphology.branchingDepth ||
+    state.stems.length >= morphology.maximumStemCount
+  ) {
+    createTerminalCrown(parentStem, leaderIndex, state, preset, random);
+    return;
+  }
+
+  const childCount = random.integer(
+    morphology.childCount[0],
+    morphology.childCount[1],
+  );
+  const parentDirection = normalizeVector3(
+    subtractVector(parentStem.path.at(-1), parentStem.path.at(-2)),
+  );
+  let created = 0;
+
+  for (let index = 0; index < childCount; index += 1) {
+    if (state.stems.length >= morphology.maximumStemCount) break;
+    const start = childAttachment(parentStem, index, childCount, preset, random);
+    if (shouldLoseLowerLimb(start, preset, random)) continue;
+    const parentLength = parentStem.metadata.length;
+    const length = Math.max(
+      SYMPODIAL_BROADLEAF_CONSTANTS.minimumStemLength,
+      parentLength *
+        morphology.lengthDecay *
+        (1 + random.signed() * morphology.lengthVariation),
+    );
+    const direction = selectChildDirection(
+      parentDirection,
+      start,
+      length,
+      index,
+      state,
+      preset,
+      random,
+    );
+    const path = createStemPath(start, direction, length, order, preset, random);
+    const radiusScale = morphology.radiusDecay ** Math.max(1, order - 1);
+    const startRadius = Math.max(
+      SYMPODIAL_BROADLEAF_CONSTANTS.minimumStemRadius,
+      preset.trunk.baseRadius * 0.48 * radiusScale,
+    );
+    const endRadius = Math.max(
+      SYMPODIAL_BROADLEAF_CONSTANTS.minimumStemRadius * 0.55,
+      startRadius * morphology.radiusDecay * 0.48,
+    );
+    const child = registerStem({
+      parentStem,
+      order,
+      path,
+      startRadius,
+      endRadius,
+      leaderIndex,
+      state,
+      preset,
+      random,
+    });
+    state.endpoints.push(path.at(-1));
+    created += 1;
+    growChildren(child, leaderIndex, state, preset, random);
+  }
+
+  if (created === 0) {
+    createTerminalCrown(parentStem, leaderIndex, state, preset, random);
+  }
 }
 
 function createRootStem(preset, random) {
-  const path = createRootPath(preset, random);
+  const path = createTrunkPath(preset, random);
   return {
     id: TREE_IR_ROOT_STEM_ID,
     parentId: null,
@@ -121,409 +414,63 @@ function createRootStem(preset, random) {
     exposedTip: false,
     age: 1,
     importance: 1,
-    windNodeId: ROOT_WIND_NODE_ID,
+    windNodeId: SYMPODIAL_BROADLEAF_CONSTANTS.rootWindNodeId,
     metadata: {
-      kind: 'sympodial-root',
+      kind: 'trunk',
       flare: preset.trunk.flare,
     },
   };
 }
 
-function pathPointAt(stem, ratio) {
-  const points = stem.path;
-  if (ratio <= 0) return { ...points[0] };
-  if (ratio >= 1) return { ...points.at(-1) };
-  const scaled = ratio * (points.length - 1);
-  const index = Math.floor(scaled);
-  const local = scaled - index;
-  const left = points[index];
-  const right = points[Math.min(points.length - 1, index + 1)];
-  return {
-    x: lerp(left.x, right.x, local),
-    y: lerp(left.y, right.y, local),
-    z: lerp(left.z, right.z, local),
-  };
-}
-
-function pathTangentAt(stem, ratio) {
-  const epsilon = 1 / Math.max(8, stem.path.length * 2);
-  const before = pathPointAt(stem, Math.max(0, ratio - epsilon));
-  const after = pathPointAt(stem, Math.min(1, ratio + epsilon));
-  return normalize(subtract(after, before));
-}
-
-function createStemPath(start, direction, stemLength, sag, segments, random) {
-  const points = [];
-  const side = normalize(cross(direction, { x: 0, y: 1, z: 0 }), {
-    x: 1,
-    y: 0,
-    z: 0,
+function createLeaderDirection(index, preset, random) {
+  const angle =
+    index * SYMPODIAL_BROADLEAF_CONSTANTS.goldenAngle +
+    random.signed() * 0.18;
+  const horizontal = lerp(0.18, 0.68, preset.morphology.crownSpread);
+  return normalizeVector3({
+    x: Math.cos(angle) * horizontal,
+    y: lerp(1.2, 0.72, preset.morphology.crownSpread),
+    z: Math.sin(angle) * horizontal,
   });
-  const sway = random.signed() * stemLength * 0.035;
-
-  for (let index = 0; index <= segments; index += 1) {
-    const t = index / segments;
-    const sagOffset = sag * stemLength * 0.16 * Math.sin(Math.PI * t);
-    const swayOffset = sway * Math.sin(Math.PI * t);
-    points.push(
-      add(
-        add(start, multiply(direction, stemLength * t)),
-        add(
-          { x: 0, y: -sagOffset, z: 0 },
-          multiply(side, swayOffset),
-        ),
-      ),
-    );
-  }
-  return points;
-}
-
-function crownCenter(preset) {
-  return {
-    x: preset.trunk.lean[0] * 0.55,
-    y:
-      preset.height *
-      lerp(0.62, 0.72, 1 - preset.morphology.crownFlattening),
-    z: preset.trunk.lean[1] * 0.55,
-  };
-}
-
-function desiredCrownDirection(start, preset, random, azimuthBias) {
-  const target = crownCenter(preset);
-  const crownHeight = preset.height * (1 - preset.morphology.crownBaseRatio);
-  const targetSpread =
-    crownHeight * preset.morphology.crownSpread * random.range(0.55, 1);
-  const elevation = random.range(0.18, 0.62) * (1 - preset.morphology.crownFlattening * 0.58);
-  const radialTarget = {
-    x: target.x + Math.cos(azimuthBias) * targetSpread,
-    y: Math.max(target.y, start.y + crownHeight * random.range(0.35, 0.82)),
-    z: target.z + Math.sin(azimuthBias) * targetSpread,
-  };
-  return normalize(
-    add(
-      normalize(subtract(radialTarget, start)),
-      directionFromAngles(azimuthBias, elevation),
-    ),
-  );
-}
-
-function directionScore(direction, origin, endpointDirections, preset) {
-  const end = add(origin, direction);
-  let minimumDistance = Number.POSITIVE_INFINITY;
-  for (const entry of endpointDirections) {
-    minimumDistance = Math.min(minimumDistance, length(subtract(end, entry)));
-  }
-  const spread = Math.hypot(direction.x, direction.z);
-  const verticalPenalty = Math.max(0, direction.y - 0.82);
-  return (
-    minimumDistance * preset.morphology.selfOrganization +
-    spread * preset.morphology.crownSpread -
-    verticalPenalty * 0.55
-  );
-}
-
-function chooseChildDirection(
-  parentDirection,
-  start,
-  state,
-  preset,
-  random,
-  childIndex,
-) {
-  const parentAzimuth = azimuthOf(parentDirection);
-  const parentElevation = elevationOf(parentDirection);
-  let best = null;
-  let bestScore = Number.NEGATIVE_INFINITY;
-
-  for (
-    let candidateIndex = 0;
-    candidateIndex < preset.morphology.directionCandidates;
-    candidateIndex += 1
-  ) {
-    const childSpread =
-      (childIndex + candidateIndex / preset.morphology.directionCandidates) *
-      (TAU / Math.max(2, preset.morphology.childCount[1]));
-    const azimuth =
-      parentAzimuth + childSpread + random.signed() * 0.52;
-    const angle = random.range(
-      preset.morphology.branchAngle[0],
-      preset.morphology.branchAngle[1],
-    );
-    const elevation = clamp(
-      parentElevation * 0.35 +
-        preset.morphology.upwardBias * 0.65 +
-        Math.cos(angle) * 0.28 +
-        random.signed() * 0.12,
-      -0.22,
-      1.18,
-    );
-    const candidate = directionFromAngles(azimuth, elevation);
-    const score = directionScore(
-      candidate,
-      start,
-      state.endpoints,
-      preset,
-    );
-    if (score > bestScore) {
-      best = candidate;
-      bestScore = score;
-    }
-  }
-  return best ?? parentDirection;
-}
-
-function groupFor(state, sourceStemId) {
-  let group = state.groups.get(sourceStemId);
-  if (!group) {
-    group = {
-      id: `foliage-group:${sourceStemId}`,
-      stemIds: [sourceStemId],
-      crownVolumeIds: [],
-      foliageSiteIds: [],
-      metadata: { kind: 'sympodial-terminal' },
-    };
-    state.groups.set(sourceStemId, group);
-  }
-  return group;
-}
-
-function createTerminalFoliage(stem, direction, state, preset, random) {
-  const end = stem.path.at(-1);
-  const volumeId = `crown:${stem.id}`;
-  const group = groupFor(state, stem.id);
-  const flatten = preset.morphology.crownFlattening;
-  const volumeScale =
-    preset.morphology.crownVolumeScale *
-    preset.morphology.foliageScale *
-    random.range(0.82, 1.16);
-  state.crownVolumes.push({
-    id: volumeId,
-    sourceStemId: stem.id,
-    center: {
-      x: end.x + direction.x * volumeScale * 0.24,
-      y: end.y + direction.y * volumeScale * 0.16,
-      z: end.z + direction.z * volumeScale * 0.24,
-    },
-    scale: {
-      x: volumeScale * random.range(0.9, 1.25),
-      y: volumeScale * lerp(0.95, 0.5, flatten) * random.range(0.9, 1.08),
-      z: volumeScale * random.range(0.9, 1.25),
-    },
-    rotation: {
-      x: random.signed() * 0.18,
-      y: random.range(0, TAU),
-      z: random.signed() * 0.18,
-    },
-    density: 1,
-    exposure: 1,
-    macroClumpId: state.crownVolumes.length,
-    colorMix: random.next(),
-    importance: stem.importance,
-    metadata: { kind: 'sympodial-terminal-volume' },
-  });
-  group.crownVolumeIds.push(volumeId);
-
-  const count = preset.morphology.foliageSitesPerTerminal;
-  const frame = createTreeIrFrame(end, direction);
-  for (let index = 0; index < count; index += 1) {
-    const angle = (index / count) * TAU + random.signed() * 0.28;
-    const radial = add(
-      multiply(frame.normal, Math.cos(angle)),
-      multiply(frame.binormal, Math.sin(angle)),
-    );
-    const offset = add(
-      multiply(direction, random.range(-0.08, 0.24) * volumeScale),
-      multiply(radial, random.range(0.24, 0.72) * volumeScale),
-    );
-    const position = add(end, offset);
-    const tangent = normalize(
-      add(
-        multiply(direction, 0.45),
-        add(multiply(radial, 0.72), { x: 0, y: random.range(0.12, 0.5), z: 0 }),
-      ),
-    );
-    const siteId = `foliage:${stem.id}:${index}`;
-    state.foliageSites.push({
-      id: siteId,
-      parentStemId: stem.id,
-      frame: createTreeIrFrame(position, tangent),
-      branchPosition: 1,
-      exposure: 1,
-      age: 0.45 + stem.age * 0.55,
-      vigor: 0.78 + stem.importance * 0.22,
-      lightFactor: 0.9 + random.next() * 0.1,
-      densityPotential: 1,
-      primitiveFamily: FOLIAGE_PRIMITIVE_FAMILIES.BROADLEAF_SPRAY,
-      importance: stem.importance,
-      windNodeId: stem.windNodeId,
-      metadata: {
-        broadleaf: {
-          foliageScale:
-            preset.morphology.foliageScale * random.range(0.86, 1.12),
-          terminalStemId: stem.id,
-        },
-      },
-    });
-    group.foliageSiteIds.push(siteId);
-  }
-}
-
-function createChildStem(
-  parent,
-  start,
-  direction,
-  order,
-  childIndex,
-  state,
-  preset,
-  random,
-) {
-  const baseLength =
-    preset.height *
-    random.range(preset.morphology.leaderReach[0], preset.morphology.leaderReach[1]);
-  const stemLength =
-    baseLength *
-    preset.morphology.lengthDecay ** Math.max(0, order - 1) *
-    random.range(
-      1 - preset.morphology.lengthVariation,
-      1 + preset.morphology.lengthVariation,
-    );
-  const startRadius = Math.max(
-    0.025,
-    parent.endRadius * preset.morphology.radiusDecay * random.range(0.88, 1.08),
-  );
-  const endRadius = Math.max(
-    0.012,
-    startRadius * preset.morphology.radiusDecay * random.range(0.9, 1.08),
-  );
-  const id = `stem:${++state.nextStemIndex}`;
-  const windNodeId = `wind:${id}`;
-  const path = createStemPath(
-    start,
-    direction,
-    stemLength,
-    preset.morphology.branchSag,
-    preset.morphology.stemPathSegments,
-    random,
-  );
-  const importance =
-    Math.max(0.16, 1 - order / (preset.morphology.branchingDepth + 1)) *
-    random.range(0.88, 1.08);
-  const stem = {
-    id,
-    parentId: parent.id,
-    order,
-    attachmentFrame: createPathAttachmentFrame(path),
-    path,
-    startRadius,
-    endRadius,
-    taperPower: preset.trunk.taperPower,
-    exposedTip: order >= preset.morphology.branchingDepth,
-    age: clamp(1 - order * 0.14, 0.18, 1),
-    importance,
-    windNodeId,
-    metadata: {
-      kind: 'sympodial-branch',
-      childIndex,
-    },
-  };
-  state.windNodes.push({
-    id: windNodeId,
-    parentId: parent.windNodeId,
-    phase: random.next(),
-    stiffness: clamp(0.92 - order * 0.12, 0.34, 0.92),
-    damping: clamp(0.48 + order * 0.055, 0.48, 0.72),
-    massAreaProxy: stemLength * startRadius,
-  });
-  return stem;
-}
-
-function shouldPruneChild(parent, order, preset, random) {
-  if (order !== 1) return false;
-  const attachmentHeight = parent.path.at(-1).y / preset.height;
-  const lowerInfluence = clamp(
-    (preset.morphology.crownBaseRatio + 0.18 - attachmentHeight) / 0.34,
-    0,
-    1,
-  );
-  return random.next() < preset.morphology.lowerLimbLoss * lowerInfluence;
-}
-
-function growBranch(parent, direction, order, state, preset, random) {
-  if (
-    state.stems.length >= preset.morphology.maximumStemCount ||
-    order > preset.morphology.branchingDepth
-  ) {
-    createTerminalFoliage(parent, direction, state, preset, random);
-    return;
-  }
-
-  const childCount = random.int(
-    preset.morphology.childCount[0],
-    preset.morphology.childCount[1],
-  );
-  let createdChild = false;
-  for (let childIndex = 0; childIndex < childCount; childIndex += 1) {
-    if (state.stems.length >= preset.morphology.maximumStemCount) break;
-    const attachment = random.range(
-      preset.morphology.childAttachmentRange[0],
-      preset.morphology.childAttachmentRange[1],
-    );
-    const start = pathPointAt(parent, attachment);
-    const parentDirection = pathTangentAt(parent, attachment);
-    const childDirection = chooseChildDirection(
-      parentDirection,
-      start,
-      state,
-      preset,
-      random,
-      childIndex,
-    );
-    const stem = createChildStem(
-      parent,
-      start,
-      childDirection,
-      order,
-      childIndex,
-      state,
-      preset,
-      random,
-    );
-    if (shouldPruneChild(stem, order, preset, random)) continue;
-    state.stems.push(stem);
-    state.endpoints.push(stem.path.at(-1));
-    createdChild = true;
-    growBranch(stem, childDirection, order + 1, state, preset, random);
-  }
-
-  if (!createdChild) createTerminalFoliage(parent, direction, state, preset, random);
 }
 
 function createLeaders(rootStem, state, preset, random) {
-  const count = preset.morphology.leaderCount;
-  const startRatio = Math.max(0.55, preset.morphology.crownBaseRatio);
-  for (let index = 0; index < count; index += 1) {
-    const attachment = clamp(
-      startRatio + index * 0.04 + random.signed() * 0.025,
-      0.52,
-      0.92,
+  const crownHeight = preset.height * (1 - preset.morphology.crownBaseRatio);
+  const start = rootStem.path.at(-1);
+  for (let index = 0; index < preset.morphology.leaderCount; index += 1) {
+    const direction = createLeaderDirection(index, preset, random);
+    const desiredRise =
+      crownHeight *
+      Math.min(1, random.range(
+        preset.morphology.leaderReach[0],
+        preset.morphology.leaderReach[1],
+      ));
+    const length = Math.max(
+      SYMPODIAL_BROADLEAF_CONSTANTS.minimumStemLength,
+      desiredRise / Math.max(0.3, direction.y),
     );
-    const start = pathPointAt(rootStem, attachment);
-    const azimuth = (index / count) * TAU + random.signed() * 0.32;
-    const direction = desiredCrownDirection(start, preset, random, azimuth);
-    const stem = createChildStem(
-      rootStem,
-      start,
-      direction,
-      1,
-      index,
+    const path = createStemPath(start, direction, length, 1, preset, random);
+    const startRadius = Math.max(
+      SYMPODIAL_BROADLEAF_CONSTANTS.minimumStemRadius,
+      preset.trunk.topRadius * lerp(0.74, 1.12, random.next()),
+    );
+    const endRadius = Math.max(
+      SYMPODIAL_BROADLEAF_CONSTANTS.minimumStemRadius,
+      startRadius * preset.morphology.radiusDecay,
+    );
+    const leader = registerStem({
+      parentStem: rootStem,
+      order: 1,
+      path,
+      startRadius,
+      endRadius,
+      leaderIndex: index,
       state,
       preset,
       random,
-    );
-    state.stems.push(stem);
-    state.endpoints.push(stem.path.at(-1));
-    growBranch(stem, direction, 2, state, preset, random);
+    });
+    state.endpoints.push(path.at(-1));
+    growChildren(leader, index, state, preset, random);
   }
 }
 
@@ -602,7 +549,6 @@ export class SympodialBroadleafTreeGenerator {
           barkPalette: preset.trunk.barkPalette,
           foliagePalette: preset.foliage.palette,
           foliageRoughness: preset.foliage.roughness,
-          leafShape: preset.foliage.leafShape,
         },
         topology: {
           leaderCount: preset.morphology.leaderCount,
