@@ -16,6 +16,7 @@ export function calculateTreeIrFoliageCardStyle(treeIr, site, config) {
     heightScale: scaleVariation * (1 - stretch * 0.55),
     twist:
       treeIrStyleSigned(treeIr, site.id, 'card-twist') * config.cardTwist,
+    colorMix: treeIrStyleUnit(treeIr, site.id, 'card-color'),
     brightness: 0.96 + treeIrStyleUnit(treeIr, site.id, 'card-brightness') * 0.08,
   });
 }
