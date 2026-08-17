@@ -59,6 +59,22 @@ function isFrondOnly(treeIr) {
   );
 }
 
+function configureShadowOnly(root) {
+  root.traverse((object) => {
+    if (!object.material) return;
+    object.castShadow = true;
+    object.receiveShadow = false;
+    const materials = Array.isArray(object.material)
+      ? object.material
+      : [object.material];
+    for (const material of materials) {
+      material.colorWrite = false;
+      material.depthWrite = false;
+    }
+  });
+  return root;
+}
+
 function crownSettings(role, config) {
   if (role === TREE_REPRESENTATION_ROLES.HERO) {
     return {
@@ -121,9 +137,7 @@ function createDetachedLevelObjects({
     );
 
     const frondOnly = isFrondOnly(treeIr);
-    const useCrownVolumes =
-      treeIr.crownVolumes.length > 0 &&
-      (role === TREE_REPRESENTATION_ROLES.AGGREGATE || !frondOnly);
+    const useCrownVolumes = treeIr.crownVolumes.length > 0 && !frondOnly;
     if (useCrownVolumes && representation.crownVolumeDensity > 0) {
       objects.push(
         crownBuilder.build(treeIr, {
@@ -161,6 +175,7 @@ function createShadowProxy(
   renderingConfig,
   structureBuilder,
   crownBuilder,
+  foliageBuilder,
 ) {
   const group = new THREE.Group();
   group.name = 'tree-shadow-proxy';
@@ -177,11 +192,20 @@ function createShadowProxy(
       analyzeManifold: false,
       name: 'tree-ir-structure-shadow-proxy',
     });
-    structure.material.colorWrite = false;
-    structure.material.depthWrite = false;
+    configureShadowOnly(structure);
     group.add(structure);
 
-    if (treeIr.crownVolumes.length > 0) {
+    if (isFrondOnly(treeIr)) {
+      const foliage = foliageBuilder.build(
+        treeIr,
+        TREE_REPRESENTATION_ROLES.AGGREGATE,
+        qualityProfile.representations[TREE_REPRESENTATION_ROLES.AGGREGATE]
+          .foliageDensity,
+        renderingConfig.foliage,
+      );
+      configureShadowOnly(foliage);
+      group.add(foliage);
+    } else if (treeIr.crownVolumes.length > 0) {
       const crown = crownBuilder.build(treeIr, {
         detail: renderingConfig.crown.aggregateDetail,
         scaleMultiplier: renderingConfig.crown.aggregateScale,
@@ -192,13 +216,13 @@ function createShadowProxy(
         receiveShadow: false,
         name: 'tree-ir-crown-shadow-proxy',
       });
-      crown.material.colorWrite = false;
-      crown.material.depthWrite = false;
+      configureShadowOnly(crown);
       group.add(crown);
     }
     group.userData.shadowProxy = Object.freeze({
       treeIr: true,
       drawCalls: collectLevelMetrics(group).drawCalls,
+      frondShadow: isFrondOnly(treeIr),
     });
     return group;
   } catch (error) {
@@ -329,6 +353,7 @@ export class TreeIrMeshBuilder {
               this.renderingConfig,
               this.structureBuilder,
               this.crownBuilder,
+              this.foliageBuilder,
             )
           : createEmptyShadowProxy();
       root.add(shadowProxy);
