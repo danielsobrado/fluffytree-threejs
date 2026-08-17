@@ -15,6 +15,7 @@ test('direct Tree IR rendering policy parses into immutable role settings', () =
   assert.equal(parsed.crown.heroScale, 0.64);
   assert.equal(parsed.crown.heroBrightness, 0.7);
   assert.equal(parsed.crown.shapeVariation, 0.08);
+  assert.equal(parsed.crown.surfaceVariation, 0.07);
   assert.equal(parsed.foliage.alphaResolution, 96);
   assert.equal(parsed.foliage.nearAlphaTest, 0.3);
   assert.equal(parsed.foliage.heroCardPlanes, 2);
