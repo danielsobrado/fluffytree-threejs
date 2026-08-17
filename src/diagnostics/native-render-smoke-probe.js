@@ -73,12 +73,15 @@ function collectNativeMetrics(trees) {
     impostorDrawCalls: 0,
     frondBatchCount: 0,
     heroLeafletPalmCount: 0,
+    nearLeafletPalmCount: 0,
     aggregateFrondProxyCount: 0,
     palmFrondShadowCount: 0,
     palmBandedTrunkCount: 0,
     foliageCardBatchCount: 0,
+    volumetricBroadleafCardCount: 0,
     recessedBroadleafCoreCount: 0,
     broadleafLeafShapeCount: 0,
+    mipmappedBillboardTreeCount: 0,
     billboardBatchTreeCount: 0,
   };
 
@@ -144,6 +147,17 @@ function collectNativeMetrics(trees) {
       }
       metrics.heroLeafletPalmCount += 1;
 
+      const nearFronds = findUserDataMarker(
+        lodState.levels[nearIndex],
+        'fronds',
+      );
+      if (!nearFronds?.leaflets) {
+        throw new Error(
+          `Palm '${treeState.presetId}' near representation does not preserve its pinnate silhouette.`,
+        );
+      }
+      metrics.nearLeafletPalmCount += 1;
+
       const heroStructure = findUserDataMarker(
         lodState.levels[heroIndex],
         'structure',
@@ -198,6 +212,15 @@ function collectNativeMetrics(trees) {
           `Broadleaf '${treeState.presetId}' does not expose its complete native canopy hierarchy.`,
         );
       }
+      if (
+        heroCards.planeCount < 3 ||
+        heroCards.alphaToCoverage !== true
+      ) {
+        throw new Error(
+          `Broadleaf '${treeState.presetId}' hero foliage is not volumetric and alpha-to-coverage smoothed.`,
+        );
+      }
+      metrics.volumetricBroadleafCardCount += 1;
       if (!heroCards.leafShape || heroCards.leafShape !== nearCards.leafShape) {
         throw new Error(
           `Broadleaf '${treeState.presetId}' does not preserve its leaf silhouette across detailed LODs.`,
@@ -227,7 +250,19 @@ function collectNativeMetrics(trees) {
     if (!hasDrawableImpostor(lodState)) {
       throw new Error(`Native tree '${treeState.presetId}' has no drawable impostor.`);
     }
-    if (lodState.billboardBatch) metrics.billboardBatchTreeCount += 1;
+    if (lodState.billboardBatch) {
+      metrics.billboardBatchTreeCount += 1;
+      const atlas = lodState.billboardBatch.batch?.atlas;
+      if (
+        !(atlas?.gutter > 0) ||
+        atlas.texture?.generateMipmaps !== true
+      ) {
+        throw new Error(
+          `Native tree '${treeState.presetId}' billboard atlas is not mipmapped with filtering gutters.`,
+        );
+      }
+      metrics.mipmappedBillboardTreeCount += 1;
+    }
   }
 
   if (metrics.palmCount === 0 || metrics.broadleafCount === 0) {
