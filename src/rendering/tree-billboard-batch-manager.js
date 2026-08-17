@@ -6,6 +6,7 @@ import {
   createBillboardAtlasLayout,
 } from './tree-billboard-atlas.js';
 import { TreeBillboardBatchState } from './tree-billboard-batch-state.js';
+import { calculateTreeBillboardWorldSize } from './tree-billboard-scale.js';
 
 const DITHER_FRAGMENT = `
   float treeBatchNoise = fract(
@@ -166,6 +167,7 @@ export class TreeBillboardBatchManager {
     this.capacity = capacity;
     this.batches = new Map();
     this.worldPosition = new THREE.Vector3();
+    this.worldScale = new THREE.Vector3();
     this.matrix = new THREE.Matrix4();
   }
 
@@ -221,6 +223,7 @@ export class TreeBillboardBatchManager {
     const presetId = tree.userData.tree.presetId;
     tree.userData.lod.rebuildImpostor?.(tree.rotation.y);
     tree.updateMatrixWorld(true);
+    tree.getWorldScale(this.worldScale);
     const impostor = findImpostor(tree);
     const sourceTexture = impostor?.material?.map;
     if (!impostor || !sourceTexture) return null;
@@ -244,7 +247,11 @@ export class TreeBillboardBatchManager {
       batch.mesh.setMatrixAt(index, this.matrix);
 
       const scale = batch.mesh.geometry.getAttribute('treeBillboardScale');
-      scale.setXY(index, impostor.scale.x, impostor.scale.y);
+      const billboardSize = calculateTreeBillboardWorldSize(
+        impostor.scale,
+        this.worldScale,
+      );
+      scale.setXY(index, billboardSize.x, billboardSize.y);
       const slot = calculateBillboardAtlasSlot(index, batch.atlas.layout);
       batch.atlas.context.drawImage(
         sourceTexture.image,
