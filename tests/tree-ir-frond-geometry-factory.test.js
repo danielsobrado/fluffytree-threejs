@@ -52,6 +52,26 @@ test('hero palm leaflets create a feathered frond with a continuous rachis', () 
   }
 });
 
+test('frond geometry anchors wind at the crown and increases motion toward the tip', () => {
+  const geometry = new TreeIrFrondGeometryFactory().create(TREE_IR, SITE);
+
+  try {
+    const weights = geometry.getAttribute('treeFrondWindWeight');
+    const phases = geometry.getAttribute('treeFrondWindPhase');
+    assert.equal(weights.count, geometry.getAttribute('position').count);
+    assert.equal(phases.count, weights.count);
+    assert.equal(weights.getX(0), 0);
+    assert.equal(weights.getX(1), 0);
+    assert.equal(weights.getX(weights.count - 1), 1);
+    assert.equal(
+      phases.getX(0),
+      phases.getX(phases.count - 1),
+    );
+  } finally {
+    geometry.dispose();
+  }
+});
+
 test('frond geometry reduces segment cost for lower LODs', () => {
   const factory = new TreeIrFrondGeometryFactory();
   const hero = factory.create(TREE_IR, SITE);
