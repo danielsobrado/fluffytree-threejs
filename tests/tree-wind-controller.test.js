@@ -75,7 +75,7 @@ test('minimum LOD trees do not wrap an unreachable hero builder', () => {
   assert.equal(tree.userData.lod.buildHero, buildHero);
 });
 
-test('wind controller registers a shared material state only once', () => {
+test('wind controller registers a shared material state only once per tree', () => {
   const sharedState = { time: 0, phase: 0, strength: 0, treeHeight: 1 };
   const tree = createTreeWithVisitor((visitor) => {
     visitor({ material: { userData: { windState: sharedState } }, userData: {} });
@@ -88,6 +88,35 @@ test('wind controller registers a shared material state only once', () => {
 
   assert.equal(controller.states.length, 1);
   assert.equal(sharedState.treeHeight, TREE_HEIGHT);
+});
+
+test('shared wind states survive until every owning tree unregisters', () => {
+  const sharedState = { time: 0, phase: 0, strength: 0, treeHeight: 1 };
+  const visitor = (callback) =>
+    callback({ material: { userData: { windState: sharedState } }, userData: {} });
+  const first = createTreeWithVisitor(visitor);
+  const second = createTreeWithVisitor(visitor);
+  const controller = new TreeWindController();
+
+  controller.register(first, 1);
+  controller.register(second, 2);
+  assert.equal(controller.states.length, 1);
+  assert.equal(controller.unregister(first), true);
+  assert.equal(controller.states.length, 1);
+  assert.equal(controller.unregister(second), true);
+  assert.equal(controller.states.length, 0);
+});
+
+test('unregister restores the original deferred hero builder', () => {
+  const controller = new TreeWindController();
+  const tree = createTree();
+  const originalBuildHero = tree.userData.lod.buildHero;
+
+  controller.register(tree, 1);
+  assert.notEqual(tree.userData.lod.buildHero, originalBuildHero);
+  assert.equal(controller.unregister(tree), true);
+  assert.equal(tree.userData.lod.buildHero, originalBuildHero);
+  assert.equal(controller.unregister(tree), false);
 });
 
 test('clearing wind state allows fresh trees to register normally', () => {
@@ -105,16 +134,19 @@ test('clearing wind state allows fresh trees to register normally', () => {
   assert.equal(controller.states[0], state);
 });
 
-test('clear does not stack deferred hero wrappers on the same tree', () => {
+test('clear restores deferred hero builders before future registration', () => {
   const controller = new TreeWindController();
   const tree = createTree();
+  const originalBuildHero = tree.userData.lod.buildHero;
 
   controller.register(tree, 1);
-  const wrappedBuildHero = tree.userData.lod.buildHero;
+  const firstWrapper = tree.userData.lod.buildHero;
   controller.clear();
-  controller.register(tree, 1);
+  assert.equal(tree.userData.lod.buildHero, originalBuildHero);
 
-  assert.equal(tree.userData.lod.buildHero, wrappedBuildHero);
+  controller.register(tree, 1);
+  assert.notEqual(tree.userData.lod.buildHero, firstWrapper);
+  assert.notEqual(tree.userData.lod.buildHero, originalBuildHero);
   tree.userData.lod.buildHero();
   assert.equal(controller.states.length, 1);
 });
