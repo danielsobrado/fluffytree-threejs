@@ -42,3 +42,55 @@ test('direct Tree IR rendering policy rejects invalid quality values', () => {
     /frondAggregateSegmentRatio/,
   );
 });
+
+test('lower native LODs cannot exceed higher-detail geometry settings', () => {
+  const invalidNear = structuredClone(config);
+  invalidNear.directIr.structure.near.radialSegments =
+    invalidNear.directIr.structure.hero.radialSegments + 1;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidNear),
+    /structure\.near\.radialSegments/,
+  );
+
+  const invalidAggregate = structuredClone(config);
+  invalidAggregate.directIr.structure.aggregate.branchCurveSamples =
+    invalidAggregate.directIr.structure.near.branchCurveSamples + 1;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidAggregate),
+    /structure\.aggregate\.branchCurveSamples/,
+  );
+
+  const invalidShadow = structuredClone(config);
+  invalidShadow.directIr.shadow.trunkCurveSamples =
+    invalidShadow.directIr.structure.near.trunkCurveSamples + 1;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidShadow),
+    /shadow\.trunkCurveSamples/,
+  );
+});
+
+test('lower native foliage and crown LODs remain cheaper than higher LODs', () => {
+  const invalidCards = structuredClone(config);
+  invalidCards.directIr.foliage.nearCardPlanes = 3;
+  invalidCards.directIr.foliage.heroCardPlanes = 2;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidCards),
+    /nearCardPlanes must not exceed heroCardPlanes/,
+  );
+
+  const invalidFrondSegments = structuredClone(config);
+  invalidFrondSegments.directIr.foliage.frondAggregateSegmentRatio = 0.8;
+  invalidFrondSegments.directIr.foliage.frondNearSegmentRatio = 0.6;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidFrondSegments),
+    /frondAggregateSegmentRatio must not exceed frondNearSegmentRatio/,
+  );
+
+  const invalidCrown = structuredClone(config);
+  invalidCrown.directIr.crown.aggregateDetail = 2;
+  invalidCrown.directIr.crown.nearDetail = 1;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidCrown),
+    /aggregateDetail must not exceed nearDetail/,
+  );
+});
