@@ -12,7 +12,14 @@ test('direct Tree IR rendering policy parses into immutable role settings', () =
 
   assert.equal(parsed.structure.hero.radialSegments, 10);
   assert.equal(parsed.structure.aggregate.branchCurveSamples, 4);
+  assert.equal(parsed.crown.heroScale, 0.64);
+  assert.equal(parsed.crown.heroBrightness, 0.7);
+  assert.equal(parsed.crown.shapeVariation, 0.08);
+  assert.equal(parsed.foliage.alphaResolution, 96);
+  assert.equal(parsed.foliage.nearAlphaTest, 0.3);
   assert.equal(parsed.foliage.heroCardPlanes, 2);
+  assert.equal(parsed.foliage.frondHeroLeaflets, true);
+  assert.equal(parsed.foliage.frondLeafletLengthRatio, 0.95);
   assert.equal(parsed.foliage.frondNearSegmentRatio, 0.58);
   assert.equal(parsed.foliage.frondAggregateDensity, 0.72);
   assert.equal(parsed.foliage.frondAggregateSegmentRatio, 0.35);
@@ -40,6 +47,13 @@ test('direct Tree IR rendering policy rejects invalid quality values', () => {
   assert.throws(
     () => parseTreeIrRenderingConfig(invalidAggregateSegments),
     /frondAggregateSegmentRatio/,
+  );
+
+  const invalidLeafletFlag = structuredClone(config);
+  invalidLeafletFlag.directIr.foliage.frondHeroLeaflets = 1;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidLeafletFlag),
+    /frondHeroLeaflets.*boolean/,
   );
 });
 
@@ -69,13 +83,21 @@ test('lower native LODs cannot exceed higher-detail geometry settings', () => {
   );
 });
 
-test('lower native foliage and crown LODs remain cheaper than higher LODs', () => {
+test('lower native foliage and crown LODs preserve their visual hierarchy', () => {
   const invalidCards = structuredClone(config);
   invalidCards.directIr.foliage.nearCardPlanes = 3;
   invalidCards.directIr.foliage.heroCardPlanes = 2;
   assert.throws(
     () => parseTreeIrRenderingConfig(invalidCards),
     /nearCardPlanes must not exceed heroCardPlanes/,
+  );
+
+  const invalidNearAlpha = structuredClone(config);
+  invalidNearAlpha.directIr.foliage.nearAlphaTest = 0.5;
+  invalidNearAlpha.directIr.foliage.alphaTest = 0.4;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidNearAlpha),
+    /nearAlphaTest must not exceed alphaTest/,
   );
 
   const invalidFrondSegments = structuredClone(config);
@@ -86,11 +108,25 @@ test('lower native foliage and crown LODs remain cheaper than higher LODs', () =
     /frondAggregateSegmentRatio must not exceed frondNearSegmentRatio/,
   );
 
-  const invalidCrown = structuredClone(config);
-  invalidCrown.directIr.crown.aggregateDetail = 2;
-  invalidCrown.directIr.crown.nearDetail = 1;
+  const invalidCrownDetail = structuredClone(config);
+  invalidCrownDetail.directIr.crown.aggregateDetail = 2;
+  invalidCrownDetail.directIr.crown.nearDetail = 1;
   assert.throws(
-    () => parseTreeIrRenderingConfig(invalidCrown),
+    () => parseTreeIrRenderingConfig(invalidCrownDetail),
     /aggregateDetail must not exceed nearDetail/,
+  );
+
+  const invalidCrownScale = structuredClone(config);
+  invalidCrownScale.directIr.crown.nearScale = 0.55;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidCrownScale),
+    /crown scale must not decrease/,
+  );
+
+  const invalidCrownBrightness = structuredClone(config);
+  invalidCrownBrightness.directIr.crown.aggregateBrightness = 0.65;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidCrownBrightness),
+    /crown brightness must not decrease/,
   );
 });
