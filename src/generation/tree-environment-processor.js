@@ -2,6 +2,7 @@ import { hashCanonicalValue } from '../core/canonical-value-hash.js';
 import { createPathAttachmentFrame, createTreeIrFrame } from './tree-ir-frame.js';
 import { expandTreeIrFrondBounds } from './tree-ir-frond-bounds.js';
 import { validateTreeIr } from './tree-ir-validator.js';
+import { pruneUnreferencedTreeIrWindNodes } from './tree-ir-wind-node-pruner.js';
 import { createTreeEnvironmentContext } from './tree-environment-context.js';
 import { TREE_ENVIRONMENT_CONSTANTS } from './tree-environment-constants.js';
 import { parseTreeEnvironmentResponse } from './tree-environment-response.js';
@@ -240,11 +241,14 @@ export function applyTreeEnvironment(treeIr, responseInput, environmentInput) {
   }
 
   const prunedFoliageSiteCount = treeIr.foliageSites.length - keptSites.length;
+  const prunedWindNodeCount =
+    prunedFoliageSiteCount > 0 ? pruneUnreferencedTreeIrWindNodes(ir) : 0;
   ir.metadata.environment = {
     applied: true,
     response,
     context: environment,
     prunedFoliageSiteCount,
+    prunedWindNodeCount,
   };
   invalidateLegacyCoverage(ir.metadata, prunedFoliageSiteCount);
   updateLegacyCrownCenter(ir.metadata, ir.crownVolumes);
