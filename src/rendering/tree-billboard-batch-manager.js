@@ -1,10 +1,9 @@
 import * as THREE from 'three';
+import { BILLBOARD_BATCH_CAPACITY } from './tree-billboard-atlas.js';
 import {
-  BILLBOARD_BATCH_CAPACITY,
-  calculateBillboardAtlasSlot,
-  calculateBillboardAtlasUvTransform,
-  createBillboardAtlasLayout,
-} from './tree-billboard-atlas.js';
+  createTreeBillboardAtlas,
+  writeTreeBillboardAtlasCell,
+} from './tree-billboard-atlas-resource.js';
 import { releaseTreeBillboardBatchReferences } from './tree-billboard-batch-lifecycle.js';
 import { TreeBillboardBatchState } from './tree-billboard-batch-state.js';
 import { calculateTreeBillboardWorldSize } from './tree-billboard-scale.js';
@@ -110,36 +109,6 @@ function createMaterial(texture) {
   return material;
 }
 
-function createAtlas(capacity, sourceTexture) {
-  const image = sourceTexture.image;
-  if (!image?.width || !image?.height) {
-    throw new Error('The tree impostor texture has no drawable image.');
-  }
-
-  const layout = createBillboardAtlasLayout(capacity);
-  const canvas = document.createElement('canvas');
-  canvas.width = image.width * layout.columns;
-  canvas.height = image.height * layout.rows;
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('Unable to create the tree billboard atlas.');
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.name = 'tree-impostor-atlas';
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.minFilter = THREE.LinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = false;
-  texture.needsUpdate = true;
-  return {
-    canvas,
-    context,
-    texture,
-    layout,
-    cellWidth: image.width,
-    cellHeight: image.height,
-  };
-}
-
 function disposeBatch(scene, batch) {
   releaseTreeBillboardBatchReferences(batch);
   scene.remove(batch.mesh);
@@ -183,7 +152,7 @@ export class TreeBillboardBatchManager {
     let mesh = null;
 
     try {
-      atlas = createAtlas(this.capacity, sourceTexture);
+      atlas = createTreeBillboardAtlas(this.capacity, sourceTexture);
       geometry = createGeometry(this.capacity);
       material = createMaterial(atlas.texture);
       mesh = new THREE.InstancedMesh(geometry, material, this.capacity);
@@ -260,21 +229,7 @@ export class TreeBillboardBatchManager {
         this.worldScale,
       );
       scale.setXY(index, billboardSize.x, billboardSize.y);
-      const slot = calculateBillboardAtlasSlot(index, batch.atlas.layout);
-      batch.atlas.context.drawImage(
-        sourceTexture.image,
-        slot.column * batch.atlas.cellWidth,
-        slot.row * batch.atlas.cellHeight,
-        batch.atlas.cellWidth,
-        batch.atlas.cellHeight,
-      );
-      batch.atlas.texture.needsUpdate = true;
-
-      const uv = calculateBillboardAtlasUvTransform(
-        slot,
-        batch.atlas.canvas.width,
-        batch.atlas.canvas.height,
-      );
+      const uv = writeTreeBillboardAtlasCell(batch.atlas, index, sourceTexture);
       const uvTransform = batch.mesh.geometry.getAttribute(
         'treeBillboardUvTransform',
       );
