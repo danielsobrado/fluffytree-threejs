@@ -1,7 +1,5 @@
-import {
-  TREE_WIND_PROFILE,
-  calculateTreeWindBoundsPadding,
-} from './tree-wind-profile.js';
+import { expandTreeWindBounds } from './tree-wind-bounds.js';
+import { TREE_WIND_PROFILE } from './tree-wind-profile.js';
 
 function requireNonNegativeFinite(value, name) {
   const number = Number(value);
@@ -17,22 +15,6 @@ function requirePositiveFinite(value, name) {
     throw new RangeError(`${name} must be finite and positive.`);
   }
   return number;
-}
-
-function expandWindBounds(object, strength) {
-  if (!object?.isInstancedMesh) return;
-
-  const targetPadding = calculateTreeWindBoundsPadding(strength);
-  const userData = object.userData ?? (object.userData = {});
-  const previousPadding = Number(userData.windBoundsPadding ?? 0);
-  const additionalPadding = targetPadding - previousPadding;
-  if (!(additionalPadding > Number.EPSILON)) return;
-
-  if (!object.boundingBox) object.computeBoundingBox?.();
-  if (!object.boundingSphere) object.computeBoundingSphere?.();
-  object.boundingBox?.expandByScalar?.(additionalPadding);
-  if (object.boundingSphere) object.boundingSphere.radius += additionalPadding;
-  userData.windBoundsPadding = targetPadding;
 }
 
 export class TreeWindController {
@@ -81,7 +63,7 @@ export class TreeWindController {
         this.states.push(state);
       }
 
-      if (windEnabled) expandWindBounds(object, this.strength);
+      if (windEnabled) expandTreeWindBounds(object, this.strength);
     });
 
     const lodState = tree.userData?.lod;
