@@ -5,6 +5,7 @@ import {
   calculateBillboardAtlasUvTransform,
   createBillboardAtlasLayout,
 } from './tree-billboard-atlas.js';
+import { releaseTreeBillboardBatchReferences } from './tree-billboard-batch-lifecycle.js';
 import { TreeBillboardBatchState } from './tree-billboard-batch-state.js';
 import { calculateTreeBillboardWorldSize } from './tree-billboard-scale.js';
 import { calculateTreeWorldYaw } from './tree-world-yaw.js';
@@ -140,6 +141,7 @@ function createAtlas(capacity, sourceTexture) {
 }
 
 function disposeBatch(scene, batch) {
+  releaseTreeBillboardBatchReferences(batch);
   scene.remove(batch.mesh);
   batch.mesh.geometry.dispose();
   batch.mesh.material.dispose();
