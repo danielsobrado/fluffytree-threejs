@@ -13,6 +13,10 @@ export function configureTreeIrFrondWindMaterial(material) {
   material.onBeforeCompile = (shader) => {
     installTreeWindUniforms(shader, windState);
     shader.vertexShader = `
+      uniform float uTreeWindTime;
+      uniform float uTreeWindPhase;
+      uniform float uTreeWindStrength;
+      uniform float uTreeWindTreeHeight;
       attribute float treeFrondWindWeight;
       attribute float treeFrondWindPhase;
       ${shader.vertexShader}
