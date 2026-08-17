@@ -3,7 +3,7 @@ import test from 'node:test';
 import * as THREE from 'three';
 import { configureTreeIrFrondWindMaterial } from '../src/rendering/tree-ir-frond-wind-material.js';
 
-test('palm frond wind material compiles anchored vertex deformation inputs', () => {
+test('palm frond wind material compiles anchored zero-based deformation inputs', () => {
   const material = configureTreeIrFrondWindMaterial(
     new THREE.MeshStandardMaterial(),
   );
@@ -18,9 +18,10 @@ test('palm frond wind material compiles anchored vertex deformation inputs', () 
     assert.ok(shader.vertexShader.includes('treeFrondWindPhase'));
     assert.ok(shader.vertexShader.includes('uniform float uTreeWindTime'));
     assert.ok(shader.vertexShader.includes('frondWindSecondary'));
+    assert.ok(shader.vertexShader.includes('-\n          sin(frondWindPhase)'));
     assert.ok(shader.uniforms.uTreeWindTime);
     assert.ok(material.userData.windState);
-    assert.equal(material.customProgramCacheKey(), 'tree-ir-frond-wind-v1');
+    assert.equal(material.customProgramCacheKey(), 'tree-ir-frond-wind-v2');
   } finally {
     material.dispose();
   }
