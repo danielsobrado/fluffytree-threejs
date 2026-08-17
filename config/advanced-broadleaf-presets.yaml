@@ -45,6 +45,7 @@ presets:
     foliage:
       palette: ['#274432', '#3f6543', '#63875a', '#8eaa72']
       roughness: 0.9
+      leafShape: broadleaf
 
   umbrellaBroadleaf:
     label: Umbrella broadleaf
@@ -92,3 +93,4 @@ presets:
     foliage:
       palette: ['#244333', '#3c6848', '#67905d', '#92ad73']
       roughness: 0.88
+      leafShape: oval
