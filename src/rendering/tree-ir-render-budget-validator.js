@@ -1,7 +1,7 @@
 import { TREE_REPRESENTATION_ROLES } from './tree-representation-role.js';
 
 const COST_EPSILON = 1e-12;
-const PINNATE_HERO_FROND_TRIANGLE_FACTOR = 2;
+const PINNATE_FROND_TRIANGLE_FACTOR = 2;
 
 function requireRepresentation(profile, role) {
   const representation = profile?.representations?.[role];
@@ -17,6 +17,10 @@ function assertNotMoreExpensive(lowerCost, higherCost, label) {
       `${label} must not exceed its higher-detail representation cost (${lowerCost} > ${higherCost}).`,
     );
   }
+}
+
+function frondTriangleFactor(leaflets) {
+  return leaflets ? PINNATE_FROND_TRIANGLE_FACTOR : 1;
 }
 
 export function validateTreeIrRenderBudgets(qualityProfile, renderingConfig) {
@@ -36,9 +40,11 @@ export function validateTreeIrRenderBudgets(qualityProfile, renderingConfig) {
   const heroCardCost = hero.foliageDensity * foliage.heroCardPlanes;
   const nearCardCost = near.foliageDensity * foliage.nearCardPlanes;
   const heroFrondCost =
-    hero.foliageDensity *
-    (foliage.frondHeroLeaflets ? PINNATE_HERO_FROND_TRIANGLE_FACTOR : 1);
-  const nearFrondCost = near.foliageDensity * foliage.frondNearSegmentRatio;
+    hero.foliageDensity * frondTriangleFactor(foliage.frondHeroLeaflets);
+  const nearFrondCost =
+    near.foliageDensity *
+    foliage.frondNearSegmentRatio *
+    frondTriangleFactor(foliage.frondNearLeaflets);
   const aggregateFrondCost =
     foliage.frondAggregateDensity * foliage.frondAggregateSegmentRatio;
 
