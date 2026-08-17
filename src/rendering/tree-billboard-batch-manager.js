@@ -7,6 +7,7 @@ import {
 } from './tree-billboard-atlas.js';
 import { TreeBillboardBatchState } from './tree-billboard-batch-state.js';
 import { calculateTreeBillboardWorldSize } from './tree-billboard-scale.js';
+import { calculateTreeWorldYaw } from './tree-world-yaw.js';
 
 const DITHER_FRAGMENT = `
   float treeBatchNoise = fract(
@@ -168,6 +169,8 @@ export class TreeBillboardBatchManager {
     this.batches = new Map();
     this.worldPosition = new THREE.Vector3();
     this.worldScale = new THREE.Vector3();
+    this.worldQuaternion = new THREE.Quaternion();
+    this.worldForward = new THREE.Vector3();
     this.matrix = new THREE.Matrix4();
   }
 
@@ -221,7 +224,10 @@ export class TreeBillboardBatchManager {
 
   register(tree) {
     const presetId = tree.userData.tree.presetId;
-    tree.userData.lod.rebuildImpostor?.(tree.rotation.y);
+    tree.getWorldQuaternion(this.worldQuaternion);
+    this.worldForward.set(0, 0, 1).applyQuaternion(this.worldQuaternion);
+    const worldYaw = calculateTreeWorldYaw(this.worldForward, tree.rotation.y);
+    tree.userData.lod.rebuildImpostor?.(worldYaw);
     tree.updateMatrixWorld(true);
     tree.getWorldScale(this.worldScale);
     const impostor = findImpostor(tree);
