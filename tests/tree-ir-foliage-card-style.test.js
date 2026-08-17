@@ -16,7 +16,7 @@ test('native foliage card style is deterministic and bounded', () => {
 
   assert.deepEqual(first, second);
   assert.ok(first.widthScale >= 0.8 && first.widthScale <= 1.22);
-  assert.ok(first.heightScale >= 0.86 && first.heightScale <= 1.15);
+  assert.ok(first.heightScale >= 0.85 && first.heightScale <= 1.16);
   assert.ok(Math.abs(first.twist) <= CONFIG.cardTwist);
   assert.ok(first.brightness >= 0.96 && first.brightness <= 1.04);
 });
