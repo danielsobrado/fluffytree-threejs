@@ -132,6 +132,12 @@ function parseCrown(source) {
       0.25,
       'treeIrRendering.directIr.crown.shapeVariation',
     ),
+    surfaceVariation: requireRange(
+      source.surfaceVariation,
+      0,
+      0.2,
+      'treeIrRendering.directIr.crown.surfaceVariation',
+    ),
   });
 
   if (crown.nearDetail > crown.heroDetail) {
