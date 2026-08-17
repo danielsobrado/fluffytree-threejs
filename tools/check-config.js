@@ -24,6 +24,7 @@ import { parseShellCoverageQaConfig } from '../src/qa/shell-coverage-qa-config.j
 import { parseStemManifoldQaConfig } from '../src/qa/stem-manifold-qa-config.js';
 import { parseTreeShapeQaConfig } from '../src/qa/tree-shape-qa-config.js';
 import { parseTreeStressQaPolicy } from '../src/qa/tree-stress-qa-policy.js';
+import { validateTreeIrRenderBudgets } from '../src/rendering/tree-ir-render-budget-validator.js';
 import { parseTreeIrRenderingConfig } from '../src/rendering/tree-ir-rendering-config.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
 import { parsePagesConfig } from './pages-config.js';
@@ -134,8 +135,13 @@ for (const preset of coniferLibrary.presets.values()) {
   parseWhorledConiferConfig(preset);
 }
 
-parseTreeQualityProfiles(readConfig('config/tree-quality-profiles.yaml'));
-parseTreeIrRenderingConfig(readConfig('config/tree-ir-rendering.yaml'));
+const qualityProfiles = parseTreeQualityProfiles(
+  readConfig('config/tree-quality-profiles.yaml'),
+);
+const treeIrRenderingConfig = parseTreeIrRenderingConfig(
+  readConfig('config/tree-ir-rendering.yaml'),
+);
+validateTreeIrRenderBudgets(qualityProfiles.default, treeIrRenderingConfig);
 parseForestVariantPolicy(readConfig('config/forest-variant-policy.yaml'));
 parseForestRuntimePolicy(readConfig('config/forest-runtime-policy.yaml'));
 parseTreeAnimationPolicy(readConfig('config/tree-animation-policy.yaml'));
