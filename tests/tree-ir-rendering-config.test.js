@@ -20,6 +20,7 @@ test('direct Tree IR rendering policy parses into immutable role settings', () =
   assert.equal(parsed.foliage.nearAlphaTest, 0.3);
   assert.equal(parsed.foliage.heroCardPlanes, 3);
   assert.equal(parsed.foliage.frondHeroLeaflets, true);
+  assert.equal(parsed.foliage.frondNearLeaflets, true);
   assert.equal(parsed.foliage.frondLeafletLengthRatio, 0.95);
   assert.equal(parsed.foliage.frondNearSegmentRatio, 0.58);
   assert.equal(parsed.foliage.frondAggregateDensity, 0.72);
@@ -99,6 +100,14 @@ test('lower native foliage and crown LODs preserve their visual hierarchy', () =
   assert.throws(
     () => parseTreeIrRenderingConfig(invalidNearAlpha),
     /nearAlphaTest must not exceed alphaTest/,
+  );
+
+  const invalidNearLeaflets = structuredClone(config);
+  invalidNearLeaflets.directIr.foliage.frondHeroLeaflets = false;
+  invalidNearLeaflets.directIr.foliage.frondNearLeaflets = true;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidNearLeaflets),
+    /frondNearLeaflets requires frondHeroLeaflets/,
   );
 
   const invalidFrondSegments = structuredClone(config);
