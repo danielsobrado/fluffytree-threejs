@@ -4,6 +4,7 @@ import { configureObjectLodFade, setObjectLodFade } from './lod-dither-fade.js';
 import { disposeObject } from './object-disposer.js';
 import { TreeIrCrownVolumeBuilder } from './tree-ir-crown-volume-builder.js';
 import { TreeIrFoliageBuilder } from './tree-ir-foliage-builder.js';
+import { shouldBuildTreeIrFoliage } from './tree-ir-foliage-lod-policy.js';
 import { TreeIrImpostorBuilder } from './tree-ir-impostor-builder.js';
 import {
   TREE_RENDER_REPRESENTATION_ROLES,
@@ -79,13 +80,6 @@ function structureSettings(role, config) {
   return settings;
 }
 
-function foliageDensityForRole(treeIr, role, representation, config) {
-  if (role === TREE_REPRESENTATION_ROLES.AGGREGATE && isFrondOnly(treeIr)) {
-    return config.frondAggregateDensity;
-  }
-  return representation.foliageDensity;
-}
-
 function createDetachedLevelObjects({
   treeIr,
   role,
@@ -126,15 +120,8 @@ function createDetachedLevelObjects({
       );
     }
 
-    const foliageDensity = foliageDensityForRole(
-      treeIr,
-      role,
-      representation,
-      renderingConfig.foliage,
-    );
-    const allowFoliage =
-      role !== TREE_REPRESENTATION_ROLES.AGGREGATE || frondOnly;
-    if (allowFoliage && foliageDensity > 0) {
+    const foliageDensity = representation.foliageDensity;
+    if (shouldBuildTreeIrFoliage(treeIr, role, foliageDensity)) {
       objects.push(
         foliageBuilder.build(
           treeIr,
