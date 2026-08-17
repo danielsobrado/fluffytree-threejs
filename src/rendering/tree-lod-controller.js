@@ -22,6 +22,10 @@ import { shouldRenderTreeShadowProxy } from './tree-shadow-lod-policy.js';
 const VISIBLE_FADE_THRESHOLD = 0.001;
 const MINIMUM_TREE_DISTANCE = 0.001;
 
+function heroTaskKey(tree) {
+  return `${tree.uuid}:hero`;
+}
+
 function logGenerationError(error, tree) {
   const presetId = tree.userData?.tree?.presetId ?? 'unknown';
   logger.error(`Deferred hero generation failed for '${presetId}'.`, error);
@@ -77,6 +81,7 @@ export class TreeLodController {
   }
 
   register(tree) {
+    if (this.entries.some((entry) => entry.tree === tree)) return false;
     const lodState = tree.userData.lod;
     this.entries.push({
       tree,
@@ -94,6 +99,16 @@ export class TreeLodController {
       },
     });
     this.dirty = true;
+    return true;
+  }
+
+  unregister(tree) {
+    const index = this.entries.findIndex((entry) => entry.tree === tree);
+    if (index < 0) return false;
+    this.entries.splice(index, 1);
+    this.generationQueue?.cancel?.(heroTaskKey(tree));
+    this.dirty = true;
+    return true;
   }
 
   clear() {
@@ -118,7 +133,7 @@ export class TreeLodController {
     };
 
     if (this.generationQueue) {
-      this.generationQueue.enqueue(`${entry.tree.uuid}:hero`, task);
+      this.generationQueue.enqueue(heroTaskKey(entry.tree), task);
     } else {
       task();
     }
