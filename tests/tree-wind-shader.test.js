@@ -42,6 +42,16 @@ test('tree wind uses instance crown height for coherent sway weight', () => {
   );
 });
 
+test('tree wind deformation is zero at capture time for any seeded phase', () => {
+  const source = injectTreeWindVertexShader(
+    'void main() { #include <begin_vertex> }',
+  );
+
+  assert.match(source, /sin\(uTreeWindPhase\)/);
+  assert.match(source, /treeWindSecondaryPhase/);
+  assert.match(source, /sin\(treeWindSecondaryPhase\)/);
+});
+
 test('tree wind material exposes one mutable state', () => {
   const material = createMaterial();
   configureTreeWindMaterial(material, { cacheKey: 'wind-test' });
