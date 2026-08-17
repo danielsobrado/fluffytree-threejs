@@ -62,6 +62,7 @@ function collectNativeMetrics(trees) {
   const aggregateIndex = treeRepresentationIndex(
     TREE_REPRESENTATION_ROLES.AGGREGATE,
   );
+  const broadleafLeafShapes = new Set();
   const metrics = {
     treeCount: trees.length,
     palmCount: 0,
@@ -74,8 +75,10 @@ function collectNativeMetrics(trees) {
     heroLeafletPalmCount: 0,
     aggregateFrondProxyCount: 0,
     palmFrondShadowCount: 0,
+    palmBandedTrunkCount: 0,
     foliageCardBatchCount: 0,
     recessedBroadleafCoreCount: 0,
+    broadleafLeafShapeCount: 0,
     billboardBatchTreeCount: 0,
   };
 
@@ -141,6 +144,17 @@ function collectNativeMetrics(trees) {
       }
       metrics.heroLeafletPalmCount += 1;
 
+      const heroStructure = findUserDataMarker(
+        lodState.levels[heroIndex],
+        'structure',
+      );
+      if (heroStructure?.barkPattern !== 'palm') {
+        throw new Error(
+          `Palm '${treeState.presetId}' hero trunk has no palm leaf-scar bark pattern.`,
+        );
+      }
+      metrics.palmBandedTrunkCount += 1;
+
       if (!hasUserDataMarker(lodState.levels[aggregateIndex], 'fronds')) {
         throw new Error(
           `Palm '${treeState.presetId}' aggregate representation has no frond proxy.`,
@@ -184,6 +198,12 @@ function collectNativeMetrics(trees) {
           `Broadleaf '${treeState.presetId}' does not expose its complete native canopy hierarchy.`,
         );
       }
+      if (!heroCards.leafShape || heroCards.leafShape !== nearCards.leafShape) {
+        throw new Error(
+          `Broadleaf '${treeState.presetId}' does not preserve its leaf silhouette across detailed LODs.`,
+        );
+      }
+      broadleafLeafShapes.add(heroCards.leafShape);
       if (nearCards.alphaTest > heroCards.alphaTest) {
         throw new Error(
           `Broadleaf '${treeState.presetId}' near foliage alpha cutoff exceeds hero cutoff.`,
@@ -212,6 +232,15 @@ function collectNativeMetrics(trees) {
 
   if (metrics.palmCount === 0 || metrics.broadleafCount === 0) {
     throw new Error('Native render smoke must exercise both palm and broadleaf models.');
+  }
+  metrics.broadleafLeafShapeCount = broadleafLeafShapes.size;
+  if (
+    metrics.broadleafCount > 1 &&
+    metrics.broadleafLeafShapeCount < 2
+  ) {
+    throw new Error(
+      'Native render smoke broadleaf species must exercise more than one leaf silhouette.',
+    );
   }
   return metrics;
 }
