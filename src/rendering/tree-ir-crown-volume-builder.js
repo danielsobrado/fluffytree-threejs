@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { calculateTreeIrCrownStyle } from './tree-ir-crown-style.js';
 import { setTreeIrPaletteColor } from './tree-ir-palette.js';
 
 export class TreeIrCrownVolumeBuilder {
@@ -7,6 +8,8 @@ export class TreeIrCrownVolumeBuilder {
     {
       detail = 1,
       scaleMultiplier = 1,
+      brightness = 1,
+      shapeVariation = 0,
       castShadow = false,
       receiveShadow = true,
       name = 'tree-ir-crown-volumes',
@@ -19,7 +22,10 @@ export class TreeIrCrownVolumeBuilder {
       geometry = new THREE.IcosahedronGeometry(1, detail);
       material = new THREE.MeshStandardMaterial({
         color: 0xffffff,
-        roughness: Number(treeIr.metadata.material.foliageRoughness ?? 0.9),
+        roughness: Math.min(
+          1,
+          Number(treeIr.metadata.material.foliageRoughness ?? 0.9) + 0.08,
+        ),
         metalness: 0,
         fog: true,
       });
@@ -31,21 +37,25 @@ export class TreeIrCrownVolumeBuilder {
       const scale = new THREE.Vector3();
       const color = new THREE.Color();
       const palette = treeIr.metadata.material.foliagePalette;
+      const styleConfig = { brightness, shapeVariation };
 
       volumes.forEach((volume, index) => {
+        const style = calculateTreeIrCrownStyle(treeIr, volume, styleConfig);
         position.set(volume.center.x, volume.center.y, volume.center.z);
         euler.set(volume.rotation.x, volume.rotation.y, volume.rotation.z);
         quaternion.setFromEuler(euler);
         scale.set(
-          volume.scale.x * scaleMultiplier,
-          volume.scale.y * scaleMultiplier,
-          volume.scale.z * scaleMultiplier,
+          Math.max(0.01, volume.scale.x * scaleMultiplier * style.scaleX),
+          Math.max(0.01, volume.scale.y * scaleMultiplier * style.scaleY),
+          Math.max(0.01, volume.scale.z * scaleMultiplier * style.scaleZ),
         );
         matrix.compose(position, quaternion, scale);
         mesh.setMatrixAt(index, matrix);
         mesh.setColorAt(
           index,
-          setTreeIrPaletteColor(color, palette, volume.colorMix),
+          setTreeIrPaletteColor(color, palette, volume.colorMix).multiplyScalar(
+            style.brightness,
+          ),
         );
       });
 
@@ -64,6 +74,8 @@ export class TreeIrCrownVolumeBuilder {
         count: volumes.length,
         detail,
         scaleMultiplier,
+        brightness,
+        shapeVariation,
       });
       geometry = null;
       material = null;
