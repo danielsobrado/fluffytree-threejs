@@ -28,13 +28,14 @@ function createWindTransform() {
         1.0
       );
     #endif
-    float treeWindPrimary = sin(
-      uTreeWindTime * ${primaryTimeScale} + uTreeWindPhase
-    );
-    float treeWindSecondary = sin(
-      uTreeWindTime * ${secondaryTimeScale} +
-        uTreeWindPhase * ${secondaryPhaseScale}
-    );
+    float treeWindPrimary =
+      sin(uTreeWindTime * ${primaryTimeScale} + uTreeWindPhase) -
+      sin(uTreeWindPhase);
+    float treeWindSecondaryPhase =
+      uTreeWindPhase * ${secondaryPhaseScale};
+    float treeWindSecondary =
+      sin(uTreeWindTime * ${secondaryTimeScale} + treeWindSecondaryPhase) -
+      sin(treeWindSecondaryPhase);
     vec3 treeWindObjectOffset = vec3(
       treeWindPrimary * uTreeWindStrength * treeWindWeight,
       0.0,
@@ -108,7 +109,7 @@ export function injectTreeWindVertexShader(vertexShader) {
 
 export function configureTreeWindMaterial(
   material,
-  { cacheKey = 'tree-wind-v1' } = {},
+  { cacheKey = 'tree-wind-v2' } = {},
 ) {
   const windState = createTreeWindState();
   material.userData.windState = windState;
