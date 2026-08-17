@@ -3,11 +3,13 @@ import { logger } from '../core/logger.js';
 import { setObjectLodFade } from './lod-dither-fade.js';
 import {
   calculateLodWeights,
-  calculateProjectedTreePixels,
   remapUnavailableLodWeights,
   resolveStableLod,
-  resolveTreeWorldScale,
 } from './tree-lod-math.js';
+import {
+  calculateProjectedTreePixels,
+  resolveTreeWorldScale,
+} from './tree-projection-math.js';
 import {
   isImpostorRepresentation,
   TREE_REPRESENTATION_ROLES,
@@ -17,6 +19,7 @@ import {
 import { shouldRenderTreeShadowProxy } from './tree-shadow-lod-policy.js';
 
 const VISIBLE_FADE_THRESHOLD = 0.001;
+const MINIMUM_TREE_DISTANCE = 0.001;
 
 function logGenerationError(error, tree) {
   const presetId = tree.userData?.tree?.presetId ?? 'unknown';
@@ -215,7 +218,10 @@ export class TreeLodController {
       const lodState = entry.tree.userData.lod;
       entry.tree.getWorldPosition(this.worldPosition);
       entry.tree.getWorldScale(this.worldScale);
-      const distance = camera.position.distanceTo(this.worldPosition);
+      const distance = Math.max(
+        MINIMUM_TREE_DISTANCE,
+        camera.position.distanceTo(this.worldPosition),
+      );
       const projectedPixels = calculateProjectedTreePixels(
         treeState.height,
         distance,
