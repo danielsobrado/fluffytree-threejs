@@ -3,6 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createTreeIrFoliageAlphaTexture } from './tree-ir-foliage-alpha-texture.js';
 import { calculateTreeIrFoliageCardStyle } from './tree-ir-foliage-card-style.js';
 import { setTreeIrPaletteColor } from './tree-ir-palette.js';
+import { configureTreeWindMaterial } from './tree-wind-shader.js';
 
 function createCardGeometry(planeCount) {
   const geometries = [];
@@ -53,16 +54,19 @@ export class TreeIrFoliageCardBuilder {
         primitiveFamily,
         alphaResolution,
       );
-      material = new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        map: texture,
-        alphaTest,
-        transparent: false,
-        side: THREE.DoubleSide,
-        roughness: Number(treeIr.metadata.material.foliageRoughness ?? 0.9),
-        metalness: 0,
-        fog: true,
-      });
+      material = configureTreeWindMaterial(
+        new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          map: texture,
+          alphaTest,
+          transparent: false,
+          side: THREE.DoubleSide,
+          roughness: Number(treeIr.metadata.material.foliageRoughness ?? 0.9),
+          metalness: 0,
+          fog: true,
+        }),
+        { cacheKey: 'tree-ir-foliage-card-wind-v1' },
+      );
       material.userData.disposables = [texture];
       const mesh = new THREE.InstancedMesh(geometry, material, sites.length);
       const basisMatrix = new THREE.Matrix4();
