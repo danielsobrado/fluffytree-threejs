@@ -40,7 +40,7 @@ function frondSegmentRatio(role, config) {
 
 function selectFamilySites(treeIr, sites, family, role, density) {
   return family === FOLIAGE_PRIMITIVE_FAMILIES.FROND
-    ? selectTreeIrFrondSites(treeIr, sites, role, density)
+    ? selectTreeIrFrondSites(treeIr, sites, density)
     : selectTreeIrFoliageSites(treeIr, sites, role, density);
 }
 
