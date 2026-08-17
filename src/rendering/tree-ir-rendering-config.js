@@ -19,6 +19,13 @@ function requireRange(value, minimum, maximum, path) {
   return value;
 }
 
+function requireBoolean(value, path) {
+  if (typeof value !== 'boolean') {
+    throw new TypeError(`${path} must be a boolean.`);
+  }
+  return value;
+}
+
 function parseStructure(source, path) {
   requireObject(source, path);
   return Object.freeze({
@@ -209,6 +216,28 @@ function parseFoliage(source) {
       0,
       Math.PI * 0.5,
       'treeIrRendering.directIr.foliage.cardTwist',
+    ),
+    frondHeroLeaflets: requireBoolean(
+      source.frondHeroLeaflets,
+      'treeIrRendering.directIr.foliage.frondHeroLeaflets',
+    ),
+    frondRachisWidthRatio: requireRange(
+      source.frondRachisWidthRatio,
+      0.02,
+      0.25,
+      'treeIrRendering.directIr.foliage.frondRachisWidthRatio',
+    ),
+    frondLeafletLengthRatio: requireRange(
+      source.frondLeafletLengthRatio,
+      0.5,
+      1,
+      'treeIrRendering.directIr.foliage.frondLeafletLengthRatio',
+    ),
+    frondLeafletWidthRatio: requireRange(
+      source.frondLeafletWidthRatio,
+      0.2,
+      1,
+      'treeIrRendering.directIr.foliage.frondLeafletWidthRatio',
     ),
     frondNearSegmentRatio: requireRange(
       source.frondNearSegmentRatio,
