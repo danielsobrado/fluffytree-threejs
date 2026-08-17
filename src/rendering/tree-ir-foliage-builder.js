@@ -40,6 +40,16 @@ function frondSegmentRatio(role, config) {
   return config.frondNearSegmentRatio;
 }
 
+function useFrondLeaflets(role, config) {
+  if (role === TREE_REPRESENTATION_ROLES.HERO) {
+    return config.frondHeroLeaflets;
+  }
+  if (role === TREE_REPRESENTATION_ROLES.NEAR) {
+    return config.frondNearLeaflets;
+  }
+  return false;
+}
+
 function selectFamilySites(treeIr, sites, family, role, density) {
   return family === FOLIAGE_PRIMITIVE_FAMILIES.FROND
     ? selectTreeIrFrondSites(treeIr, sites, density)
@@ -83,9 +93,7 @@ export class TreeIrFoliageBuilder {
         group.add(
           this.frondBuilder.build(treeIr, sites, {
             segmentRatio: frondSegmentRatio(role, config),
-            leaflets:
-              role === TREE_REPRESENTATION_ROLES.HERO &&
-              config.frondHeroLeaflets,
+            leaflets: useFrondLeaflets(role, config),
             rachisWidthRatio: config.frondRachisWidthRatio,
             leafletLengthRatio: config.frondLeafletLengthRatio,
             leafletWidthRatio: config.frondLeafletWidthRatio,
