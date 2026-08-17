@@ -1,3 +1,4 @@
+import { expandTreeIrFrondBounds } from './tree-ir-frond-bounds.js';
 import { createPathAttachmentFrame, createTreeIrFrame } from './tree-ir-frame.js';
 import {
   FOLIAGE_PRIMITIVE_FAMILIES,
@@ -127,22 +128,22 @@ function createFrondSite(preset, crownPosition, random, index) {
   };
 }
 
-function createBounds(preset, trunkPath, crownPosition) {
-  const maximumLength = preset.morphology.frondLength[1];
-  const minimum = {
-    x: Math.min(...trunkPath.map((point) => point.x), crownPosition.x - maximumLength),
-    y: 0,
-    z: Math.min(...trunkPath.map((point) => point.z), crownPosition.z - maximumLength),
+function createBounds(preset, trunkPath, foliageSites) {
+  const bounds = {
+    minimum: {
+      x: Math.min(...trunkPath.map((point) => point.x)),
+      y: 0,
+      z: Math.min(...trunkPath.map((point) => point.z)),
+    },
+    maximum: {
+      x: Math.max(...trunkPath.map((point) => point.x)),
+      y: preset.height,
+      z: Math.max(...trunkPath.map((point) => point.z)),
+    },
   };
-  const maximum = {
-    x: Math.max(...trunkPath.map((point) => point.x), crownPosition.x + maximumLength),
-    y: Math.max(
-      preset.height,
-      crownPosition.y + maximumLength * preset.morphology.frondRise,
-    ),
-    z: Math.max(...trunkPath.map((point) => point.z), crownPosition.z + maximumLength),
-  };
-  return { minimum, maximum };
+
+  for (const site of foliageSites) expandTreeIrFrondBounds(bounds, site);
+  return bounds;
 }
 
 export class PalmTreeGenerator {
@@ -209,7 +210,7 @@ export class PalmTreeGenerator {
       generationModel: PALM_TREE_MODEL_ID,
       seed: Number(seed) >>> 0,
       height: preset.height,
-      bounds: createBounds(preset, trunkPath, crownPosition),
+      bounds: createBounds(preset, trunkPath, foliageSites),
       root: { stemId: TREE_IR_ROOT_STEM_ID },
       stems: [rootStem],
       foliageSites,
