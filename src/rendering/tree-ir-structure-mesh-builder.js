@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { analyzeBufferGeometryManifold } from '../qa/mesh-manifold-analyzer.js';
 import { TaperedCurveGeometryFactory } from './tapered-curve-geometry-factory.js';
+import { TREE_BARK_PATTERNS } from './tree-bark-style-constants.js';
 import { createRenderableTreeIrStemPath } from './tree-ir-render-path.js';
 import { createTreeIrTrunkRenderData } from './tree-ir-trunk-render-data.js';
 import { TrunkGeometryFactory } from './trunk-geometry-factory.js';
@@ -18,6 +19,12 @@ function rootStem(treeIr) {
 
 function includeStem(stem, maximumStemOrder) {
   return maximumStemOrder === null || stem.order <= maximumStemOrder;
+}
+
+function trunkBarkPattern(treeIr) {
+  return treeIr.generationModel === 'palm'
+    ? TREE_BARK_PATTERNS.PALM
+    : TREE_BARK_PATTERNS.WOOD;
 }
 
 export class TreeIrStructureMeshBuilder {
@@ -68,6 +75,7 @@ export class TreeIrStructureMeshBuilder {
         treeIr.seed,
         0,
         treeIr.height,
+        { pattern: trunkBarkPattern(treeIr) },
       );
 
       for (const stem of treeIr.stems) {
@@ -104,6 +112,7 @@ export class TreeIrStructureMeshBuilder {
         maximumStemOrder,
         manifoldAnalyzed: Boolean(trunkManifold),
         trunkClosed: trunkManifold?.closedTwoManifold ?? null,
+        barkPattern: trunkBarkPattern(treeIr),
       });
       merged = null;
       material = null;
