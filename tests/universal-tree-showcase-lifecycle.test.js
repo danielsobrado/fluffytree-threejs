@@ -15,10 +15,26 @@ function createRoot() {
 }
 
 function createShowcase(root, billboardRegister) {
+  let windRegistered = false;
+  let windUnregisterCount = 0;
+  const windController = {
+    register() {
+      windRegistered = true;
+      return true;
+    },
+    unregister() {
+      windRegistered = false;
+      windUnregisterCount += 1;
+      return true;
+    },
+    update() {},
+    clear() {},
+  };
   const showcase = new UniversalTreeShowcase({
     sceneFactory: { create() {} },
-    treeGenerator: { generateIr: () => ({}) },
+    treeGenerator: { generateIr: () => ({ seed: 1 }) },
     treeMeshBuilder: { build: () => root },
+    windController,
     renderSmokeProbe: { enabled: false },
   });
   const sceneObjects = new Set();
@@ -55,7 +71,8 @@ function createShowcase(root, billboardRegister) {
     },
   };
   showcase.billboardBatchManager = {
-    register: () => billboardRegister({ sceneObjects, lodRegistered }),
+    register: () =>
+      billboardRegister({ sceneObjects, lodRegistered, windRegistered }),
   };
   return {
     showcase,
@@ -66,28 +83,39 @@ function createShowcase(root, billboardRegister) {
     get unregisterCount() {
       return unregisterCount;
     },
+    get windRegistered() {
+      return windRegistered;
+    },
+    get windUnregisterCount() {
+      return windUnregisterCount;
+    },
   };
 }
 
 const ENTRY = Object.freeze({ seed: 1, position: [0, 0, 0], rotationY: 0 });
 const PRESET = Object.freeze({ id: 'testTree' });
 
-test('billboard registration runs only after scene and LOD registration commit', () => {
+test('billboard registration runs after scene, LOD and wind registration', () => {
   const root = createRoot();
-  const fixture = createShowcase(root, ({ sceneObjects, lodRegistered }) => {
-    assert.equal(sceneObjects.has(root), true);
-    assert.equal(lodRegistered, true);
-    return { batch: {}, index: 0 };
-  });
+  const fixture = createShowcase(
+    root,
+    ({ sceneObjects, lodRegistered, windRegistered }) => {
+      assert.equal(sceneObjects.has(root), true);
+      assert.equal(lodRegistered, true);
+      assert.equal(windRegistered, true);
+      return { batch: {}, index: 0 };
+    },
+  );
 
   fixture.showcase.addTree(ENTRY, PRESET);
 
   assert.equal(fixture.sceneObjects.has(root), true);
   assert.equal(fixture.lodRegistered, true);
+  assert.equal(fixture.windRegistered, true);
   assert.deepEqual(fixture.showcase.treeRoots, [root]);
 });
 
-test('missing far impostor rolls back scene tracking and LOD registration', () => {
+test('missing far impostor rolls back wind, LOD and scene registration', () => {
   const root = createRoot();
   const fixture = createShowcase(root, () => null);
 
@@ -97,6 +125,8 @@ test('missing far impostor rolls back scene tracking and LOD registration', () =
   );
   assert.equal(fixture.sceneObjects.has(root), false);
   assert.equal(fixture.lodRegistered, false);
+  assert.equal(fixture.windRegistered, false);
+  assert.equal(fixture.windUnregisterCount, 1);
   assert.equal(fixture.unregisterCount, 1);
   assert.deepEqual(fixture.showcase.treeRoots, []);
 });
