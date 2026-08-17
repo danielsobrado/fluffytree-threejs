@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { setTreeIrPaletteColor } from './tree-ir-palette.js';
 import { treeIrStyleUnit } from './tree-ir-style-random.js';
 
+const TAU = Math.PI * 2;
+
 function clamp01(value) {
   return Math.min(1, Math.max(0, value));
 }
@@ -42,9 +44,29 @@ function colorMix(treeIr, site, t, offset = 0) {
   return clamp01(base * 0.65 + t * 0.35 + offset);
 }
 
-function appendVertex(positions, colors, point, color) {
+function windPhase(treeIr, site) {
+  return treeIrStyleUnit(treeIr, site.id, 'frond-wind-phase') * TAU;
+}
+
+function windWeight(t) {
+  const value = clamp01(t);
+  return value * value * (3 - 2 * value);
+}
+
+function appendVertex(
+  positions,
+  colors,
+  windWeights,
+  windPhases,
+  point,
+  color,
+  t,
+  phase,
+) {
   positions.push(point.x, point.y, point.z);
   colors.push(color.r, color.g, color.b);
+  windWeights.push(windWeight(t));
+  windPhases.push(phase);
   return positions.length / 3 - 1;
 }
 
@@ -56,13 +78,27 @@ function offsetPoint(sample, distance) {
   };
 }
 
-function finishGeometry(positions, colors, indices) {
+function finishGeometry(
+  positions,
+  colors,
+  windWeights,
+  windPhases,
+  indices,
+) {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute(
     'position',
     new THREE.Float32BufferAttribute(positions, 3),
   );
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setAttribute(
+    'treeFrondWindWeight',
+    new THREE.Float32BufferAttribute(windWeights, 1),
+  );
+  geometry.setAttribute(
+    'treeFrondWindPhase',
+    new THREE.Float32BufferAttribute(windPhases, 1),
+  );
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   geometry.computeBoundingBox();
@@ -74,16 +110,37 @@ function createRibbonGeometry(treeIr, site, frond, segmentCount) {
   const sample = createSampler(site, frond);
   const positions = [];
   const colors = [];
+  const windWeights = [];
+  const windPhases = [];
   const indices = [];
   const palette = treeIr.metadata.material.foliagePalette;
   const color = new THREE.Color();
+  const phase = windPhase(treeIr, site);
 
   for (let index = 0; index <= segmentCount; index += 1) {
     const t = index / segmentCount;
     const center = sample(t);
     setTreeIrPaletteColor(color, palette, colorMix(treeIr, site, t));
-    appendVertex(positions, colors, offsetPoint(center, -center.halfWidth), color);
-    appendVertex(positions, colors, offsetPoint(center, center.halfWidth), color);
+    appendVertex(
+      positions,
+      colors,
+      windWeights,
+      windPhases,
+      offsetPoint(center, -center.halfWidth),
+      color,
+      t,
+      phase,
+    );
+    appendVertex(
+      positions,
+      colors,
+      windWeights,
+      windPhases,
+      offsetPoint(center, center.halfWidth),
+      color,
+      t,
+      phase,
+    );
 
     if (index < segmentCount) {
       const left = index * 2;
@@ -94,7 +151,13 @@ function createRibbonGeometry(treeIr, site, frond, segmentCount) {
     }
   }
 
-  return finishGeometry(positions, colors, indices);
+  return finishGeometry(
+    positions,
+    colors,
+    windWeights,
+    windPhases,
+    indices,
+  );
 }
 
 function appendRachis(
@@ -105,11 +168,14 @@ function appendRachis(
   rachisWidthRatio,
   positions,
   colors,
+  windWeights,
+  windPhases,
   indices,
 ) {
   const sample = createSampler(site, frond);
   const palette = treeIr.metadata.material.foliagePalette;
   const color = new THREE.Color();
+  const phase = windPhase(treeIr, site);
   const firstVertex = positions.length / 3;
   const halfWidth = Math.max(0.006, frond.width * rachisWidthRatio * 0.5);
 
@@ -121,8 +187,26 @@ function appendRachis(
       palette,
       colorMix(treeIr, site, t, -0.08),
     );
-    appendVertex(positions, colors, offsetPoint(center, -halfWidth), color);
-    appendVertex(positions, colors, offsetPoint(center, halfWidth), color);
+    appendVertex(
+      positions,
+      colors,
+      windWeights,
+      windPhases,
+      offsetPoint(center, -halfWidth),
+      color,
+      t,
+      phase,
+    );
+    appendVertex(
+      positions,
+      colors,
+      windWeights,
+      windPhases,
+      offsetPoint(center, halfWidth),
+      color,
+      t,
+      phase,
+    );
 
     if (index < segmentCount) {
       const left = firstVertex + index * 2;
@@ -146,11 +230,14 @@ function appendLeaflets(
   },
   positions,
   colors,
+  windWeights,
+  windPhases,
   indices,
 ) {
   const sample = createSampler(site, frond);
   const palette = treeIr.metadata.material.foliagePalette;
   const color = new THREE.Color();
+  const phase = windPhase(treeIr, site);
   const step = 1 / segmentCount;
   const rachisHalfWidth = Math.max(
     0.006,
@@ -160,8 +247,10 @@ function appendLeaflets(
   for (let index = 0; index < segmentCount; index += 1) {
     const t = (index + 0.5) * step;
     const halfSpan = step * leafletWidthRatio * 0.5;
-    const before = sample(Math.max(0, t - halfSpan));
-    const after = sample(Math.min(1, t + halfSpan));
+    const beforeT = Math.max(0, t - halfSpan);
+    const afterT = Math.min(1, t + halfSpan);
+    const before = sample(beforeT);
+    const after = sample(afterT);
     const center = sample(t);
 
     for (const sign of [-1, 1]) {
@@ -174,20 +263,32 @@ function appendLeaflets(
       const first = appendVertex(
         positions,
         colors,
+        windWeights,
+        windPhases,
         offsetPoint(before, sign * rachisHalfWidth),
         color,
+        beforeT,
+        phase,
       );
       const second = appendVertex(
         positions,
         colors,
+        windWeights,
+        windPhases,
         offsetPoint(after, sign * rachisHalfWidth),
         color,
+        afterT,
+        phase,
       );
       const tip = appendVertex(
         positions,
         colors,
+        windWeights,
+        windPhases,
         offsetPoint(center, sign * center.halfWidth * leafletLengthRatio),
         color,
+        t,
+        phase,
       );
 
       if (sign < 0) indices.push(first, tip, second);
@@ -199,6 +300,8 @@ function appendLeaflets(
 function createLeafletGeometry(treeIr, site, frond, segmentCount, style) {
   const positions = [];
   const colors = [];
+  const windWeights = [];
+  const windPhases = [];
   const indices = [];
   appendRachis(
     treeIr,
@@ -208,6 +311,8 @@ function createLeafletGeometry(treeIr, site, frond, segmentCount, style) {
     style.rachisWidthRatio,
     positions,
     colors,
+    windWeights,
+    windPhases,
     indices,
   );
   appendLeaflets(
@@ -218,9 +323,17 @@ function createLeafletGeometry(treeIr, site, frond, segmentCount, style) {
     style,
     positions,
     colors,
+    windWeights,
+    windPhases,
     indices,
   );
-  return finishGeometry(positions, colors, indices);
+  return finishGeometry(
+    positions,
+    colors,
+    windWeights,
+    windPhases,
+    indices,
+  );
 }
 
 export class TreeIrFrondGeometryFactory {
