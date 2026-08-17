@@ -1,19 +1,22 @@
 import * as THREE from 'three';
 import {
+  DEFAULT_LEAF_SHAPE_ID,
   getLeafShape,
   sampleLeafAlpha,
 } from './leaf-shape-library.js';
 
-function alphaShapeId(primitiveFamily) {
+function alphaShapeId(primitiveFamily, requestedShapeId) {
   if (primitiveFamily === 'needle-cluster') return 'needle';
-  return 'broadleaf';
+  return requestedShapeId ?? DEFAULT_LEAF_SHAPE_ID;
 }
 
 export function createTreeIrFoliageAlphaTexture(
   primitiveFamily,
   resolution,
+  requestedShapeId = null,
 ) {
-  const shape = getLeafShape(alphaShapeId(primitiveFamily));
+  const shapeId = alphaShapeId(primitiveFamily, requestedShapeId);
+  const shape = getLeafShape(shapeId);
   const data = new Uint8Array(resolution * resolution * 4);
 
   for (let y = 0; y < resolution; y += 1) {
@@ -35,7 +38,7 @@ export function createTreeIrFoliageAlphaTexture(
     resolution,
     THREE.RGBAFormat,
   );
-  texture.name = `tree-ir-${primitiveFamily}-alpha`;
+  texture.name = `tree-ir-${primitiveFamily}-${shapeId}-alpha`;
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
