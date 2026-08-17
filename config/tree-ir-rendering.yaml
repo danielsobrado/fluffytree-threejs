@@ -28,7 +28,7 @@ directIr:
     alphaResolution: 96
     alphaTest: 0.38
     nearAlphaTest: 0.30
-    heroCardPlanes: 2
+    heroCardPlanes: 3
     nearCardPlanes: 1
     heroScale: 1.04
     nearScale: 1.16
