@@ -1,6 +1,7 @@
 import { TREE_REPRESENTATION_ROLES } from './tree-representation-role.js';
 
 const COST_EPSILON = 1e-12;
+const PINNATE_HERO_FROND_TRIANGLE_FACTOR = 2;
 
 function requireRepresentation(profile, role) {
   const representation = profile?.representations?.[role];
@@ -34,7 +35,9 @@ export function validateTreeIrRenderBudgets(qualityProfile, renderingConfig) {
 
   const heroCardCost = hero.foliageDensity * foliage.heroCardPlanes;
   const nearCardCost = near.foliageDensity * foliage.nearCardPlanes;
-  const heroFrondCost = hero.foliageDensity;
+  const heroFrondCost =
+    hero.foliageDensity *
+    (foliage.frondHeroLeaflets ? PINNATE_HERO_FROND_TRIANGLE_FACTOR : 1);
   const nearFrondCost = near.foliageDensity * foliage.frondNearSegmentRatio;
   const aggregateFrondCost =
     foliage.frondAggregateDensity * foliage.frondAggregateSegmentRatio;
