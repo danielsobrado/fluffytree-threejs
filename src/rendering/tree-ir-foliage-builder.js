@@ -22,11 +22,13 @@ function cardSettings(role, config) {
     return {
       planeCount: config.heroCardPlanes,
       scaleMultiplier: config.heroScale,
+      alphaTest: config.alphaTest,
     };
   }
   return {
     planeCount: config.nearCardPlanes,
     scaleMultiplier: config.nearScale,
+    alphaTest: config.nearAlphaTest,
   };
 }
 
@@ -93,8 +95,11 @@ export class TreeIrFoliageBuilder {
           primitiveFamily: family,
           planeCount: settings.planeCount,
           alphaResolution: config.alphaResolution,
-          alphaTest: config.alphaTest,
+          alphaTest: settings.alphaTest,
           scaleMultiplier: settings.scaleMultiplier,
+          cardScaleVariation: config.cardScaleVariation,
+          cardStretch: config.cardStretch,
+          cardTwist: config.cardTwist,
           name: `tree-ir-${family}-${role}`,
         }),
       );
