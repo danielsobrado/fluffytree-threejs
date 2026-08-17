@@ -15,6 +15,17 @@ export class FrameBudgetQueue {
     return true;
   }
 
+  cancel(key) {
+    if (!this.keys.delete(key)) return false;
+    const index = this.tasks.findIndex(
+      (entry, entryIndex) => entryIndex >= this.head && entry.key === key,
+    );
+    if (index < 0) return false;
+    this.tasks.splice(index, 1);
+    this.compact();
+    return true;
+  }
+
   compact() {
     if (this.head === 0) return;
     if (this.head === this.tasks.length) {
