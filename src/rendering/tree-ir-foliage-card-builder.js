@@ -107,11 +107,9 @@ export class TreeIrFoliageCardBuilder {
         mesh.setMatrixAt(index, matrix);
         mesh.setColorAt(
           index,
-          setTreeIrPaletteColor(
-            color,
-            palette,
-            style.brightness * 0.5 + 0.25,
-          ).multiplyScalar(style.brightness),
+          setTreeIrPaletteColor(color, palette, style.colorMix).multiplyScalar(
+            style.brightness,
+          ),
         );
       });
 
