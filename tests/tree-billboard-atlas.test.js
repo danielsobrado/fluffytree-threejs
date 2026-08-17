@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  BILLBOARD_ATLAS_GUTTER_PIXELS,
   calculateBillboardAtlasSlot,
   calculateBillboardAtlasUvTransform,
   createBillboardAtlasLayout,
@@ -47,6 +48,28 @@ test('billboard atlas UVs stay half a texel inside their cell', () => {
   assertClose(uv.offsetY + uv.scaleY, 1 - inset);
 });
 
+test('billboard atlas UVs exclude mip-safe gutters from sampling', () => {
+  const layout = createBillboardAtlasLayout(4);
+  const slot = calculateBillboardAtlasSlot(1, layout);
+  const stride = 128 + BILLBOARD_ATLAS_GUTTER_PIXELS * 2;
+  const width = stride * layout.columns;
+  const height = stride * layout.rows;
+  const uv = calculateBillboardAtlasUvTransform(
+    slot,
+    width,
+    height,
+    BILLBOARD_ATLAS_GUTTER_PIXELS,
+  );
+  const expectedOffsetX =
+    slot.offsetX + (BILLBOARD_ATLAS_GUTTER_PIXELS + 0.5) / width;
+  const expectedScale = 127 / width;
+
+  assertClose(uv.offsetX, expectedOffsetX);
+  assertClose(uv.scaleX, expectedScale);
+  assert.ok(uv.offsetX > slot.offsetX);
+  assert.ok(uv.offsetX + uv.scaleX < slot.offsetX + slot.scaleX);
+});
+
 test('billboard atlas rejects invalid slots and texture sizes', () => {
   const layout = createBillboardAtlasLayout(4);
   const slot = calculateBillboardAtlasSlot(0, layout);
@@ -54,4 +77,8 @@ test('billboard atlas rejects invalid slots and texture sizes', () => {
   assert.throws(() => calculateBillboardAtlasSlot(4, layout), RangeError);
   assert.throws(() => calculateBillboardAtlasUvTransform(slot, 0, 256), RangeError);
   assert.throws(() => calculateBillboardAtlasUvTransform(slot, 256, 0), RangeError);
+  assert.throws(
+    () => calculateBillboardAtlasUvTransform(slot, 8, 8, 4),
+    /too small/,
+  );
 });
