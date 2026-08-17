@@ -26,20 +26,22 @@ export function configureTreeIrFrondWindMaterial(material) {
         #include <begin_vertex>
         float frondWindWeight = clamp(treeFrondWindWeight, 0.0, 1.0);
         float frondWindPhase = uTreeWindPhase + treeFrondWindPhase;
-        float frondPrimary = sin(
-          uTreeWindTime * ${PRIMARY_SCALE} + frondWindPhase
-        );
-        float frondSecondary = sin(
-          uTreeWindTime * ${SECONDARY_SCALE} * 1.45 +
-          frondWindPhase * 1.63 +
-          frondWindWeight * 5.4
-        );
+        float frondPrimary =
+          sin(uTreeWindTime * ${PRIMARY_SCALE} + frondWindPhase) -
+          sin(frondWindPhase);
+        float frondSecondaryPhase =
+          frondWindPhase * 1.63 + frondWindWeight * 5.4;
+        float frondSecondary =
+          sin(uTreeWindTime * ${SECONDARY_SCALE} * 1.45 + frondSecondaryPhase) -
+          sin(frondSecondaryPhase);
+        float frondCross =
+          cos(uTreeWindTime * ${SECONDARY_SCALE} + frondWindPhase) -
+          cos(frondWindPhase);
         transformed.x +=
           (frondPrimary * 0.72 + frondSecondary * 0.16) *
           uTreeWindStrength * frondWindWeight;
         transformed.z +=
-          (cos(uTreeWindTime * ${SECONDARY_SCALE} + frondWindPhase) * 0.52 +
-          frondSecondary * 0.12) *
+          (frondCross * 0.52 + frondSecondary * 0.12) *
           uTreeWindStrength * frondWindWeight;
         transformed.y +=
           frondSecondary * uTreeWindStrength * frondWindWeight * 0.12;
@@ -47,7 +49,7 @@ export function configureTreeIrFrondWindMaterial(material) {
     );
     material.userData.shader = shader;
   };
-  material.customProgramCacheKey = () => 'tree-ir-frond-wind-v1';
+  material.customProgramCacheKey = () => 'tree-ir-frond-wind-v2';
   material.needsUpdate = true;
   return material;
 }
