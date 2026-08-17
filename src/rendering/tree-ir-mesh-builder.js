@@ -66,6 +66,7 @@ function crownSettings(role, config) {
       scaleMultiplier: config.heroScale,
       brightness: config.heroBrightness,
       shapeVariation: config.shapeVariation,
+      surfaceVariation: config.surfaceVariation,
     };
   }
   if (role === TREE_REPRESENTATION_ROLES.NEAR) {
@@ -74,6 +75,7 @@ function crownSettings(role, config) {
       scaleMultiplier: config.nearScale,
       brightness: config.nearBrightness,
       shapeVariation: config.shapeVariation,
+      surfaceVariation: config.surfaceVariation,
     };
   }
   return {
@@ -81,6 +83,7 @@ function crownSettings(role, config) {
     scaleMultiplier: config.aggregateScale,
     brightness: config.aggregateBrightness,
     shapeVariation: config.shapeVariation,
+    surfaceVariation: config.surfaceVariation,
   };
 }
 
@@ -184,6 +187,7 @@ function createShadowProxy(
         scaleMultiplier: renderingConfig.crown.aggregateScale,
         brightness: 1,
         shapeVariation: renderingConfig.crown.shapeVariation,
+        surfaceVariation: renderingConfig.crown.surfaceVariation,
         castShadow: true,
         receiveShadow: false,
         name: 'tree-ir-crown-shadow-proxy',
