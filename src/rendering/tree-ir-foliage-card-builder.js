@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { DEFAULT_LEAF_SHAPE_ID } from './leaf-shape-library.js';
 import { createTreeIrFoliageAlphaTexture } from './tree-ir-foliage-alpha-texture.js';
 import { calculateTreeIrFoliageCardStyle } from './tree-ir-foliage-card-style.js';
 import { setTreeIrPaletteColor } from './tree-ir-palette.js';
@@ -49,10 +50,12 @@ export class TreeIrFoliageCardBuilder {
     let texture = null;
     let material = null;
     try {
+      const leafShape = treeIr.metadata.material.leafShape ?? DEFAULT_LEAF_SHAPE_ID;
       geometry = createCardGeometry(planeCount);
       texture = createTreeIrFoliageAlphaTexture(
         primitiveFamily,
         alphaResolution,
+        leafShape,
       );
       material = configureTreeWindMaterial(
         new THREE.MeshStandardMaterial({
@@ -130,6 +133,7 @@ export class TreeIrFoliageCardBuilder {
       mesh.computeBoundingSphere();
       mesh.userData.foliageCards = Object.freeze({
         primitiveFamily,
+        leafShape,
         instanceCount: sites.length,
         planeCount,
         scaleMultiplier,
