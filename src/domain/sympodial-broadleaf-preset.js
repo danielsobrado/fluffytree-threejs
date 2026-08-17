@@ -4,6 +4,10 @@ import {
 } from '../generation/sympodial-broadleaf-constants.js';
 import { parseTreeEnvironmentResponse } from '../generation/tree-environment-response.js';
 import {
+  DEFAULT_LEAF_SHAPE_ID,
+  isLeafShapeId,
+} from '../rendering/leaf-shape-library.js';
+import {
   requireConfigColor,
   requireConfigInteger,
   requireConfigIntegerPair,
@@ -15,6 +19,14 @@ import {
   requireConfigVector2,
   requirePositiveConfig,
 } from './botanical-preset-validation.js';
+
+function requireLeafShape(value, path) {
+  const leafShape = value ?? DEFAULT_LEAF_SHAPE_ID;
+  if (!isLeafShapeId(leafShape)) {
+    throw new Error(`Configuration '${path}' has unsupported leaf shape '${leafShape}'.`);
+  }
+  return leafShape;
+}
 
 export function createSympodialBroadleafPreset(id, value) {
   requireConfigString(id, 'tree preset id');
@@ -197,6 +209,7 @@ export function createSympodialBroadleafPreset(id, value) {
         [0, 1],
         `${id}.foliage.roughness`,
       ),
+      leafShape: requireLeafShape(foliage.leafShape, `${id}.foliage.leafShape`),
     }),
     environmentResponse: parseTreeEnvironmentResponse(
       value.environmentResponse,
