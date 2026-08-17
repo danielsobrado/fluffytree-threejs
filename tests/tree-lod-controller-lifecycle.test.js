@@ -31,16 +31,19 @@ function createTree() {
   return tree;
 }
 
-test('LOD registration is idempotent and unregister cancels deferred hero work', () => {
-  const cancelled = [];
-  const queue = {
+function createQueue(cancelled) {
+  return {
     enqueue() {},
     cancel(key) {
       cancelled.push(key);
       return true;
     },
   };
-  const controller = new TreeLodController(SETTINGS, queue);
+}
+
+test('LOD registration is idempotent and unregister cancels deferred hero work', () => {
+  const cancelled = [];
+  const controller = new TreeLodController(SETTINGS, createQueue(cancelled));
   const tree = createTree();
 
   assert.equal(controller.register(tree), true);
@@ -50,4 +53,18 @@ test('LOD registration is idempotent and unregister cancels deferred hero work',
   assert.equal(controller.entries.length, 0);
   assert.deepEqual(cancelled, [`${tree.uuid}:hero`]);
   assert.equal(controller.unregister(tree), false);
+});
+
+test('LOD clear cancels deferred hero work for every registered tree', () => {
+  const cancelled = [];
+  const controller = new TreeLodController(SETTINGS, createQueue(cancelled));
+  const first = createTree();
+  const second = createTree();
+  controller.register(first);
+  controller.register(second);
+
+  controller.clear();
+
+  assert.equal(controller.entries.length, 0);
+  assert.deepEqual(cancelled, [`${first.uuid}:hero`, `${second.uuid}:hero`]);
 });
