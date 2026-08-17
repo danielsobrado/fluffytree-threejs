@@ -94,6 +94,9 @@ export class UniversalTreeShowcase {
   addTree(entry, preset) {
     const treeIr = this.treeGenerator.generateIr(preset, entry.seed);
     let root = null;
+    let tracked = false;
+    let lodRegistered = false;
+
     try {
       root = this.treeMeshBuilder.build(treeIr, {
         sunDirection: this.context.sun.position.clone().normalize(),
@@ -105,12 +108,29 @@ export class UniversalTreeShowcase {
       root.rotation.y = entry.rotationY;
       root.updateMatrixWorld(true);
       root.userData.lod.billboardBatchManager = this.billboardBatchManager;
-      this.billboardBatchManager.register(root);
+
       this.context.scene.add(root);
       this.treeRoots.push(root);
-      this.lodController.register(root);
+      tracked = true;
+      lodRegistered = this.lodController.register(root);
+      if (!lodRegistered) {
+        throw new Error(`Tree '${preset.id}' was already registered for LOD.`);
+      }
+
+      const billboardHandle = this.billboardBatchManager.register(root);
+      if (!billboardHandle) {
+        throw new Error(`Tree '${preset.id}' could not register its far impostor.`);
+      }
     } catch (error) {
-      if (root) disposeObject(root);
+      if (lodRegistered) this.lodController.unregister(root);
+      if (tracked) {
+        const index = this.treeRoots.indexOf(root);
+        if (index >= 0) this.treeRoots.splice(index, 1);
+      }
+      if (root) {
+        this.context?.scene?.remove(root);
+        disposeObject(root);
+      }
       throw error;
     }
   }
