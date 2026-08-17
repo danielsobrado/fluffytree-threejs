@@ -82,3 +82,19 @@ test('failed tasks are removed and still contribute timing metrics', () => {
   assert.equal(queue.lastProcessDuration, 7);
   assert.equal(queue.enqueue('broken', () => {}), true);
 });
+
+test('pending generation tasks can be cancelled by key', () => {
+  const queue = new FrameBudgetQueue({ now: () => 0 });
+  const completed = [];
+  queue.enqueue('a', () => completed.push('a'));
+  queue.enqueue('b', () => completed.push('b'));
+  queue.enqueue('c', () => completed.push('c'));
+
+  assert.equal(queue.cancel('b'), true);
+  assert.equal(queue.cancel('b'), false);
+  assert.equal(queue.length, 2);
+  assert.equal(queue.enqueue('b', () => completed.push('b2')), true);
+
+  assert.equal(queue.process(1), 3);
+  assert.deepEqual(completed, ['a', 'c', 'b2']);
+});
