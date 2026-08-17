@@ -16,6 +16,7 @@ function renderingConfig() {
     foliage: {
       heroCardPlanes: 2,
       nearCardPlanes: 1,
+      frondHeroLeaflets: true,
       frondNearSegmentRatio: 0.58,
       frondAggregateDensity: 0.72,
       frondAggregateSegmentRatio: 0.35,
@@ -28,6 +29,7 @@ test('current native foliage policy is monotonically cheaper across LODs', () =>
 
   assert.equal(costs.heroCardCost, 2);
   assert.equal(costs.nearCardCost, 0.58);
+  assert.equal(costs.heroFrondCost, 2);
   assert.ok(costs.aggregateFrondCost < costs.nearFrondCost);
   assert.ok(costs.nearFrondCost < costs.heroFrondCost);
 });
