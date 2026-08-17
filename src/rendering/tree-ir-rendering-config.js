@@ -55,6 +55,14 @@ function assertStructureNotMoreDetailed(lower, higher, path) {
   }
 }
 
+function assertNonDecreasing(values, path) {
+  for (let index = 1; index < values.length; index += 1) {
+    if (values[index] < values[index - 1]) {
+      throw new RangeError(`${path} must not decrease toward lower-detail LODs.`);
+    }
+  }
+}
+
 function parseCrown(source) {
   const crown = Object.freeze({
     heroDetail: requireInteger(
@@ -93,6 +101,30 @@ function parseCrown(source) {
       1.5,
       'treeIrRendering.directIr.crown.aggregateScale',
     ),
+    heroBrightness: requireRange(
+      source.heroBrightness,
+      0.4,
+      1,
+      'treeIrRendering.directIr.crown.heroBrightness',
+    ),
+    nearBrightness: requireRange(
+      source.nearBrightness,
+      0.4,
+      1,
+      'treeIrRendering.directIr.crown.nearBrightness',
+    ),
+    aggregateBrightness: requireRange(
+      source.aggregateBrightness,
+      0.4,
+      1,
+      'treeIrRendering.directIr.crown.aggregateBrightness',
+    ),
+    shapeVariation: requireRange(
+      source.shapeVariation,
+      0,
+      0.25,
+      'treeIrRendering.directIr.crown.shapeVariation',
+    ),
   });
 
   if (crown.nearDetail > crown.heroDetail) {
@@ -105,6 +137,14 @@ function parseCrown(source) {
       'treeIrRendering.directIr.crown.aggregateDetail must not exceed nearDetail.',
     );
   }
+  assertNonDecreasing(
+    [crown.heroScale, crown.nearScale, crown.aggregateScale],
+    'treeIrRendering.directIr.crown scale',
+  );
+  assertNonDecreasing(
+    [crown.heroBrightness, crown.nearBrightness, crown.aggregateBrightness],
+    'treeIrRendering.directIr.crown brightness',
+  );
   return crown;
 }
 
@@ -121,6 +161,12 @@ function parseFoliage(source) {
       0,
       1,
       'treeIrRendering.directIr.foliage.alphaTest',
+    ),
+    nearAlphaTest: requireRange(
+      source.nearAlphaTest,
+      0,
+      1,
+      'treeIrRendering.directIr.foliage.nearAlphaTest',
     ),
     heroCardPlanes: requireInteger(
       source.heroCardPlanes,
@@ -146,6 +192,24 @@ function parseFoliage(source) {
       3,
       'treeIrRendering.directIr.foliage.nearScale',
     ),
+    cardScaleVariation: requireRange(
+      source.cardScaleVariation,
+      0,
+      0.3,
+      'treeIrRendering.directIr.foliage.cardScaleVariation',
+    ),
+    cardStretch: requireRange(
+      source.cardStretch,
+      0,
+      0.3,
+      'treeIrRendering.directIr.foliage.cardStretch',
+    ),
+    cardTwist: requireRange(
+      source.cardTwist,
+      0,
+      Math.PI * 0.5,
+      'treeIrRendering.directIr.foliage.cardTwist',
+    ),
     frondNearSegmentRatio: requireRange(
       source.frondNearSegmentRatio,
       0.2,
@@ -169,6 +233,11 @@ function parseFoliage(source) {
   if (foliage.nearCardPlanes > foliage.heroCardPlanes) {
     throw new RangeError(
       'treeIrRendering.directIr.foliage.nearCardPlanes must not exceed heroCardPlanes.',
+    );
+  }
+  if (foliage.nearAlphaTest > foliage.alphaTest) {
+    throw new RangeError(
+      'treeIrRendering.directIr.foliage.nearAlphaTest must not exceed alphaTest.',
     );
   }
   if (foliage.frondAggregateSegmentRatio > foliage.frondNearSegmentRatio) {
