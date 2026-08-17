@@ -1,3 +1,4 @@
+import { TreeWindController } from '../animation/tree-wind-controller.js';
 import { logger } from '../core/logger.js';
 import { NativeRenderSmokeProbe } from '../diagnostics/native-render-smoke-probe.js';
 import { FrameBudgetQueue } from '../generation/frame-budget-queue.js';
@@ -13,6 +14,7 @@ export class UniversalTreeShowcase {
     sceneFactory,
     treeGenerator,
     treeMeshBuilder,
+    windController = new TreeWindController(),
     renderSmokeProbe = new NativeRenderSmokeProbe(),
   }) {
     if (!sceneFactory || typeof sceneFactory.create !== 'function') {
@@ -24,12 +26,22 @@ export class UniversalTreeShowcase {
     if (!treeMeshBuilder || typeof treeMeshBuilder.build !== 'function') {
       throw new TypeError('UniversalTreeShowcase requires a tree mesh builder.');
     }
+    if (
+      !windController ||
+      typeof windController.register !== 'function' ||
+      typeof windController.update !== 'function' ||
+      typeof windController.clear !== 'function'
+    ) {
+      throw new TypeError('UniversalTreeShowcase requires a TreeWindController.');
+    }
     this.sceneFactory = sceneFactory;
     this.treeGenerator = treeGenerator;
     this.treeMeshBuilder = treeMeshBuilder;
+    this.windController = windController;
     this.renderSmokeProbe = renderSmokeProbe;
     this.generationQueue = new FrameBudgetQueue();
     this.treeRoots = [];
+    this.animationStartMilliseconds = null;
     this.render = this.render.bind(this);
     this.handleResize = this.handleResize.bind(this);
     this.destroyed = true;
@@ -43,6 +55,7 @@ export class UniversalTreeShowcase {
     this.viewportHeight = measureViewport(container).height;
     this.context = this.sceneFactory.create(container, sceneConfig);
     this.destroyed = false;
+    this.animationStartMilliseconds = performance.now();
     this.impostorRenderer = new TreeImpostorRenderer(this.context.renderer);
     this.impostorRenderer.configureLights(
       this.context.sun.position.clone().normalize(),
@@ -96,6 +109,7 @@ export class UniversalTreeShowcase {
     let root = null;
     let tracked = false;
     let lodRegistered = false;
+    let windRegistered = false;
 
     try {
       root = this.treeMeshBuilder.build(treeIr, {
@@ -117,11 +131,15 @@ export class UniversalTreeShowcase {
         throw new Error(`Tree '${preset.id}' was already registered for LOD.`);
       }
 
+      this.windController.register(root, treeIr.seed);
+      windRegistered = true;
+
       const billboardHandle = this.billboardBatchManager.register(root);
       if (!billboardHandle) {
         throw new Error(`Tree '${preset.id}' could not register its far impostor.`);
       }
     } catch (error) {
+      if (windRegistered) this.windController.unregister?.(root);
       if (lodRegistered) this.lodController.unregister(root);
       if (tracked) {
         const index = this.treeRoots.indexOf(root);
@@ -149,6 +167,12 @@ export class UniversalTreeShowcase {
     if (this.destroyed || !this.context) return;
     try {
       this.generationQueue.process(this.sceneConfig.lod.generationBudgetMs);
+      const elapsedSeconds = Math.max(
+        0,
+        (performance.now() - (this.animationStartMilliseconds ?? performance.now())) /
+          1000,
+      );
+      this.windController.update(elapsedSeconds);
       this.context.controls.update();
       this.lodController.update(
         this.context.camera,
@@ -173,6 +197,7 @@ export class UniversalTreeShowcase {
     context?.renderer?.setAnimationLoop(null);
     this.generationQueue.clear();
     this.lodController?.clear();
+    this.windController.clear();
     this.billboardBatchManager?.clear();
 
     for (const root of this.treeRoots) {
@@ -197,5 +222,6 @@ export class UniversalTreeShowcase {
     this.impostorRenderer = null;
     this.billboardBatchManager = null;
     this.lodController = null;
+    this.animationStartMilliseconds = null;
   }
 }
