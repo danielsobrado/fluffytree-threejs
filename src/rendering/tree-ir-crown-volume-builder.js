@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { calculateTreeIrCrownStyle } from './tree-ir-crown-style.js';
 import { setTreeIrPaletteColor } from './tree-ir-palette.js';
+import { configureTreeWindMaterial } from './tree-wind-shader.js';
 
 export class TreeIrCrownVolumeBuilder {
   build(
@@ -20,15 +21,18 @@ export class TreeIrCrownVolumeBuilder {
     try {
       const volumes = treeIr.crownVolumes;
       geometry = new THREE.IcosahedronGeometry(1, detail);
-      material = new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        roughness: Math.min(
-          1,
-          Number(treeIr.metadata.material.foliageRoughness ?? 0.9) + 0.08,
-        ),
-        metalness: 0,
-        fog: true,
-      });
+      material = configureTreeWindMaterial(
+        new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          roughness: Math.min(
+            1,
+            Number(treeIr.metadata.material.foliageRoughness ?? 0.9) + 0.08,
+          ),
+          metalness: 0,
+          fog: true,
+        }),
+        { cacheKey: 'tree-ir-crown-core-wind-v1' },
+      );
       const mesh = new THREE.InstancedMesh(geometry, material, volumes.length);
       const matrix = new THREE.Matrix4();
       const position = new THREE.Vector3();
