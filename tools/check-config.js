@@ -141,7 +141,9 @@ const qualityProfiles = parseTreeQualityProfiles(
 const treeIrRenderingConfig = parseTreeIrRenderingConfig(
   readConfig('config/tree-ir-rendering.yaml'),
 );
-validateTreeIrRenderBudgets(qualityProfiles.default, treeIrRenderingConfig);
+for (const qualityProfile of Object.values(qualityProfiles)) {
+  validateTreeIrRenderBudgets(qualityProfile, treeIrRenderingConfig);
+}
 parseForestVariantPolicy(readConfig('config/forest-variant-policy.yaml'));
 parseForestRuntimePolicy(readConfig('config/forest-runtime-policy.yaml'));
 parseTreeAnimationPolicy(readConfig('config/tree-animation-policy.yaml'));
