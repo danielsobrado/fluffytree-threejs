@@ -30,6 +30,27 @@ function validateGenerator(modelId, generator) {
   }
 }
 
+function withPresetMaterialMetadata(treeIr, preset) {
+  const leafShape = preset?.foliage?.leafShape;
+  if (
+    typeof leafShape !== 'string' ||
+    leafShape === '' ||
+    treeIr.metadata?.material?.leafShape === leafShape
+  ) {
+    return treeIr;
+  }
+
+  const material = Object.freeze({
+    ...treeIr.metadata.material,
+    leafShape,
+  });
+  const metadata = Object.freeze({
+    ...treeIr.metadata,
+    material,
+  });
+  return Object.freeze({ ...treeIr, metadata });
+}
+
 export class TreeGenerator {
   constructor({ modelGenerators = null, ...defaultModelOptions } = {}) {
     this.modelGenerators = new Map([
@@ -71,7 +92,10 @@ export class TreeGenerator {
       throw new Error(`Unsupported tree generation model '${modelId}'.`);
     }
 
-    const generatedIr = generator.generate(preset, seed, options);
+    const generatedIr = withPresetMaterialMetadata(
+      generator.generate(preset, seed, options),
+      preset,
+    );
     validateTreeIr(generatedIr);
     if (generatedIr.generationModel !== modelId) {
       throw new Error(
