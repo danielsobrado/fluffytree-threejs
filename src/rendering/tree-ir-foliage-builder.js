@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { FOLIAGE_PRIMITIVE_FAMILIES } from '../generation/tree-ir-schema.js';
 import { TREE_REPRESENTATION_ROLES } from './tree-representation-role.js';
 import { TreeIrFoliageCardBuilder } from './tree-ir-foliage-card-builder.js';
+import { resolveTreeIrFamilyFoliageDensity } from './tree-ir-foliage-lod-policy.js';
 import { TreeIrFrondBuilder } from './tree-ir-frond-builder.js';
 import { selectTreeIrFrondSites } from './tree-ir-frond-selector.js';
 import { selectTreeIrFoliageSites } from './tree-ir-foliage-selector.js';
@@ -60,12 +61,18 @@ export class TreeIrFoliageBuilder {
 
     for (const [family, sourceSites] of familyGroups) {
       if (family === FOLIAGE_PRIMITIVE_FAMILIES.NONE) continue;
+      const familyDensity = resolveTreeIrFamilyFoliageDensity(
+        family,
+        role,
+        density,
+        config,
+      );
       const sites = selectFamilySites(
         treeIr,
         sourceSites,
         family,
         role,
-        density,
+        familyDensity,
       );
       selectedSiteCount += sites.length;
       if (sites.length === 0) continue;
