@@ -16,16 +16,24 @@ directIr:
     heroDetail: 2
     nearDetail: 1
     aggregateDetail: 1
-    heroScale: 0.74
-    nearScale: 0.88
+    heroScale: 0.64
+    nearScale: 0.80
     aggregateScale: 1.0
+    heroBrightness: 0.70
+    nearBrightness: 0.78
+    aggregateBrightness: 0.88
+    shapeVariation: 0.08
   foliage:
-    alphaResolution: 64
-    alphaTest: 0.42
+    alphaResolution: 96
+    alphaTest: 0.38
+    nearAlphaTest: 0.30
     heroCardPlanes: 2
     nearCardPlanes: 1
-    heroScale: 1.0
-    nearScale: 1.12
+    heroScale: 1.04
+    nearScale: 1.16
+    cardScaleVariation: 0.08
+    cardStretch: 0.12
+    cardTwist: 0.32
     frondNearSegmentRatio: 0.58
     frondAggregateDensity: 0.72
     frondAggregateSegmentRatio: 0.35
