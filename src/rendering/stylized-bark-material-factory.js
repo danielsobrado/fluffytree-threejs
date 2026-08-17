@@ -1,10 +1,8 @@
 import * as THREE from 'three';
+import { calculateTreeBarkColorMix } from './tree-bark-color-profile.js';
+import { TREE_BARK_PATTERNS } from './tree-bark-style-constants.js';
 
 const TAU = Math.PI * 2;
-
-function clamp01(value) {
-  return Math.min(1, Math.max(0, value));
-}
 
 export function addStylizedBarkColors(
   geometry,
@@ -12,6 +10,7 @@ export function addStylizedBarkColors(
   seed,
   order = 0,
   treeHeight = 1,
+  { pattern = TREE_BARK_PATTERNS.WOOD } = {},
 ) {
   const colors = palette.map((value) => new THREE.Color(value));
   const positions = geometry.getAttribute('position');
@@ -21,11 +20,18 @@ export function addStylizedBarkColors(
 
   for (let index = 0; index < positions.count; index += 1) {
     const u = geometry.getAttribute('uv')?.getX(index) ?? 0;
-    const v = clamp01(positions.getY(index) / Math.max(0.001, treeHeight));
-    const grain = Math.sin(v * 31 + Math.sin(u * TAU * 3 + phase) * 1.8 + phase);
-    const broad = Math.sin(v * 7.5 + u * TAU + phase * 0.6);
-    const ridge = clamp01(0.5 + grain * 0.16 + broad * 0.12 + order * 0.035);
-    const baseMix = clamp01(ridge - Math.pow(1 - clamp01(v), 3) * 0.22);
+    const v = Math.min(
+      1,
+      Math.max(0, positions.getY(index) / Math.max(0.001, treeHeight)),
+    );
+    const baseMix = calculateTreeBarkColorMix({
+      u,
+      v,
+      phase,
+      order,
+      treeHeight,
+      pattern,
+    });
 
     if (baseMix < 0.52) {
       color.lerpColors(colors[0], colors[1], baseMix / 0.52);
