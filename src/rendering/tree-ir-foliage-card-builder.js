@@ -62,13 +62,14 @@ export class TreeIrFoliageCardBuilder {
           color: 0xffffff,
           map: texture,
           alphaTest,
+          alphaToCoverage: true,
           transparent: false,
           side: THREE.DoubleSide,
           roughness: Number(treeIr.metadata.material.foliageRoughness ?? 0.9),
           metalness: 0,
           fog: true,
         }),
-        { cacheKey: 'tree-ir-foliage-card-wind-v1' },
+        { cacheKey: 'tree-ir-foliage-card-wind-v2' },
       );
       material.userData.disposables = [texture];
       const mesh = new THREE.InstancedMesh(geometry, material, sites.length);
@@ -138,6 +139,7 @@ export class TreeIrFoliageCardBuilder {
         planeCount,
         scaleMultiplier,
         alphaTest,
+        alphaToCoverage: material.alphaToCoverage,
       });
       geometry = null;
       texture = null;
