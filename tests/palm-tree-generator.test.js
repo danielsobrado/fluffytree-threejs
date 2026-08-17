@@ -4,6 +4,7 @@ import { TreeAnimationLodPlanner } from '../src/animation/tree-animation-lod-pla
 import { parseTreeAnimationPolicy } from '../src/animation/tree-animation-policy-config.js';
 import { FoliagePrimitiveCompiler } from '../src/compilation/foliage-primitive-compiler.js';
 import { PresetLibrary } from '../src/domain/preset-library.js';
+import { expandTreeIrFrondBounds } from '../src/generation/tree-ir-frond-bounds.js';
 import { TreeGenerator } from '../src/generation/tree-generator.js';
 import { readYamlConfigSync } from '../tools/node-yaml-config.js';
 
@@ -16,6 +17,21 @@ const animationPolicy = parseTreeAnimationPolicy(
 
 function coconutPalm() {
   return PresetLibrary.fromConfig(palmConfig).get('coconutPalm');
+}
+
+function emptyBounds() {
+  return {
+    minimum: {
+      x: Number.POSITIVE_INFINITY,
+      y: Number.POSITIVE_INFINITY,
+      z: Number.POSITIVE_INFINITY,
+    },
+    maximum: {
+      x: Number.NEGATIVE_INFINITY,
+      y: Number.NEGATIVE_INFINITY,
+      z: Number.NEGATIVE_INFINITY,
+    },
+  };
 }
 
 test('palm presets use a model-specific schema without broadleaf crown fields', () => {
@@ -43,6 +59,18 @@ test('palm generation emits deterministic trunk and frond Tree IR without lobe t
   assert.ok(first.foliageSites.every((site) => site.primitiveFamily === 'frond'));
   assert.ok(first.foliageSites.every((site) => typeof site.windNodeId === 'string'));
   assert.equal(first.metadata.legacyRendererCompatible, false);
+});
+
+test('palm Tree IR bounds contain every generated frond envelope', () => {
+  const ir = new TreeGenerator().generateIr(coconutPalm(), 71237);
+
+  for (const site of ir.foliageSites) {
+    const frondBounds = expandTreeIrFrondBounds(emptyBounds(), site);
+    for (const axis of ['x', 'y', 'z']) {
+      assert.ok(ir.bounds.minimum[axis] <= frondBounds.minimum[axis]);
+      assert.ok(ir.bounds.maximum[axis] >= frondBounds.maximum[axis]);
+    }
+  }
 });
 
 test('palm foliage compiles through frond-specific role backends', () => {
