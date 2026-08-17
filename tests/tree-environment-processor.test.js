@@ -109,4 +109,9 @@ test('the same environmental processor works on native palm IR', () => {
   assert.equal(adapted.stems.length, 1);
   assert.ok(adapted.foliageSites.every((site) => site.primitiveFamily === 'frond'));
   assert.notDeepEqual(adapted.stems[0].path, baseline.stems[0].path);
+  assert.equal(adapted.windNodes.length, adapted.foliageSites.length + 1);
+  assert.equal(
+    adapted.metadata.environment.prunedWindNodeCount,
+    baseline.windNodes.length - adapted.windNodes.length,
+  );
 });
