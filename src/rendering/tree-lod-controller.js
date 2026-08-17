@@ -112,6 +112,9 @@ export class TreeLodController {
   }
 
   clear() {
+    for (const entry of this.entries) {
+      this.generationQueue?.cancel?.(heroTaskKey(entry.tree));
+    }
     this.entries.length = 0;
     this.dirty = true;
   }
