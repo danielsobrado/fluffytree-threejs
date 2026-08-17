@@ -17,6 +17,7 @@ function renderingConfig() {
       heroCardPlanes: 3,
       nearCardPlanes: 1,
       frondHeroLeaflets: true,
+      frondNearLeaflets: true,
       frondNearSegmentRatio: 0.58,
       frondAggregateDensity: 0.72,
       frondAggregateSegmentRatio: 0.35,
@@ -30,6 +31,7 @@ test('current native foliage policy is monotonically cheaper across LODs', () =>
   assert.equal(costs.heroCardCost, 3);
   assert.equal(costs.nearCardCost, 0.58);
   assert.equal(costs.heroFrondCost, 2);
+  assert.ok(Math.abs(costs.nearFrondCost - 0.6728) < 1e-12);
   assert.ok(costs.aggregateFrondCost < costs.nearFrondCost);
   assert.ok(costs.nearFrondCost < costs.heroFrondCost);
 });
@@ -37,7 +39,7 @@ test('current native foliage policy is monotonically cheaper across LODs', () =>
 test('aggregate frond proxy cannot become more expensive than near fronds', () => {
   const config = renderingConfig();
   config.foliage.frondAggregateDensity = 1;
-  config.foliage.frondAggregateSegmentRatio = 0.6;
+  config.foliage.frondAggregateSegmentRatio = 0.8;
 
   assert.throws(
     () => validateTreeIrRenderBudgets(qualityProfile(), config),
