@@ -38,12 +38,18 @@ function hasDrawableImpostor(lodState) {
   return Boolean(lodState.billboardBatch?.batch?.atlas?.texture?.image);
 }
 
-function hasUserDataMarker(root, marker) {
-  let found = false;
+function findUserDataMarker(root, marker) {
+  let metadata = null;
   root.traverse((object) => {
-    if (object.userData?.[marker]) found = true;
+    if (!metadata && object.userData?.[marker]) {
+      metadata = object.userData[marker];
+    }
   });
-  return found;
+  return metadata;
+}
+
+function hasUserDataMarker(root, marker) {
+  return Boolean(findUserDataMarker(root, marker));
 }
 
 function collectNativeMetrics(trees) {
@@ -51,6 +57,8 @@ function collectNativeMetrics(trees) {
     throw new Error('Native render smoke found no Tree IR trees.');
   }
 
+  const heroIndex = treeRepresentationIndex(TREE_REPRESENTATION_ROLES.HERO);
+  const nearIndex = treeRepresentationIndex(TREE_REPRESENTATION_ROLES.NEAR);
   const aggregateIndex = treeRepresentationIndex(
     TREE_REPRESENTATION_ROLES.AGGREGATE,
   );
@@ -63,8 +71,11 @@ function collectNativeMetrics(trees) {
     aggregateDrawCalls: 0,
     impostorDrawCalls: 0,
     frondBatchCount: 0,
+    heroLeafletPalmCount: 0,
     aggregateFrondProxyCount: 0,
+    palmFrondShadowCount: 0,
     foliageCardBatchCount: 0,
+    recessedBroadleafCoreCount: 0,
     billboardBatchTreeCount: 0,
   };
 
@@ -119,12 +130,35 @@ function collectNativeMetrics(trees) {
       if (!hasFronds) {
         throw new Error(`Palm '${treeState.presetId}' has no native frond batch.`);
       }
+      const heroFronds = findUserDataMarker(
+        lodState.levels[heroIndex],
+        'fronds',
+      );
+      if (!heroFronds?.leaflets) {
+        throw new Error(
+          `Palm '${treeState.presetId}' hero representation has no pinnate leaflet geometry.`,
+        );
+      }
+      metrics.heroLeafletPalmCount += 1;
+
       if (!hasUserDataMarker(lodState.levels[aggregateIndex], 'fronds')) {
         throw new Error(
           `Palm '${treeState.presetId}' aggregate representation has no frond proxy.`,
         );
       }
+      if (hasUserDataMarker(lodState.levels[aggregateIndex], 'crownVolumes')) {
+        throw new Error(
+          `Palm '${treeState.presetId}' aggregate representation still exposes a crown-volume blob.`,
+        );
+      }
       metrics.aggregateFrondProxyCount += 1;
+
+      if (!lodState.shadowProxy?.userData?.shadowProxy?.frondShadow) {
+        throw new Error(
+          `Palm '${treeState.presetId}' shadow proxy is not frond-shaped.`,
+        );
+      }
+      metrics.palmFrondShadowCount += 1;
     }
     if (treeState.generationModel === 'sympodial-broadleaf') {
       metrics.broadleafCount += 1;
@@ -133,6 +167,38 @@ function collectNativeMetrics(trees) {
           `Broadleaf '${treeState.presetId}' has no native foliage-card batch.`,
         );
       }
+      const heroCards = findUserDataMarker(
+        lodState.levels[heroIndex],
+        'foliageCards',
+      );
+      const nearCards = findUserDataMarker(
+        lodState.levels[nearIndex],
+        'foliageCards',
+      );
+      const heroCore = findUserDataMarker(
+        lodState.levels[heroIndex],
+        'crownVolumes',
+      );
+      if (!heroCards || !nearCards || !heroCore) {
+        throw new Error(
+          `Broadleaf '${treeState.presetId}' does not expose its complete native canopy hierarchy.`,
+        );
+      }
+      if (nearCards.alphaTest > heroCards.alphaTest) {
+        throw new Error(
+          `Broadleaf '${treeState.presetId}' near foliage alpha cutoff exceeds hero cutoff.`,
+        );
+      }
+      if (
+        !(heroCore.scaleMultiplier < 1) ||
+        !(heroCore.brightness < 1) ||
+        !(heroCore.surfaceVariation > 0)
+      ) {
+        throw new Error(
+          `Broadleaf '${treeState.presetId}' hero crown core is not recessed and organically shaped.`,
+        );
+      }
+      metrics.recessedBroadleafCoreCount += 1;
     }
 
     if (!lodState.shadowProxy) {
