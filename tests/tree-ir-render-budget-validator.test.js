@@ -14,7 +14,7 @@ function qualityProfile() {
 function renderingConfig() {
   return {
     foliage: {
-      heroCardPlanes: 2,
+      heroCardPlanes: 3,
       nearCardPlanes: 1,
       frondHeroLeaflets: true,
       frondNearSegmentRatio: 0.58,
@@ -27,7 +27,7 @@ function renderingConfig() {
 test('current native foliage policy is monotonically cheaper across LODs', () => {
   const costs = validateTreeIrRenderBudgets(qualityProfile(), renderingConfig());
 
-  assert.equal(costs.heroCardCost, 2);
+  assert.equal(costs.heroCardCost, 3);
   assert.equal(costs.nearCardCost, 0.58);
   assert.equal(costs.heroFrondCost, 2);
   assert.ok(costs.aggregateFrondCost < costs.nearFrondCost);
@@ -49,7 +49,7 @@ test('near foliage cards cannot exceed hero card cost', () => {
   const profile = qualityProfile();
   const config = renderingConfig();
   profile.representations.near.foliageDensity = 1;
-  config.foliage.nearCardPlanes = 3;
+  config.foliage.nearCardPlanes = 4;
 
   assert.throws(
     () => validateTreeIrRenderBudgets(profile, config),
