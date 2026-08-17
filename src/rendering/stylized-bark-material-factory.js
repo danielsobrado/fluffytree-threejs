@@ -81,18 +81,25 @@ export class StylizedBarkMaterialFactory {
           #include <begin_vertex>
           float treeWoodHeight = clamp(position.y / uTreeHeight, 0.0, 1.0);
           float treeWoodFlex = smoothstep(0.48, 1.0, treeWoodHeight);
-          float treeWoodGust = sin(
-            uTreeWindTime * 0.78 + uTreeWindPhase + position.y * 0.31
-          );
-          transformed.x += treeWoodGust * uTreeWindStrength * treeWoodFlex * 0.38;
-          transformed.z += sin(
-            uTreeWindTime * 1.17 + uTreeWindPhase * 1.7 + position.y * 0.23
-          ) * uTreeWindStrength * treeWoodFlex * 0.16;
+          float treeWoodPrimaryPhase =
+            uTreeWindPhase + position.y * 0.31;
+          float treeWoodSecondaryPhase =
+            uTreeWindPhase * 1.7 + position.y * 0.23;
+          float treeWoodGust =
+            sin(uTreeWindTime * 0.78 + treeWoodPrimaryPhase) -
+            sin(treeWoodPrimaryPhase);
+          float treeWoodCross =
+            sin(uTreeWindTime * 1.17 + treeWoodSecondaryPhase) -
+            sin(treeWoodSecondaryPhase);
+          transformed.x +=
+            treeWoodGust * uTreeWindStrength * treeWoodFlex * 0.38;
+          transformed.z +=
+            treeWoodCross * uTreeWindStrength * treeWoodFlex * 0.16;
         `,
       );
       material.userData.shader = shader;
     };
-    material.customProgramCacheKey = () => 'stylized-bark-wind-v1';
+    material.customProgramCacheKey = () => 'stylized-bark-wind-v2';
     return material;
   }
 }
