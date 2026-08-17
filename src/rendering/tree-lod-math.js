@@ -8,6 +8,39 @@ function blendAtThreshold(value, threshold, band) {
   return smoothstep((value - (threshold - halfWidth)) / (halfWidth * 2));
 }
 
+export function resolveTreeWorldScale(scale) {
+  if (
+    !scale ||
+    !Number.isFinite(scale.x) ||
+    !Number.isFinite(scale.y) ||
+    !Number.isFinite(scale.z)
+  ) {
+    throw new TypeError('Tree world scale must contain finite x, y, and z values.');
+  }
+  return Math.max(Math.abs(scale.x), Math.abs(scale.y), Math.abs(scale.z));
+}
+
+export function calculateProjectedTreePixels(
+  height,
+  distance,
+  focalPixels,
+  worldScale = 1,
+) {
+  if (!Number.isFinite(height) || height < 0) {
+    throw new RangeError('Tree height must be a finite non-negative number.');
+  }
+  if (!Number.isFinite(distance) || distance < 0) {
+    throw new RangeError('Tree distance must be a finite non-negative number.');
+  }
+  if (!Number.isFinite(focalPixels) || focalPixels < 0) {
+    throw new RangeError('Tree focal pixels must be a finite non-negative number.');
+  }
+  if (!Number.isFinite(worldScale) || worldScale < 0) {
+    throw new RangeError('Tree world scale must be a finite non-negative number.');
+  }
+  return (height * worldScale * focalPixels) / Math.max(0.001, distance);
+}
+
 export function resolveRawLod(projectedPixels, settings) {
   if (projectedPixels >= settings.nearPixels) return 0;
   if (projectedPixels >= settings.mediumPixels) return 1;
