@@ -3,8 +3,10 @@ import { logger } from '../core/logger.js';
 import { setObjectLodFade } from './lod-dither-fade.js';
 import {
   calculateLodWeights,
+  calculateProjectedTreePixels,
   remapUnavailableLodWeights,
   resolveStableLod,
+  resolveTreeWorldScale,
 } from './tree-lod-math.js';
 import {
   isImpostorRepresentation,
@@ -50,6 +52,7 @@ export class TreeLodController {
     this.onGenerationError = onGenerationError;
     this.entries = [];
     this.worldPosition = new THREE.Vector3();
+    this.worldScale = new THREE.Vector3();
     this.dirty = true;
     this.lastCameraX = Number.NaN;
     this.lastCameraY = Number.NaN;
@@ -211,8 +214,14 @@ export class TreeLodController {
       const treeState = entry.tree.userData.tree;
       const lodState = entry.tree.userData.lod;
       entry.tree.getWorldPosition(this.worldPosition);
-      const distance = Math.max(0.001, camera.position.distanceTo(this.worldPosition));
-      const projectedPixels = (treeState.height / distance) * focalPixels;
+      entry.tree.getWorldScale(this.worldScale);
+      const distance = camera.position.distanceTo(this.worldPosition);
+      const projectedPixels = calculateProjectedTreePixels(
+        treeState.height,
+        distance,
+        focalPixels,
+        resolveTreeWorldScale(this.worldScale),
+      );
       const minimumLevel = lodState.minimumLevel ?? 0;
       entry.stableLevel = Math.max(
         minimumLevel,
