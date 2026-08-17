@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { logger } from '../core/logger.js';
 import { NativeRenderSmokeProbe } from '../diagnostics/native-render-smoke-probe.js';
 import { FrameBudgetQueue } from '../generation/frame-budget-queue.js';
@@ -31,7 +30,6 @@ export class UniversalTreeShowcase {
     this.renderSmokeProbe = renderSmokeProbe;
     this.generationQueue = new FrameBudgetQueue();
     this.treeRoots = [];
-    this.clock = new THREE.Clock();
     this.render = this.render.bind(this);
     this.handleResize = this.handleResize.bind(this);
     this.destroyed = true;
