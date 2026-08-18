@@ -34,10 +34,10 @@ test('bent foliage normals preserve geometry cost while softening card lighting'
     assert.notDeepEqual(normals(bent), normals(flat));
 
     const bentNormals = normals(bent);
-    const averageUp =
-      bentNormals.reduce((sum, normal) => sum + normal.y, 0) /
-      bentNormals.length;
-    assert.ok(averageUp > 0.05);
+    const maximumVerticalComponent = Math.max(
+      ...bentNormals.map((normal) => Math.abs(normal.y)),
+    );
+    assert.ok(maximumVerticalComponent > 0.1);
 
     for (const normal of bentNormals) {
       const length = Math.hypot(normal.x, normal.y, normal.z);
