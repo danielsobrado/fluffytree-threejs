@@ -21,12 +21,14 @@ function cardSettings(role, config) {
   if (role === TREE_REPRESENTATION_ROLES.HERO) {
     return {
       planeCount: config.heroCardPlanes,
+      depthSpread: config.heroCardDepthSpread,
       scaleMultiplier: config.heroScale,
       alphaTest: config.alphaTest,
     };
   }
   return {
     planeCount: config.nearCardPlanes,
+    depthSpread: config.nearCardDepthSpread,
     scaleMultiplier: config.nearScale,
     alphaTest: config.nearAlphaTest,
   };
@@ -111,12 +113,17 @@ export class TreeIrFoliageBuilder {
         this.cardBuilder.build(treeIr, sites, {
           primitiveFamily: family,
           planeCount: settings.planeCount,
+          depthSpread: settings.depthSpread,
           alphaResolution: config.alphaResolution,
           alphaTest: settings.alphaTest,
           scaleMultiplier: settings.scaleMultiplier,
           cardScaleVariation: config.cardScaleVariation,
           cardStretch: config.cardStretch,
           cardTwist: config.cardTwist,
+          cardLean: config.cardLean,
+          surfaceMottle: config.surfaceMottle,
+          surfaceEdgeDarkening: config.surfaceEdgeDarkening,
+          surfaceVerticalTint: config.surfaceVerticalTint,
           name: `tree-ir-${family}-${role}`,
         }),
       );
