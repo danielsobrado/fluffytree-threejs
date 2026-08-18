@@ -10,14 +10,15 @@ export function calculateTreeIrFoliageCardStyle(treeIr, site, config) {
       config.cardScaleVariation;
   const stretch =
     treeIrStyleSigned(treeIr, site.id, 'card-stretch') * config.cardStretch;
+  const lean = config.cardLean ?? 0;
 
   return Object.freeze({
     widthScale: scaleVariation * (1 + stretch),
     heightScale: scaleVariation * (1 - stretch * 0.55),
     twist:
       treeIrStyleSigned(treeIr, site.id, 'card-twist') * config.cardTwist,
-    leanX: treeIrStyleSigned(treeIr, site.id, 'card-lean-x') * config.cardLean,
-    leanZ: treeIrStyleSigned(treeIr, site.id, 'card-lean-z') * config.cardLean,
+    leanX: treeIrStyleSigned(treeIr, site.id, 'card-lean-x') * lean,
+    leanZ: treeIrStyleSigned(treeIr, site.id, 'card-lean-z') * lean,
     colorMix: treeIrStyleUnit(treeIr, site.id, 'card-color'),
     brightness: 0.96 + treeIrStyleUnit(treeIr, site.id, 'card-brightness') * 0.08,
   });
