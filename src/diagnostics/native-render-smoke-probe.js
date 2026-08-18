@@ -74,11 +74,13 @@ function collectNativeMetrics(trees) {
     frondBatchCount: 0,
     heroLeafletPalmCount: 0,
     nearLeafletPalmCount: 0,
+    aggregateLeafletPalmCount: 0,
     aggregateFrondProxyCount: 0,
     palmFrondShadowCount: 0,
     palmBandedTrunkCount: 0,
     foliageCardBatchCount: 0,
     volumetricBroadleafCardCount: 0,
+    nearVolumetricBroadleafCardCount: 0,
     recessedBroadleafCoreCount: 0,
     broadleafLeafShapeCount: 0,
     mipmappedBillboardTreeCount: 0,
@@ -158,6 +160,17 @@ function collectNativeMetrics(trees) {
       }
       metrics.nearLeafletPalmCount += 1;
 
+      const aggregateFronds = findUserDataMarker(
+        lodState.levels[aggregateIndex],
+        'fronds',
+      );
+      if (!aggregateFronds?.leaflets) {
+        throw new Error(
+          `Palm '${treeState.presetId}' aggregate representation does not preserve its pinnate silhouette.`,
+        );
+      }
+      metrics.aggregateLeafletPalmCount += 1;
+
       const heroStructure = findUserDataMarker(
         lodState.levels[heroIndex],
         'structure',
@@ -169,11 +182,6 @@ function collectNativeMetrics(trees) {
       }
       metrics.palmBandedTrunkCount += 1;
 
-      if (!hasUserDataMarker(lodState.levels[aggregateIndex], 'fronds')) {
-        throw new Error(
-          `Palm '${treeState.presetId}' aggregate representation has no frond proxy.`,
-        );
-      }
       if (hasUserDataMarker(lodState.levels[aggregateIndex], 'crownVolumes')) {
         throw new Error(
           `Palm '${treeState.presetId}' aggregate representation still exposes a crown-volume blob.`,
@@ -221,6 +229,12 @@ function collectNativeMetrics(trees) {
         );
       }
       metrics.volumetricBroadleafCardCount += 1;
+      if (nearCards.planeCount < 2) {
+        throw new Error(
+          `Broadleaf '${treeState.presetId}' near foliage collapses to a flat single-plane silhouette.`,
+        );
+      }
+      metrics.nearVolumetricBroadleafCardCount += 1;
       if (!heroCards.leafShape || heroCards.leafShape !== nearCards.leafShape) {
         throw new Error(
           `Broadleaf '${treeState.presetId}' does not preserve its leaf silhouette across detailed LODs.`,
