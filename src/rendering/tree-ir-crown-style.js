@@ -5,7 +5,8 @@ import {
 
 export function calculateTreeIrCrownStyle(treeIr, volume, config, exposure = 1) {
   const variation = config.shapeVariation;
-  const depthBrightness = 1 - config.depthShading * (1 - exposure);
+  const depthShading = config.depthShading ?? 0;
+  const depthBrightness = 1 - depthShading * (1 - exposure);
   return Object.freeze({
     scaleX: 1 + treeIrStyleSigned(treeIr, volume.id, 'crown-scale-x') * variation,
     scaleY: 1 + treeIrStyleSigned(treeIr, volume.id, 'crown-scale-y') * variation,
