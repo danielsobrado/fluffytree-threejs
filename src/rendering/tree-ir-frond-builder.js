@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { configureTreeIrFoliageLighting } from './tree-ir-foliage-lighting.js';
 import { TreeIrFrondGeometryFactory } from './tree-ir-frond-geometry-factory.js';
 import { configureTreeIrFrondWindMaterial } from './tree-ir-frond-wind-material.js';
 
@@ -17,6 +18,9 @@ export class TreeIrFrondBuilder {
       rachisWidthRatio = 0.08,
       leafletLengthRatio = 0.96,
       leafletWidthRatio = 0.72,
+      softLight = 0,
+      rimLight = 0,
+      backLight = 0,
       name = 'tree-ir-fronds',
     } = {},
   ) {
@@ -34,14 +38,17 @@ export class TreeIrFrondBuilder {
     try {
       merged = mergeGeometries(geometries, false);
       if (!merged) throw new Error('Failed to merge Tree IR frond geometry.');
-      material = configureTreeIrFrondWindMaterial(
-        new THREE.MeshStandardMaterial({
-          vertexColors: true,
-          side: THREE.DoubleSide,
-          roughness: Number(treeIr.metadata.material.foliageRoughness ?? 0.86),
-          metalness: 0,
-          fog: true,
-        }),
+      material = configureTreeIrFoliageLighting(
+        configureTreeIrFrondWindMaterial(
+          new THREE.MeshStandardMaterial({
+            vertexColors: true,
+            side: THREE.DoubleSide,
+            roughness: Number(treeIr.metadata.material.foliageRoughness ?? 0.86),
+            metalness: 0,
+            fog: true,
+          }),
+        ),
+        { softLight, rimLight, backLight },
       );
       const mesh = new THREE.Mesh(merged, material);
       mesh.name = name;
@@ -51,6 +58,9 @@ export class TreeIrFrondBuilder {
         count: sites.length,
         segmentRatio,
         leaflets,
+        softLight,
+        rimLight,
+        backLight,
       });
       merged = null;
       material = null;
