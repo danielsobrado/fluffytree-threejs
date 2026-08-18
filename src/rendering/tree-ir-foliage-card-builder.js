@@ -3,6 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { DEFAULT_LEAF_SHAPE_ID } from './leaf-shape-library.js';
 import { createTreeIrFoliageAlphaTexture } from './tree-ir-foliage-alpha-texture.js';
 import { calculateTreeIrFoliageCardStyle } from './tree-ir-foliage-card-style.js';
+import { configureTreeIrFoliageLighting } from './tree-ir-foliage-lighting.js';
 import { setTreeIrPaletteColor } from './tree-ir-palette.js';
 import { configureTreeWindMaterial } from './tree-wind-shader.js';
 
@@ -50,6 +51,9 @@ export class TreeIrFoliageCardBuilder {
       surfaceMottle = 0,
       surfaceEdgeDarkening = 0,
       surfaceVerticalTint = 0,
+      softLight = 0,
+      rimLight = 0,
+      backLight = 0,
       name = 'tree-ir-foliage-cards',
     },
   ) {
@@ -65,19 +69,22 @@ export class TreeIrFoliageCardBuilder {
         leafShape,
         { surfaceMottle, surfaceEdgeDarkening, surfaceVerticalTint },
       );
-      material = configureTreeWindMaterial(
-        new THREE.MeshStandardMaterial({
-          color: 0xffffff,
-          map: texture,
-          alphaTest,
-          alphaToCoverage: true,
-          transparent: false,
-          side: THREE.DoubleSide,
-          roughness: Number(treeIr.metadata.material.foliageRoughness ?? 0.9),
-          metalness: 0,
-          fog: true,
-        }),
-        { cacheKey: 'tree-ir-foliage-card-wind-v3' },
+      material = configureTreeIrFoliageLighting(
+        configureTreeWindMaterial(
+          new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            map: texture,
+            alphaTest,
+            alphaToCoverage: true,
+            transparent: false,
+            side: THREE.DoubleSide,
+            roughness: Number(treeIr.metadata.material.foliageRoughness ?? 0.9),
+            metalness: 0,
+            fog: true,
+          }),
+          { cacheKey: 'tree-ir-foliage-card-wind-v3' },
+        ),
+        { softLight, rimLight, backLight },
       );
       material.userData.disposables = [texture];
       const mesh = new THREE.InstancedMesh(geometry, material, sites.length);
@@ -155,6 +162,9 @@ export class TreeIrFoliageCardBuilder {
         surfaceMottle,
         surfaceEdgeDarkening,
         surfaceVerticalTint,
+        softLight,
+        rimLight,
+        backLight,
       });
       geometry = null;
       texture = null;
