@@ -6,6 +6,7 @@ const CONFIG = Object.freeze({
   cardScaleVariation: 0.08,
   cardStretch: 0.12,
   cardTwist: 0.32,
+  cardLean: 0.12,
 });
 
 test('native foliage card style is deterministic and bounded', () => {
@@ -18,6 +19,8 @@ test('native foliage card style is deterministic and bounded', () => {
   assert.ok(first.widthScale >= 0.8 && first.widthScale <= 1.22);
   assert.ok(first.heightScale >= 0.85 && first.heightScale <= 1.16);
   assert.ok(Math.abs(first.twist) <= CONFIG.cardTwist);
+  assert.ok(Math.abs(first.leanX) <= CONFIG.cardLean);
+  assert.ok(Math.abs(first.leanZ) <= CONFIG.cardLean);
   assert.ok(first.brightness >= 0.96 && first.brightness <= 1.04);
 });
 
