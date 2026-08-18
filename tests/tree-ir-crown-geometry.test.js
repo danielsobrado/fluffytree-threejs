@@ -37,6 +37,20 @@ function minimumRadialNormalAlignment(geometry) {
   return minimum;
 }
 
+function colorRange(geometry) {
+  const colors = geometry.getAttribute('color');
+  let minimum = Number.POSITIVE_INFINITY;
+  let maximum = Number.NEGATIVE_INFINITY;
+  for (let index = 0; index < colors.count; index += 1) {
+    const value = colors.getX(index);
+    minimum = Math.min(minimum, value);
+    maximum = Math.max(maximum, value);
+    assert.equal(value, colors.getY(index));
+    assert.equal(value, colors.getZ(index));
+  }
+  return { minimum, maximum };
+}
+
 test('native crown geometry breaks the perfect sphere silhouette conservatively', () => {
   const geometry = createTreeIrCrownGeometry(1, 0.07);
 
@@ -58,5 +72,28 @@ test('organic crown deformation keeps smooth radial lighting normals', () => {
     assert.ok(minimumRadialNormalAlignment(geometry) > 0.999999);
   } finally {
     geometry.dispose();
+  }
+});
+
+test('crown local depth shading varies color without changing topology', () => {
+  const plain = createTreeIrCrownGeometry(1, 0.07, 0);
+  const shaded = createTreeIrCrownGeometry(1, 0.07, 0.14);
+
+  try {
+    assert.equal(
+      shaded.getAttribute('position').count,
+      plain.getAttribute('position').count,
+    );
+    assert.equal(shaded.index?.count ?? 0, plain.index?.count ?? 0);
+    const plainRange = colorRange(plain);
+    const shadedRange = colorRange(shaded);
+    assert.equal(plainRange.minimum, 1);
+    assert.equal(plainRange.maximum, 1);
+    assert.ok(shadedRange.minimum < 1);
+    assert.ok(shadedRange.maximum > 1);
+    assert.ok(shadedRange.maximum - shadedRange.minimum > 0.05);
+  } finally {
+    plain.dispose();
+    shaded.dispose();
   }
 });
