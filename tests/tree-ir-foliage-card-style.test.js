@@ -7,6 +7,8 @@ const CONFIG = Object.freeze({
   cardStretch: 0.12,
   cardTwist: 0.32,
   cardLean: 0.12,
+  canopyHeightTint: 0.08,
+  canopyRadialTint: 0.05,
 });
 
 test('native foliage card style is deterministic and bounded', () => {
@@ -30,4 +32,34 @@ test('native foliage card style varies across sites', () => {
   const second = calculateTreeIrFoliageCardStyle(treeIr, { id: 'foliage:2' }, CONFIG);
 
   assert.notDeepEqual(first, second);
+});
+
+test('upper outer foliage receives subtle canopy exposure lift', () => {
+  const treeIr = {
+    seed: 104729,
+    bounds: {
+      minimum: { x: -5, y: 0, z: -5 },
+      maximum: { x: 5, y: 10, z: 5 },
+    },
+  };
+  const lowerInner = calculateTreeIrFoliageCardStyle(
+    treeIr,
+    {
+      id: 'foliage:exposure',
+      frame: { position: { x: 0, y: 2, z: 0 } },
+    },
+    CONFIG,
+  );
+  const upperOuter = calculateTreeIrFoliageCardStyle(
+    treeIr,
+    {
+      id: 'foliage:exposure',
+      frame: { position: { x: 4.5, y: 9, z: 4.5 } },
+    },
+    CONFIG,
+  );
+
+  assert.ok(upperOuter.brightness > lowerInner.brightness);
+  assert.ok(upperOuter.canopyHeight > lowerInner.canopyHeight);
+  assert.ok(upperOuter.canopyRadial > lowerInner.canopyRadial);
 });
