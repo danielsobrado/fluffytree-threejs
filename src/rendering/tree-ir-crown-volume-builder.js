@@ -58,10 +58,11 @@ export class TreeIrCrownVolumeBuilder {
     try {
       const volumes = treeIr.crownVolumes;
       const resolveExposure = createExposureResolver(volumes);
-      geometry = createTreeIrCrownGeometry(detail, surfaceVariation);
+      geometry = createTreeIrCrownGeometry(detail, surfaceVariation, depthShading);
       material = configureTreeWindMaterial(
         new THREE.MeshStandardMaterial({
           color: 0xffffff,
+          vertexColors: true,
           roughness: Math.min(
             1,
             Number(treeIr.metadata.material.foliageRoughness ?? 0.9) + 0.08,
@@ -69,7 +70,7 @@ export class TreeIrCrownVolumeBuilder {
           metalness: 0,
           fog: true,
         }),
-        { cacheKey: 'tree-ir-crown-core-wind-v1' },
+        { cacheKey: 'tree-ir-crown-core-wind-v2' },
       );
       const mesh = new THREE.InstancedMesh(geometry, material, volumes.length);
       const matrix = new THREE.Matrix4();
@@ -125,6 +126,7 @@ export class TreeIrCrownVolumeBuilder {
         shapeVariation,
         surfaceVariation,
         depthShading,
+        localDepthColors: true,
       });
       geometry = null;
       material = null;
