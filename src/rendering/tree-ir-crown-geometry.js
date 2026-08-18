@@ -12,6 +12,7 @@ export function createTreeIrCrownGeometry(detail, surfaceVariation = 0) {
   if (surfaceVariation <= Number.EPSILON) return geometry;
 
   const positions = geometry.getAttribute('position');
+  const normals = geometry.getAttribute('normal');
   const point = new THREE.Vector3();
   for (let index = 0; index < positions.count; index += 1) {
     point.fromBufferAttribute(positions, index).normalize();
@@ -23,9 +24,10 @@ export function createTreeIrCrownGeometry(detail, surfaceVariation = 0) {
       point.y * radius,
       point.z * radius,
     );
+    normals.setXYZ(index, point.x, point.y, point.z);
   }
   positions.needsUpdate = true;
-  geometry.computeVertexNormals();
+  normals.needsUpdate = true;
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
   return geometry;
