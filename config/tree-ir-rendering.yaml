@@ -33,12 +33,16 @@ directIr:
     nearCardPlanes: 2
     heroCardDepthSpread: 0.08
     nearCardDepthSpread: 0.05
+    cardNormalBlend: 0.72
+    cardNormalUpBias: 0.24
     heroScale: 1.04
     nearScale: 1.16
     cardScaleVariation: 0.08
     cardStretch: 0.12
     cardTwist: 0.32
     cardLean: 0.12
+    canopyHeightTint: 0.08
+    canopyRadialTint: 0.05
     surfaceMottle: 0.06
     surfaceEdgeDarkening: 0.08
     surfaceVerticalTint: 0.05
