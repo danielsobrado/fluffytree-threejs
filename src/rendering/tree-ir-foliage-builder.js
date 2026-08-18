@@ -47,6 +47,9 @@ function useFrondLeaflets(role, config) {
   if (role === TREE_REPRESENTATION_ROLES.NEAR) {
     return config.frondNearLeaflets;
   }
+  if (role === TREE_REPRESENTATION_ROLES.AGGREGATE) {
+    return config.frondAggregateLeaflets;
+  }
   return false;
 }
 
