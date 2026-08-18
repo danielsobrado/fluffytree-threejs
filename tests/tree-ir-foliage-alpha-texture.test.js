@@ -9,6 +9,13 @@ function alphaBytes(texture) {
   );
 }
 
+function redBytes(texture) {
+  const data = texture.image.data;
+  return Array.from({ length: data.length / 4 }, (_unused, index) =>
+    data[index * 4],
+  );
+}
+
 test('native broadleaf alpha textures preserve requested spray silhouettes', () => {
   const broadleaf = createTreeIrFoliageAlphaTexture(
     'broadleaf-spray',
@@ -49,5 +56,24 @@ test('needle primitive family always uses the needle alpha profile', () => {
   } finally {
     requestedOval.dispose();
     requestedBroadleaf.dispose();
+  }
+});
+
+test('native foliage surface detail preserves alpha while breaking flat albedo', () => {
+  const flat = createTreeIrFoliageAlphaTexture('broadleaf', 48, 'oval');
+  const detailed = createTreeIrFoliageAlphaTexture('broadleaf', 48, 'oval', {
+    surfaceMottle: 0.06,
+    surfaceEdgeDarkening: 0.08,
+    surfaceVerticalTint: 0.05,
+  });
+
+  try {
+    assert.deepEqual(alphaBytes(flat), alphaBytes(detailed));
+    assert.notDeepEqual(redBytes(flat), redBytes(detailed));
+    assert.ok(redBytes(detailed).some((value) => value < 245));
+    assert.equal(detailed.userData.foliageSurface.surfaceMottle, 0.06);
+  } finally {
+    flat.dispose();
+    detailed.dispose();
   }
 });
