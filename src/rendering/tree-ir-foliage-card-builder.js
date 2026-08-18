@@ -6,11 +6,13 @@ import { calculateTreeIrFoliageCardStyle } from './tree-ir-foliage-card-style.js
 import { setTreeIrPaletteColor } from './tree-ir-palette.js';
 import { configureTreeWindMaterial } from './tree-wind-shader.js';
 
-function createCardGeometry(planeCount) {
+function createCardGeometry(planeCount, depthSpread) {
   const geometries = [];
   try {
     for (let index = 0; index < planeCount; index += 1) {
       const geometry = new THREE.PlaneGeometry(1, 1);
+      const depthRatio = planeCount === 1 ? 0 : index / (planeCount - 1) - 0.5;
+      geometry.translate(0, 0, depthRatio * depthSpread);
       geometry.rotateY((index * Math.PI) / planeCount);
       geometries.push(geometry);
     }
@@ -37,12 +39,17 @@ export class TreeIrFoliageCardBuilder {
     {
       primitiveFamily,
       planeCount,
+      depthSpread = 0,
       alphaResolution,
       alphaTest,
       scaleMultiplier = 1,
       cardScaleVariation = 0,
       cardStretch = 0,
       cardTwist = 0,
+      cardLean = 0,
+      surfaceMottle = 0,
+      surfaceEdgeDarkening = 0,
+      surfaceVerticalTint = 0,
       name = 'tree-ir-foliage-cards',
     },
   ) {
@@ -51,11 +58,12 @@ export class TreeIrFoliageCardBuilder {
     let material = null;
     try {
       const leafShape = treeIr.metadata.material.leafShape ?? DEFAULT_LEAF_SHAPE_ID;
-      geometry = createCardGeometry(planeCount);
+      geometry = createCardGeometry(planeCount, depthSpread);
       texture = createTreeIrFoliageAlphaTexture(
         primitiveFamily,
         alphaResolution,
         leafShape,
+        { surfaceMottle, surfaceEdgeDarkening, surfaceVerticalTint },
       );
       material = configureTreeWindMaterial(
         new THREE.MeshStandardMaterial({
@@ -69,7 +77,7 @@ export class TreeIrFoliageCardBuilder {
           metalness: 0,
           fog: true,
         }),
-        { cacheKey: 'tree-ir-foliage-card-wind-v2' },
+        { cacheKey: 'tree-ir-foliage-card-wind-v3' },
       );
       material.userData.disposables = [texture];
       const mesh = new THREE.InstancedMesh(geometry, material, sites.length);
@@ -77,18 +85,19 @@ export class TreeIrFoliageCardBuilder {
       const matrix = new THREE.Matrix4();
       const position = new THREE.Vector3();
       const quaternion = new THREE.Quaternion();
-      const localTwist = new THREE.Quaternion();
+      const localRotation = new THREE.Quaternion();
+      const localEuler = new THREE.Euler();
       const scale = new THREE.Vector3();
       const xAxis = new THREE.Vector3();
       const yAxis = new THREE.Vector3();
       const zAxis = new THREE.Vector3();
-      const localYAxis = new THREE.Vector3(0, 1, 0);
       const color = new THREE.Color();
       const palette = treeIr.metadata.material.foliagePalette;
       const styleConfig = {
         cardScaleVariation,
         cardStretch,
         cardTwist,
+        cardLean,
       };
 
       sites.forEach((site, index) => {
@@ -103,8 +112,9 @@ export class TreeIrFoliageCardBuilder {
           site,
           styleConfig,
         );
-        localTwist.setFromAxisAngle(localYAxis, style.twist);
-        quaternion.multiply(localTwist);
+        localEuler.set(style.leanX, style.twist, style.leanZ, 'YXZ');
+        localRotation.setFromEuler(localEuler);
+        quaternion.multiply(localRotation);
         const size = Math.max(0.01, siteScale(site) * scaleMultiplier);
         scale.set(
           size * style.widthScale,
@@ -137,9 +147,14 @@ export class TreeIrFoliageCardBuilder {
         leafShape,
         instanceCount: sites.length,
         planeCount,
+        depthSpread,
         scaleMultiplier,
         alphaTest,
         alphaToCoverage: material.alphaToCoverage,
+        cardLean,
+        surfaceMottle,
+        surfaceEdgeDarkening,
+        surfaceVerticalTint,
       });
       geometry = null;
       texture = null;
