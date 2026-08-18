@@ -23,7 +23,11 @@ test('direct Tree IR rendering policy parses into immutable role settings', () =
   assert.equal(parsed.foliage.nearCardPlanes, 2);
   assert.equal(parsed.foliage.heroCardDepthSpread, 0.08);
   assert.equal(parsed.foliage.nearCardDepthSpread, 0.05);
+  assert.equal(parsed.foliage.cardNormalBlend, 0.72);
+  assert.equal(parsed.foliage.cardNormalUpBias, 0.24);
   assert.equal(parsed.foliage.cardLean, 0.12);
+  assert.equal(parsed.foliage.canopyHeightTint, 0.08);
+  assert.equal(parsed.foliage.canopyRadialTint, 0.05);
   assert.equal(parsed.foliage.surfaceMottle, 0.06);
   assert.equal(parsed.foliage.surfaceEdgeDarkening, 0.08);
   assert.equal(parsed.foliage.surfaceVerticalTint, 0.05);
@@ -47,6 +51,20 @@ test('direct Tree IR rendering policy rejects invalid quality values', () => {
   assert.throws(
     () => parseTreeIrRenderingConfig(invalidAlpha),
     /alphaResolution/,
+  );
+
+  const invalidNormalBlend = structuredClone(config);
+  invalidNormalBlend.directIr.foliage.cardNormalBlend = 1.2;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidNormalBlend),
+    /cardNormalBlend/,
+  );
+
+  const invalidHeightTint = structuredClone(config);
+  invalidHeightTint.directIr.foliage.canopyHeightTint = 0.5;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidHeightTint),
+    /canopyHeightTint/,
   );
 
   const invalidSurfaceMottle = structuredClone(config);
