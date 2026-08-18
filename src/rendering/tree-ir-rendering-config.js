@@ -138,6 +138,12 @@ function parseCrown(source) {
       0.2,
       'treeIrRendering.directIr.crown.surfaceVariation',
     ),
+    depthShading: requireRange(
+      source.depthShading,
+      0,
+      0.3,
+      'treeIrRendering.directIr.crown.depthShading',
+    ),
   });
 
   if (crown.nearDetail > crown.heroDetail) {
@@ -193,6 +199,18 @@ function parseFoliage(source) {
       3,
       'treeIrRendering.directIr.foliage.nearCardPlanes',
     ),
+    heroCardDepthSpread: requireRange(
+      source.heroCardDepthSpread,
+      0,
+      0.25,
+      'treeIrRendering.directIr.foliage.heroCardDepthSpread',
+    ),
+    nearCardDepthSpread: requireRange(
+      source.nearCardDepthSpread,
+      0,
+      0.25,
+      'treeIrRendering.directIr.foliage.nearCardDepthSpread',
+    ),
     heroScale: requireRange(
       source.heroScale,
       0.2,
@@ -222,6 +240,30 @@ function parseFoliage(source) {
       0,
       Math.PI * 0.5,
       'treeIrRendering.directIr.foliage.cardTwist',
+    ),
+    cardLean: requireRange(
+      source.cardLean,
+      0,
+      0.4,
+      'treeIrRendering.directIr.foliage.cardLean',
+    ),
+    surfaceMottle: requireRange(
+      source.surfaceMottle,
+      0,
+      0.2,
+      'treeIrRendering.directIr.foliage.surfaceMottle',
+    ),
+    surfaceEdgeDarkening: requireRange(
+      source.surfaceEdgeDarkening,
+      0,
+      0.2,
+      'treeIrRendering.directIr.foliage.surfaceEdgeDarkening',
+    ),
+    surfaceVerticalTint: requireRange(
+      source.surfaceVerticalTint,
+      0,
+      0.2,
+      'treeIrRendering.directIr.foliage.surfaceVerticalTint',
     ),
     frondHeroLeaflets: requireBoolean(
       source.frondHeroLeaflets,
@@ -276,6 +318,11 @@ function parseFoliage(source) {
   if (foliage.nearCardPlanes > foliage.heroCardPlanes) {
     throw new RangeError(
       'treeIrRendering.directIr.foliage.nearCardPlanes must not exceed heroCardPlanes.',
+    );
+  }
+  if (foliage.nearCardDepthSpread > foliage.heroCardDepthSpread) {
+    throw new RangeError(
+      'treeIrRendering.directIr.foliage.nearCardDepthSpread must not exceed heroCardDepthSpread.',
     );
   }
   if (foliage.nearAlphaTest > foliage.alphaTest) {
