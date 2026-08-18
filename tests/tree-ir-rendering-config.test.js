@@ -16,10 +16,17 @@ test('direct Tree IR rendering policy parses into immutable role settings', () =
   assert.equal(parsed.crown.heroBrightness, 0.7);
   assert.equal(parsed.crown.shapeVariation, 0.08);
   assert.equal(parsed.crown.surfaceVariation, 0.07);
+  assert.equal(parsed.crown.depthShading, 0.14);
   assert.equal(parsed.foliage.alphaResolution, 96);
   assert.equal(parsed.foliage.nearAlphaTest, 0.3);
   assert.equal(parsed.foliage.heroCardPlanes, 3);
   assert.equal(parsed.foliage.nearCardPlanes, 2);
+  assert.equal(parsed.foliage.heroCardDepthSpread, 0.08);
+  assert.equal(parsed.foliage.nearCardDepthSpread, 0.05);
+  assert.equal(parsed.foliage.cardLean, 0.12);
+  assert.equal(parsed.foliage.surfaceMottle, 0.06);
+  assert.equal(parsed.foliage.surfaceEdgeDarkening, 0.08);
+  assert.equal(parsed.foliage.surfaceVerticalTint, 0.05);
   assert.equal(parsed.foliage.frondHeroLeaflets, true);
   assert.equal(parsed.foliage.frondNearLeaflets, true);
   assert.equal(parsed.foliage.frondAggregateLeaflets, true);
@@ -37,6 +44,13 @@ test('direct Tree IR rendering policy rejects invalid quality values', () => {
   assert.throws(
     () => parseTreeIrRenderingConfig(invalidAlpha),
     /alphaResolution/,
+  );
+
+  const invalidSurfaceMottle = structuredClone(config);
+  invalidSurfaceMottle.directIr.foliage.surfaceMottle = 0.4;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidSurfaceMottle),
+    /surfaceMottle/,
   );
 
   const invalidAggregateDensity = structuredClone(config);
@@ -94,6 +108,14 @@ test('lower native foliage and crown LODs preserve their visual hierarchy', () =
   assert.throws(
     () => parseTreeIrRenderingConfig(invalidCards),
     /nearCardPlanes must not exceed heroCardPlanes/,
+  );
+
+  const invalidCardDepth = structuredClone(config);
+  invalidCardDepth.directIr.foliage.nearCardDepthSpread = 0.12;
+  invalidCardDepth.directIr.foliage.heroCardDepthSpread = 0.08;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidCardDepth),
+    /nearCardDepthSpread must not exceed heroCardDepthSpread/,
   );
 
   const invalidNearAlpha = structuredClone(config);
