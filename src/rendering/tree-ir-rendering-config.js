@@ -211,6 +211,18 @@ function parseFoliage(source) {
       0.25,
       'treeIrRendering.directIr.foliage.nearCardDepthSpread',
     ),
+    cardNormalBlend: requireRange(
+      source.cardNormalBlend,
+      0,
+      1,
+      'treeIrRendering.directIr.foliage.cardNormalBlend',
+    ),
+    cardNormalUpBias: requireRange(
+      source.cardNormalUpBias,
+      0,
+      1,
+      'treeIrRendering.directIr.foliage.cardNormalUpBias',
+    ),
     heroScale: requireRange(
       source.heroScale,
       0.2,
@@ -246,6 +258,18 @@ function parseFoliage(source) {
       0,
       0.4,
       'treeIrRendering.directIr.foliage.cardLean',
+    ),
+    canopyHeightTint: requireRange(
+      source.canopyHeightTint,
+      0,
+      0.25,
+      'treeIrRendering.directIr.foliage.canopyHeightTint',
+    ),
+    canopyRadialTint: requireRange(
+      source.canopyRadialTint,
+      0,
+      0.25,
+      'treeIrRendering.directIr.foliage.canopyRadialTint',
     ),
     surfaceMottle: requireRange(
       source.surfaceMottle,
