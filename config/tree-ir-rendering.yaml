@@ -24,17 +24,24 @@ directIr:
     aggregateBrightness: 0.88
     shapeVariation: 0.08
     surfaceVariation: 0.07
+    depthShading: 0.14
   foliage:
     alphaResolution: 96
     alphaTest: 0.38
     nearAlphaTest: 0.30
     heroCardPlanes: 3
     nearCardPlanes: 2
+    heroCardDepthSpread: 0.08
+    nearCardDepthSpread: 0.05
     heroScale: 1.04
     nearScale: 1.16
     cardScaleVariation: 0.08
     cardStretch: 0.12
     cardTwist: 0.32
+    cardLean: 0.12
+    surfaceMottle: 0.06
+    surfaceEdgeDarkening: 0.08
+    surfaceVerticalTint: 0.05
     frondHeroLeaflets: true
     frondNearLeaflets: true
     frondAggregateLeaflets: true
