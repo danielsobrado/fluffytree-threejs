@@ -42,6 +42,9 @@ directIr:
     surfaceMottle: 0.06
     surfaceEdgeDarkening: 0.08
     surfaceVerticalTint: 0.05
+    softLight: 0.018
+    rimLight: 0.045
+    backLight: 0.030
     frondHeroLeaflets: true
     frondNearLeaflets: true
     frondAggregateLeaflets: true
