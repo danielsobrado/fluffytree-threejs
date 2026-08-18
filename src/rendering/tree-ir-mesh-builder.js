@@ -83,6 +83,7 @@ function crownSettings(role, config) {
       brightness: config.heroBrightness,
       shapeVariation: config.shapeVariation,
       surfaceVariation: config.surfaceVariation,
+      depthShading: config.depthShading,
     };
   }
   if (role === TREE_REPRESENTATION_ROLES.NEAR) {
@@ -92,6 +93,7 @@ function crownSettings(role, config) {
       brightness: config.nearBrightness,
       shapeVariation: config.shapeVariation,
       surfaceVariation: config.surfaceVariation,
+      depthShading: config.depthShading,
     };
   }
   return {
@@ -100,6 +102,7 @@ function crownSettings(role, config) {
     brightness: config.aggregateBrightness,
     shapeVariation: config.shapeVariation,
     surfaceVariation: config.surfaceVariation,
+    depthShading: config.depthShading,
   };
 }
 
