@@ -4,6 +4,40 @@ import { calculateTreeIrCrownStyle } from './tree-ir-crown-style.js';
 import { setTreeIrPaletteColor } from './tree-ir-palette.js';
 import { configureTreeWindMaterial } from './tree-wind-shader.js';
 
+function createExposureResolver(volumes) {
+  if (volumes.length < 2) return () => 1;
+
+  let centerX = 0;
+  let centerZ = 0;
+  let minimumY = Number.POSITIVE_INFINITY;
+  let maximumY = Number.NEGATIVE_INFINITY;
+  for (const volume of volumes) {
+    centerX += volume.center.x;
+    centerZ += volume.center.z;
+    minimumY = Math.min(minimumY, volume.center.y);
+    maximumY = Math.max(maximumY, volume.center.y);
+  }
+  centerX /= volumes.length;
+  centerZ /= volumes.length;
+
+  let maximumRadius = 0;
+  for (const volume of volumes) {
+    maximumRadius = Math.max(
+      maximumRadius,
+      Math.hypot(volume.center.x - centerX, volume.center.z - centerZ),
+    );
+  }
+
+  const heightSpan = Math.max(Number.EPSILON, maximumY - minimumY);
+  const radiusSpan = Math.max(Number.EPSILON, maximumRadius);
+  return (volume) => {
+    const verticalExposure = (volume.center.y - minimumY) / heightSpan;
+    const radialExposure =
+      Math.hypot(volume.center.x - centerX, volume.center.z - centerZ) / radiusSpan;
+    return Math.min(1, Math.max(verticalExposure, radialExposure));
+  };
+}
+
 export class TreeIrCrownVolumeBuilder {
   build(
     treeIr,
@@ -13,6 +47,7 @@ export class TreeIrCrownVolumeBuilder {
       brightness = 1,
       shapeVariation = 0,
       surfaceVariation = 0,
+      depthShading = 0,
       castShadow = false,
       receiveShadow = true,
       name = 'tree-ir-crown-volumes',
@@ -22,6 +57,7 @@ export class TreeIrCrownVolumeBuilder {
     let material = null;
     try {
       const volumes = treeIr.crownVolumes;
+      const resolveExposure = createExposureResolver(volumes);
       geometry = createTreeIrCrownGeometry(detail, surfaceVariation);
       material = configureTreeWindMaterial(
         new THREE.MeshStandardMaterial({
@@ -43,10 +79,15 @@ export class TreeIrCrownVolumeBuilder {
       const scale = new THREE.Vector3();
       const color = new THREE.Color();
       const palette = treeIr.metadata.material.foliagePalette;
-      const styleConfig = { brightness, shapeVariation };
+      const styleConfig = { brightness, shapeVariation, depthShading };
 
       volumes.forEach((volume, index) => {
-        const style = calculateTreeIrCrownStyle(treeIr, volume, styleConfig);
+        const style = calculateTreeIrCrownStyle(
+          treeIr,
+          volume,
+          styleConfig,
+          resolveExposure(volume),
+        );
         position.set(volume.center.x, volume.center.y, volume.center.z);
         euler.set(volume.rotation.x, volume.rotation.y, volume.rotation.z);
         quaternion.setFromEuler(euler);
@@ -83,6 +124,7 @@ export class TreeIrCrownVolumeBuilder {
         brightness,
         shapeVariation,
         surfaceVariation,
+        depthShading,
       });
       geometry = null;
       material = null;
