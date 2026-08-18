@@ -265,6 +265,24 @@ function parseFoliage(source) {
       0.2,
       'treeIrRendering.directIr.foliage.surfaceVerticalTint',
     ),
+    softLight: requireRange(
+      source.softLight,
+      0,
+      0.15,
+      'treeIrRendering.directIr.foliage.softLight',
+    ),
+    rimLight: requireRange(
+      source.rimLight,
+      0,
+      0.15,
+      'treeIrRendering.directIr.foliage.rimLight',
+    ),
+    backLight: requireRange(
+      source.backLight,
+      0,
+      0.15,
+      'treeIrRendering.directIr.foliage.backLight',
+    ),
     frondHeroLeaflets: requireBoolean(
       source.frondHeroLeaflets,
       'treeIrRendering.directIr.foliage.frondHeroLeaflets',
