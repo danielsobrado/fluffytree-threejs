@@ -19,8 +19,10 @@ test('direct Tree IR rendering policy parses into immutable role settings', () =
   assert.equal(parsed.foliage.alphaResolution, 96);
   assert.equal(parsed.foliage.nearAlphaTest, 0.3);
   assert.equal(parsed.foliage.heroCardPlanes, 3);
+  assert.equal(parsed.foliage.nearCardPlanes, 2);
   assert.equal(parsed.foliage.frondHeroLeaflets, true);
   assert.equal(parsed.foliage.frondNearLeaflets, true);
+  assert.equal(parsed.foliage.frondAggregateLeaflets, true);
   assert.equal(parsed.foliage.frondLeafletLengthRatio, 0.95);
   assert.equal(parsed.foliage.frondNearSegmentRatio, 0.58);
   assert.equal(parsed.foliage.frondAggregateDensity, 0.72);
@@ -52,10 +54,10 @@ test('direct Tree IR rendering policy rejects invalid quality values', () => {
   );
 
   const invalidLeafletFlag = structuredClone(config);
-  invalidLeafletFlag.directIr.foliage.frondHeroLeaflets = 1;
+  invalidLeafletFlag.directIr.foliage.frondAggregateLeaflets = 1;
   assert.throws(
     () => parseTreeIrRenderingConfig(invalidLeafletFlag),
-    /frondHeroLeaflets.*boolean/,
+    /frondAggregateLeaflets.*boolean/,
   );
 });
 
@@ -108,6 +110,14 @@ test('lower native foliage and crown LODs preserve their visual hierarchy', () =
   assert.throws(
     () => parseTreeIrRenderingConfig(invalidNearLeaflets),
     /frondNearLeaflets requires frondHeroLeaflets/,
+  );
+
+  const invalidAggregateLeaflets = structuredClone(config);
+  invalidAggregateLeaflets.directIr.foliage.frondNearLeaflets = false;
+  invalidAggregateLeaflets.directIr.foliage.frondAggregateLeaflets = true;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidAggregateLeaflets),
+    /frondAggregateLeaflets requires frondNearLeaflets/,
   );
 
   const invalidFrondSegments = structuredClone(config);
