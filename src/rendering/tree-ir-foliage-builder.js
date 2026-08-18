@@ -55,6 +55,14 @@ function useFrondLeaflets(role, config) {
   return false;
 }
 
+function lightingSettings(config) {
+  return {
+    softLight: config.softLight,
+    rimLight: config.rimLight,
+    backLight: config.backLight,
+  };
+}
+
 function selectFamilySites(treeIr, sites, family, role, density) {
   return family === FOLIAGE_PRIMITIVE_FAMILIES.FROND
     ? selectTreeIrFrondSites(treeIr, sites, density)
@@ -74,6 +82,7 @@ export class TreeIrFoliageBuilder {
     const group = new THREE.Group();
     group.name = `tree-ir-foliage-${role}`;
     const familyGroups = groupByFamily(treeIr.foliageSites);
+    const lighting = lightingSettings(config);
     let selectedSiteCount = 0;
 
     for (const [family, sourceSites] of familyGroups) {
@@ -102,6 +111,7 @@ export class TreeIrFoliageBuilder {
             rachisWidthRatio: config.frondRachisWidthRatio,
             leafletLengthRatio: config.frondLeafletLengthRatio,
             leafletWidthRatio: config.frondLeafletWidthRatio,
+            ...lighting,
             name: `tree-ir-fronds-${role}`,
           }),
         );
@@ -124,6 +134,7 @@ export class TreeIrFoliageBuilder {
           surfaceMottle: config.surfaceMottle,
           surfaceEdgeDarkening: config.surfaceEdgeDarkening,
           surfaceVerticalTint: config.surfaceVerticalTint,
+          ...lighting,
           name: `tree-ir-${family}-${role}`,
         }),
       );
