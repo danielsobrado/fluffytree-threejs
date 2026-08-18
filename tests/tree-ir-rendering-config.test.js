@@ -27,6 +27,9 @@ test('direct Tree IR rendering policy parses into immutable role settings', () =
   assert.equal(parsed.foliage.surfaceMottle, 0.06);
   assert.equal(parsed.foliage.surfaceEdgeDarkening, 0.08);
   assert.equal(parsed.foliage.surfaceVerticalTint, 0.05);
+  assert.equal(parsed.foliage.softLight, 0.018);
+  assert.equal(parsed.foliage.rimLight, 0.045);
+  assert.equal(parsed.foliage.backLight, 0.03);
   assert.equal(parsed.foliage.frondHeroLeaflets, true);
   assert.equal(parsed.foliage.frondNearLeaflets, true);
   assert.equal(parsed.foliage.frondAggregateLeaflets, true);
@@ -51,6 +54,13 @@ test('direct Tree IR rendering policy rejects invalid quality values', () => {
   assert.throws(
     () => parseTreeIrRenderingConfig(invalidSurfaceMottle),
     /surfaceMottle/,
+  );
+
+  const invalidRimLight = structuredClone(config);
+  invalidRimLight.directIr.foliage.rimLight = 0.4;
+  assert.throws(
+    () => parseTreeIrRenderingConfig(invalidRimLight),
+    /rimLight/,
   );
 
   const invalidAggregateDensity = structuredClone(config);
