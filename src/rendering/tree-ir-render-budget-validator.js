@@ -46,7 +46,9 @@ export function validateTreeIrRenderBudgets(qualityProfile, renderingConfig) {
     foliage.frondNearSegmentRatio *
     frondTriangleFactor(foliage.frondNearLeaflets);
   const aggregateFrondCost =
-    foliage.frondAggregateDensity * foliage.frondAggregateSegmentRatio;
+    foliage.frondAggregateDensity *
+    foliage.frondAggregateSegmentRatio *
+    frondTriangleFactor(foliage.frondAggregateLeaflets);
 
   assertNotMoreExpensive(nearCardCost, heroCardCost, 'Near foliage-card budget');
   assertNotMoreExpensive(nearFrondCost, heroFrondCost, 'Near frond budget');
