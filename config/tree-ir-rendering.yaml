@@ -29,7 +29,7 @@ directIr:
     alphaTest: 0.38
     nearAlphaTest: 0.30
     heroCardPlanes: 3
-    nearCardPlanes: 1
+    nearCardPlanes: 2
     heroScale: 1.04
     nearScale: 1.16
     cardScaleVariation: 0.08
@@ -37,6 +37,7 @@ directIr:
     cardTwist: 0.32
     frondHeroLeaflets: true
     frondNearLeaflets: true
+    frondAggregateLeaflets: true
     frondRachisWidthRatio: 0.075
     frondLeafletLengthRatio: 0.95
     frondLeafletWidthRatio: 0.68
