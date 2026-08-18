@@ -1,29 +1,11 @@
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { DEFAULT_LEAF_SHAPE_ID } from './leaf-shape-library.js';
 import { createTreeIrFoliageAlphaTexture } from './tree-ir-foliage-alpha-texture.js';
+import { createTreeIrFoliageCardGeometry } from './tree-ir-foliage-card-geometry.js';
 import { calculateTreeIrFoliageCardStyle } from './tree-ir-foliage-card-style.js';
 import { configureTreeIrFoliageLighting } from './tree-ir-foliage-lighting.js';
 import { setTreeIrPaletteColor } from './tree-ir-palette.js';
 import { configureTreeWindMaterial } from './tree-wind-shader.js';
-
-function createCardGeometry(planeCount, depthSpread) {
-  const geometries = [];
-  try {
-    for (let index = 0; index < planeCount; index += 1) {
-      const geometry = new THREE.PlaneGeometry(1, 1);
-      const depthRatio = planeCount === 1 ? 0 : index / (planeCount - 1) - 0.5;
-      geometry.translate(0, 0, depthRatio * depthSpread);
-      geometry.rotateY((index * Math.PI) / planeCount);
-      geometries.push(geometry);
-    }
-    const merged = mergeGeometries(geometries, false);
-    if (!merged) throw new Error('Failed to build direct IR foliage card geometry.');
-    return merged;
-  } finally {
-    for (const geometry of geometries) geometry.dispose();
-  }
-}
 
 function siteScale(site) {
   return Number(
@@ -41,6 +23,8 @@ export class TreeIrFoliageCardBuilder {
       primitiveFamily,
       planeCount,
       depthSpread = 0,
+      normalBlend = 0,
+      normalUpBias = 0,
       alphaResolution,
       alphaTest,
       scaleMultiplier = 1,
@@ -48,6 +32,8 @@ export class TreeIrFoliageCardBuilder {
       cardStretch = 0,
       cardTwist = 0,
       cardLean = 0,
+      canopyHeightTint = 0,
+      canopyRadialTint = 0,
       surfaceMottle = 0,
       surfaceEdgeDarkening = 0,
       surfaceVerticalTint = 0,
@@ -62,7 +48,12 @@ export class TreeIrFoliageCardBuilder {
     let material = null;
     try {
       const leafShape = treeIr.metadata.material.leafShape ?? DEFAULT_LEAF_SHAPE_ID;
-      geometry = createCardGeometry(planeCount, depthSpread);
+      geometry = createTreeIrFoliageCardGeometry({
+        planeCount,
+        depthSpread,
+        normalBlend,
+        normalUpBias,
+      });
       texture = createTreeIrFoliageAlphaTexture(
         primitiveFamily,
         alphaResolution,
@@ -105,6 +96,8 @@ export class TreeIrFoliageCardBuilder {
         cardStretch,
         cardTwist,
         cardLean,
+        canopyHeightTint,
+        canopyRadialTint,
       };
 
       sites.forEach((site, index) => {
@@ -155,10 +148,14 @@ export class TreeIrFoliageCardBuilder {
         instanceCount: sites.length,
         planeCount,
         depthSpread,
+        normalBlend,
+        normalUpBias,
         scaleMultiplier,
         alphaTest,
         alphaToCoverage: material.alphaToCoverage,
         cardLean,
+        canopyHeightTint,
+        canopyRadialTint,
         surfaceMottle,
         surfaceEdgeDarkening,
         surfaceVerticalTint,
