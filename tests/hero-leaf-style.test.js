@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   calculateHeroClusterStretch,
+  calculateHeroLeafColorMix,
   calculateHeroLeafSelectionProbability,
   selectHeroLeafSamples,
 } from '../src/rendering/hero-leaf-style.js';
@@ -44,4 +45,17 @@ test('hero cluster stretch is deterministic, subtle and anisotropic', () => {
   assert.ok(first.x >= 0.92 && first.x <= 1.08);
   assert.ok(first.z >= 0.92 && first.z <= 1.08);
   assert.notDeepEqual(first, layered);
+});
+
+test('hero leaf color variation is deterministic, bounded and layer specific', () => {
+  const first = calculateHeroLeafColorMix(9, 12, 0, 0.5, 0.04, 0.08);
+  const second = calculateHeroLeafColorMix(9, 12, 0, 0.5, 0.04, 0.08);
+  const layered = calculateHeroLeafColorMix(9, 12, 1, 0.5, 0.04, 0.08);
+
+  assert.equal(first, second);
+  assert.ok(first >= 0 && first <= 1);
+  assert.ok(layered >= 0 && layered <= 1);
+  assert.notEqual(first, layered);
+  assert.equal(calculateHeroLeafColorMix(1, 1, 0, 1, 1, 1), 1);
+  assert.equal(calculateHeroLeafColorMix(1, 1, 0, 0, -1, 1), 0);
 });
