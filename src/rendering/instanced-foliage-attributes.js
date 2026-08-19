@@ -31,11 +31,15 @@ function createVectorAttribute(instances, getValue) {
 export function addFoliageInstanceAttributes(
   geometry,
   instances,
-  { getExposure, getCrownDirection },
+  {
+    getColorMix = (instance) => instance.colorMix,
+    getExposure,
+    getCrownDirection,
+  },
 ) {
   geometry.setAttribute(
     'instanceColorMix',
-    createScalarAttribute(instances, (instance) => instance.colorMix),
+    createScalarAttribute(instances, getColorMix),
   );
   geometry.setAttribute(
     'instanceExposure',
