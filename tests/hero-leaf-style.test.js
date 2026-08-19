@@ -57,6 +57,7 @@ test('hero leaf shader color variation is deterministic and layer specific', () 
   assert.ok(first >= 0 && first <= 1);
   assert.ok(layered >= 0 && layered <= 1);
   assert.notEqual(first, layered);
+  assert.ok(Number.isFinite(calculateHeroLeafColorMix(1, 1, 0, 0.5)));
 });
 
 test('fallback hero leaf palette coordinate preserves direct lift and clamps', () => {
@@ -67,4 +68,5 @@ test('fallback hero leaf palette coordinate preserves direct lift and clamps', (
   assert.ok(first >= 0.56 && first <= 0.64);
   assert.equal(calculateHeroLeafPaletteCoordinate(1, 1, 0, 1, 1, 0), 1);
   assert.equal(calculateHeroLeafPaletteCoordinate(1, 1, 0, 0, -1, 0), 0);
+  assert.equal(calculateHeroLeafPaletteCoordinate(1, 1, 0, 0.5), 0.5);
 });
