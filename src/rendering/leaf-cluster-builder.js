@@ -3,6 +3,7 @@ import { CrownVolumeField } from '../generation/crown-volume-field.js';
 import {
   calculateHeroClusterStretch,
   calculateHeroLeafColorMix,
+  calculateHeroLeafPaletteCoordinate,
   selectHeroLeafSamples,
 } from './hero-leaf-style.js';
 import { HeroLeafMaterialFactory } from './hero-leaf-material-factory.js';
@@ -56,8 +57,19 @@ function hasStylizedResources(resources) {
   return Boolean(resources?.paletteTexture && resources?.sunDirection);
 }
 
-function resolveRecordColorMix(treeData, settings, record) {
+function resolveStylizedColorMix(treeData, settings, record) {
   return calculateHeroLeafColorMix(
+    treeData.seed,
+    record.sample.id,
+    record.layer,
+    record.sample.colorMix,
+    settings.colorJitter,
+    treeData.palette.variation,
+  );
+}
+
+function resolveFallbackPaletteCoordinate(treeData, settings, record) {
+  return calculateHeroLeafPaletteCoordinate(
     treeData.seed,
     record.sample.id,
     record.layer,
@@ -98,7 +110,7 @@ export class LeafClusterBuilder {
       geometry = this.geometryFactory.create(settings);
       if (stylized) {
         addFoliageInstanceAttributes(geometry, records, {
-          getColorMix: (record) => resolveRecordColorMix(treeData, settings, record),
+          getColorMix: (record) => resolveStylizedColorMix(treeData, settings, record),
           getExposure: (record) => record.sample.exposure,
           getCrownDirection: (record) => record.sample.normal,
         });
@@ -164,7 +176,7 @@ export class LeafClusterBuilder {
             index,
             samplePaletteColor(
               treeData.palette.palette,
-              resolveRecordColorMix(treeData, settings, record),
+              resolveFallbackPaletteCoordinate(treeData, settings, record),
               instanceColor,
             ),
           );
