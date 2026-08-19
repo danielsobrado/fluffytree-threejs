@@ -327,7 +327,13 @@ export function configureStylizedFoliageShader(
             #include <begin_vertex>
             vFoliageHeight = clamp( ${heightExpression}, 0.0, 1.0 );
             vFoliageLocalPosition = position;
-            vFoliageWorldPosition = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;
+            vec4 foliageInstanceWorldPosition = vec4( transformed, 1.0 );
+            #ifdef USE_INSTANCING
+              foliageInstanceWorldPosition =
+                instanceMatrix * foliageInstanceWorldPosition;
+            #endif
+            vFoliageWorldPosition =
+              ( modelMatrix * foliageInstanceWorldPosition ).xyz;
             vFoliageStylePhase =
               dot(
                 normalize( instanceCrownDirection + vec3( 0.0001 ) ),
