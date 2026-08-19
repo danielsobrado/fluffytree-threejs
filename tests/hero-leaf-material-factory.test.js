@@ -45,7 +45,7 @@ test('hero leaf material shares the stylized canopy shader language', () => {
   const paletteTexture = new THREE.Texture();
   const material = new HeroLeafMaterialFactory().create({
     foliage: FOLIAGE,
-    settings: { roughness: 0.91 },
+    settings: { roughness: 0.91, colorLift: 0.1 },
     paletteTexture,
     sunDirection: new THREE.Vector3(1, 2, 1).normalize(),
   });
@@ -57,9 +57,10 @@ test('hero leaf material shares the stylized canopy shader language', () => {
     assert.equal(material.name, 'leaf-detail-material');
     assert.equal(material.roughness, 0.91);
     assert.equal(material.side, THREE.DoubleSide);
-    assert.equal(material.customProgramCacheKey(), 'hero-leaf-stylized-v1');
+    assert.equal(material.customProgramCacheKey(), 'hero-leaf-stylized-v2');
     assert.equal(shader.uniforms.uFoliageSurfaceBreakup.value, 0.02);
     assert.equal(shader.uniforms.uFoliagePalette.value, paletteTexture);
+    assert.equal(shader.uniforms.uFoliagePaletteBase.value, 0.6);
     assert.match(shader.vertexShader, /attribute float instanceExposure/);
     assert.match(shader.vertexShader, /attribute vec3 instanceCrownDirection/);
     assert.match(shader.vertexShader, /foliageRadialLocal = objectNormal/);
