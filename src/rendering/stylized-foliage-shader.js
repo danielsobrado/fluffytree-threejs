@@ -109,6 +109,18 @@ function createColorShader() {
   const minimumSun = FOLIAGE_RENDERING_CONSTANTS.minimumSunFactor.toFixed(4);
   const maximumSun = FOLIAGE_RENDERING_CONSTANTS.maximumSunFactor.toFixed(4);
   const skyHighlight = FOLIAGE_RENDERING_CONSTANTS.skyHighlightRatio.toFixed(4);
+  const rimExposureFloor =
+    FOLIAGE_RENDERING_CONSTANTS.rimExposureFloor.toFixed(4);
+  const rimSunFloor = FOLIAGE_RENDERING_CONSTANTS.rimSunFloor.toFixed(4);
+  const translucencyExposureFloor =
+    FOLIAGE_RENDERING_CONSTANTS.translucencyExposureFloor.toFixed(4);
+  const translucencySurfaceFloor =
+    FOLIAGE_RENDERING_CONSTANTS.translucencySurfaceFloor.toFixed(4);
+  const translucencyRimFloor =
+    FOLIAGE_RENDERING_CONSTANTS.translucencyRimFloor.toFixed(4);
+  const translucencyTint = FOLIAGE_RENDERING_CONSTANTS.translucencyTint
+    .map((value) => value.toFixed(4))
+    .join(', ');
 
   return `
     vec3 foliagePaletteColor = texture2D(
@@ -116,8 +128,10 @@ function createColorShader() {
       vec2( clamp( vFoliagePaletteCoordinate + vFoliagePatch * 0.045, 0.0, 1.0 ), 0.5 )
     ).rgb;
     vec3 foliageRadial = normalize( vFoliageRadialWorld );
+    vec3 foliageSunDirection = normalize( uFoliageSunDirection );
+    float foliageSunAlignment = dot( foliageRadial, foliageSunDirection );
     float foliageWrappedLight = clamp(
-      ( dot( foliageRadial, normalize( uFoliageSunDirection ) ) + uFoliageWrapLight ) /
+      ( foliageSunAlignment + uFoliageWrapLight ) /
         ( 1.0 + uFoliageWrapLight ),
       0.0,
       1.0
@@ -184,14 +198,43 @@ function createColorShader() {
       clamp( 1.0 - abs( dot( foliageView, foliageRadial ) ), 0.0, 1.0 ),
       uFoliageRimPower
     );
+    float foliageRimExposure = mix(
+      ${rimExposureFloor},
+      1.0,
+      foliageExposure
+    );
+    float foliageRimSunWeight = mix(
+      ${rimSunFloor},
+      1.0,
+      foliageWrappedLight
+    );
     diffuseColor.rgb += foliagePaletteColor * foliageRim * foliageTop *
-      uFoliageRimStrength;
+      foliageRimExposure * foliageRimSunWeight * uFoliageRimStrength;
+
     float foliageBacklight = pow(
-      clamp( dot( foliageView, -normalize( uFoliageSunDirection ) ), 0.0, 1.0 ),
+      clamp( dot( foliageView, -foliageSunDirection ), 0.0, 1.0 ),
       3.0
     );
-    diffuseColor.rgb += foliagePaletteColor * vec3( 1.05, 1.0, 0.72 ) *
-      foliageBacklight * uFoliageTranslucencyStrength;
+    float foliageSurfaceIrradiance = mix(
+      ${translucencySurfaceFloor},
+      1.0,
+      abs( foliageSunAlignment )
+    );
+    float foliageTransmissionExposure = mix(
+      ${translucencyExposureFloor},
+      1.0,
+      foliageExposure
+    );
+    float foliageTransmissionEdge = mix(
+      ${translucencyRimFloor},
+      1.0,
+      foliageRim
+    );
+    float foliageTransmissionMask = foliageBacklight *
+      foliageSurfaceIrradiance * foliageTransmissionExposure *
+      foliageTransmissionEdge;
+    diffuseColor.rgb += foliagePaletteColor * vec3( ${translucencyTint} ) *
+      foliageTransmissionMask * uFoliageTranslucencyStrength;
   `;
 }
 
