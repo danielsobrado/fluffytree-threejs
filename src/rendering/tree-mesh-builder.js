@@ -182,7 +182,7 @@ export class TreeMeshBuilder {
       alpha: minimumLod <= nearIndex,
     });
     const sharedFoliageResources = [textures.palette, textures.alpha].filter(Boolean);
-    root.userData.disposables = sharedFoliageResources;
+    root.userData.disposables = [textures];
     const foliageResources = {
       paletteTexture: textures.palette,
       alphaTexture: textures.alpha,

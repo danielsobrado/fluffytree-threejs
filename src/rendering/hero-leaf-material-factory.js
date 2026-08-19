@@ -23,7 +23,7 @@ export class HeroLeafMaterialFactory {
     });
     material.name = 'leaf-detail-material';
 
-    return configureStylizedFoliageShader(material, {
+    const configuredMaterial = configureStylizedFoliageShader(material, {
       foliage: heroFoliage,
       paletteTexture,
       sunDirection,
@@ -32,5 +32,7 @@ export class HeroLeafMaterialFactory {
       surfaceBreakup: foliage.surfaceBreakup ?? 0.025,
       cacheKey: 'hero-leaf-stylized-v2',
     });
+    configuredMaterial.userData.disposables = [];
+    return configuredMaterial;
   }
 }

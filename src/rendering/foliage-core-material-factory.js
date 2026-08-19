@@ -25,7 +25,7 @@ export class FoliageCoreMaterialFactory {
     });
     material.name = 'foliage-core-material';
 
-    return configureStylizedFoliageShader(material, {
+    const configuredMaterial = configureStylizedFoliageShader(material, {
       foliage: coreFoliage,
       paletteTexture,
       sunDirection,
@@ -36,5 +36,7 @@ export class FoliageCoreMaterialFactory {
       surfaceBreakup: foliage.surfaceBreakup ?? 0.1,
       cacheKey: 'foliage-core-interior-mass-v7',
     });
+    configuredMaterial.userData.disposables = [];
+    return configuredMaterial;
   }
 }

@@ -39,7 +39,7 @@ export class FoliageShellMaterialFactory {
       surfaceBreakup: foliage.surfaceBreakup ?? 0.025,
       cacheKey: 'foliage-shell-phase-2-5-v4',
     });
-    material.userData.disposables.push(alphaTexture);
+    material.userData.disposables = [];
     return material;
   }
 }
