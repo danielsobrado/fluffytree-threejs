@@ -82,11 +82,28 @@ test('stylized foliage shader installs crown-aware attributes and lighting', () 
   assert.match(shader.fragmentShader, /uniform sampler2D uFoliagePalette/);
   assert.match(shader.fragmentShader, /foliageWrappedLight/);
   assert.match(shader.fragmentShader, /foliageCavityFactor/);
+  assert.match(shader.fragmentShader, /foliageSunAlignment/);
+  assert.match(shader.fragmentShader, /foliageRimExposure/);
+  assert.match(shader.fragmentShader, /foliageRimSunWeight/);
+  assert.match(shader.fragmentShader, /foliageSurfaceIrradiance/);
+  assert.match(shader.fragmentShader, /foliageTransmissionExposure/);
+  assert.match(shader.fragmentShader, /foliageTransmissionEdge/);
+  assert.match(shader.fragmentShader, /foliageTransmissionMask/);
   assert.equal(shader.uniforms.uFoliagePalette.value, paletteTexture);
   assert.equal(shader.uniforms.uFoliageCrownNormalBlend.value, 0.5);
   assert.equal(material.customProgramCacheKey(), 'test-shader');
   assert.equal(material.needsUpdate, true);
   assert.deepEqual(material.userData.disposables, [paletteTexture]);
+});
+
+test('stylized foliage shader forwards the requested surface breakup', () => {
+  const material = createMaterial();
+  configure(material, { surfaceBreakup: 0.02 });
+
+  const shader = createShader();
+  material.onBeforeCompile(shader);
+
+  assert.equal(shader.uniforms.uFoliageSurfaceBreakup.value, 0.02);
 });
 
 test('shell shader replaces card normals with crown-aware radial normals', () => {
