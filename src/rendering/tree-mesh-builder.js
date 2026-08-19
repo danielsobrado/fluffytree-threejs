@@ -334,7 +334,7 @@ export class TreeMeshBuilder {
                 interiorScaleRatio: 1.08,
                 name: 'foliage-shell-lod0',
               }),
-            () => this.leafClusterBuilder.build(treeData),
+            () => this.leafClusterBuilder.build(treeData, foliageResources),
           ],
           sharedFoliageResources,
         );
