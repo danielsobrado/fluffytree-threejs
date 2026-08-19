@@ -7,6 +7,27 @@ import {
   installTreeWindUniforms,
 } from './tree-wind-shader.js';
 
+function srgbChannelToLinear(value) {
+  return value <= 0.04045
+    ? value / 12.92
+    : ((value + 0.055) / 1.055) ** 2.4;
+}
+
+function createLinearColor(value) {
+  const match =
+    typeof value === 'string'
+      ? /^#?([0-9a-f]{6})$/i.exec(value.trim())
+      : null;
+  if (!match) return [1, 1, 1];
+
+  const packed = Number.parseInt(match[1], 16);
+  return [
+    srgbChannelToLinear(((packed >> 16) & 0xff) / 255),
+    srgbChannelToLinear(((packed >> 8) & 0xff) / 255),
+    srgbChannelToLinear((packed & 0xff) / 255),
+  ];
+}
+
 function createVertexDeclarations() {
   return `
     attribute float instanceColorMix;
@@ -19,6 +40,7 @@ function createVertexDeclarations() {
     varying float vFoliagePatch;
     varying float vFoliageStylePhase;
     varying vec3 vFoliageLocalPosition;
+    varying vec3 vFoliageWorldPosition;
     uniform float uFoliageVariation;
     uniform float uFoliagePaletteBase;
     uniform float uFoliageHeightPaletteShift;
@@ -37,6 +59,7 @@ function createFragmentDeclarations() {
     varying float vFoliagePatch;
     varying float vFoliageStylePhase;
     varying vec3 vFoliageLocalPosition;
+    varying vec3 vFoliageWorldPosition;
     uniform sampler2D uFoliagePalette;
     uniform vec3 uFoliageSunDirection;
     uniform float uFoliageWrapLight;
@@ -45,6 +68,14 @@ function createFragmentDeclarations() {
     uniform float uFoliageHeightLightStrength;
     uniform float uFoliageColorMultiplier;
     uniform float uFoliageSurfaceBreakup;
+    uniform vec3 uFoliageUndersideTint;
+    uniform float uFoliageUndersideStrength;
+    uniform vec3 uFoliageSnowColor;
+    uniform float uFoliageSnowStrength;
+    uniform float uFoliageSnowSharpness;
+    uniform float uFoliageRimStrength;
+    uniform float uFoliageRimPower;
+    uniform float uFoliageTranslucencyStrength;
   `;
 }
 
@@ -129,9 +160,38 @@ function createColorShader() {
       mix(0.84, 1.08, smoothstep(-0.5, 0.5, foliageFinePattern)),
       uFoliageSurfaceBreakup
     );
+    float foliageDownward = clamp( -foliageRadial.y, 0.0, 1.0 );
+    vec3 foliageShadowTint = mix(
+      vec3( 1.0 ),
+      uFoliageUndersideTint,
+      foliageDownward * uFoliageUndersideStrength
+    );
     diffuseColor.rgb = foliagePaletteColor * foliageSunFactor * foliageSkyFactor *
       foliageCavityFactor * foliageHeightFactor * foliageFineLight *
-      uFoliageColorMultiplier;
+      foliageShadowTint * uFoliageColorMultiplier;
+
+    float foliageTop = clamp( foliageRadial.y, 0.0, 1.0 );
+    float foliageSnow = pow( foliageTop, uFoliageSnowSharpness ) *
+      uFoliageSnowStrength;
+    diffuseColor.rgb = mix(
+      diffuseColor.rgb,
+      uFoliageSnowColor * foliageSkyFactor,
+      foliageSnow
+    );
+
+    vec3 foliageView = normalize( cameraPosition - vFoliageWorldPosition );
+    float foliageRim = pow(
+      clamp( 1.0 - abs( dot( foliageView, foliageRadial ) ), 0.0, 1.0 ),
+      uFoliageRimPower
+    );
+    diffuseColor.rgb += foliagePaletteColor * foliageRim * foliageTop *
+      uFoliageRimStrength;
+    float foliageBacklight = pow(
+      clamp( dot( foliageView, -normalize( uFoliageSunDirection ) ), 0.0, 1.0 ),
+      3.0
+    );
+    diffuseColor.rgb += foliagePaletteColor * vec3( 1.05, 1.0, 0.72 ) *
+      foliageBacklight * uFoliageTranslucencyStrength;
   `;
 }
 
@@ -185,6 +245,22 @@ export function configureStylizedFoliageShader(
       uFoliageHeightLightStrength: { value: foliage.heightLightStrength },
       uFoliageColorMultiplier: { value: colorMultiplier },
       uFoliageSurfaceBreakup: { value: surfaceBreakup },
+      uFoliageUndersideTint: {
+        value: createLinearColor(foliage.undersideTint),
+      },
+      uFoliageSnowColor: { value: createLinearColor(foliage.snowColor) },
+      uFoliageSnowStrength: { value: Number(foliage.snowStrength ?? 0) },
+      uFoliageSnowSharpness: {
+        value: Math.max(0.1, Number(foliage.snowSharpness ?? 2)),
+      },
+      uFoliageUndersideStrength: {
+        value: Number(foliage.undersideStrength ?? 0),
+      },
+      uFoliageRimStrength: { value: Number(foliage.rimStrength ?? 0) },
+      uFoliageRimPower: { value: Math.max(0.1, Number(foliage.rimPower ?? 2.5)) },
+      uFoliageTranslucencyStrength: {
+        value: Number(foliage.translucencyStrength ?? 0),
+      },
     });
     installTreeWindUniforms(shader, windState);
 
@@ -208,6 +284,7 @@ export function configureStylizedFoliageShader(
             #include <begin_vertex>
             vFoliageHeight = clamp( ${heightExpression}, 0.0, 1.0 );
             vFoliageLocalPosition = position;
+            vFoliageWorldPosition = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;
             vFoliageStylePhase =
               dot(
                 normalize( instanceCrownDirection + vec3( 0.0001 ) ),

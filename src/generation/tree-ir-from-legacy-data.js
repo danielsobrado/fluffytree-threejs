@@ -20,7 +20,11 @@ function windNodeId(stemIdentifier) {
 }
 
 function clonePoint(point) {
-  return { x: Number(point.x), y: Number(point.y), z: Number(point.z) };
+  return {
+    x: Object.is(Number(point.x), -0) ? 0 : Number(point.x),
+    y: Object.is(Number(point.y), -0) ? 0 : Number(point.y),
+    z: Object.is(Number(point.z), -0) ? 0 : Number(point.z),
+  };
 }
 
 function createStemRecords(treeData) {
@@ -91,6 +95,41 @@ function createCrownVolumes(treeData) {
   }));
 }
 
+function isPlainDataObject(value) {
+  if (!value || typeof value !== 'object') return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function toCanonicalRenderValue(value) {
+  if (value === null) return null;
+  const type = typeof value;
+  if (type === 'string' || type === 'boolean') return value;
+  if (type === 'number') {
+    if (!Number.isFinite(value)) return Number.MAX_VALUE;
+    return Object.is(value, -0) ? 0 : value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) => {
+      const converted = toCanonicalRenderValue(entry);
+      return converted === undefined ? null : converted;
+    });
+  }
+  if (!isPlainDataObject(value)) return undefined;
+
+  const result = {};
+  for (const key of Object.keys(value)) {
+    if (key === 'alphaProfile') continue;
+    const converted = toCanonicalRenderValue(value[key]);
+    if (converted !== undefined) result[key] = converted;
+  }
+  return result;
+}
+
+function createRenderableInstance(instance) {
+  return toCanonicalRenderValue(instance);
+}
+
 function createFoliageSites(treeData, volumeByLegacyId) {
   return treeData.shell.map((instance) => {
     const volume = volumeByLegacyId.get(instance.lobeId);
@@ -109,7 +148,7 @@ function createFoliageSites(treeData, volumeByLegacyId) {
       importance: Math.max(0.05, instance.exposure),
       metadata: {
         lobeId: instance.lobeId,
-        render: { ...instance },
+        render: createRenderableInstance(instance),
       },
     };
   });
@@ -173,23 +212,24 @@ export function createTreeIrFromLegacyTreeData(treeData) {
     crownVolumes.map((volume) => [volume.metadata.legacyId, volume]),
   );
   const foliageSites = createFoliageSites(treeData, volumeByLegacyId);
-  const metadata = {
-    legacy: {
-      crownProfile: treeData.crownProfile,
-      crownCenter: treeData.crownCenter,
-      continuity: treeData.continuity,
-      lobeConnections: treeData.lobeConnections,
-      shellCandidateCoverageRatio: treeData.shellCandidateCoverageRatio,
-      shellCoverageDiagnostics: treeData.shellCoverageDiagnostics,
-      clumps: treeData.clumps,
-      palette: treeData.palette,
-      trunkColor: treeData.trunkColor,
-      barkPalette: treeData.barkPalette,
-    },
+  const legacy = {
+    crownProfile: treeData.crownProfile,
+    crownCenter: treeData.crownCenter,
+    continuity: treeData.continuity,
+    lobeConnections: treeData.lobeConnections,
+    shellCandidateCoverageRatio: treeData.shellCandidateCoverageRatio,
+    shellCoverageDiagnostics: treeData.shellCoverageDiagnostics,
+    clumps: treeData.clumps,
+    palette: treeData.palette,
+    trunkColor: treeData.trunkColor,
+    barkPalette: treeData.barkPalette,
   };
   if (treeData.lodCostSummaries !== undefined) {
-    metadata.legacy.lodCostSummaries = treeData.lodCostSummaries;
+    legacy.lodCostSummaries = treeData.lodCostSummaries;
   }
+  const metadata = {
+    legacy: toCanonicalRenderValue(legacy),
+  };
 
   const ir = {
     schemaVersion: TREE_IR_SCHEMA_VERSION,
@@ -210,6 +250,13 @@ export function createTreeIrFromLegacyTreeData(treeData) {
     metadata,
   };
 
-  validateTreeIr(ir);
+  try {
+    validateTreeIr(ir);
+  } catch (error) {
+    throw new TypeError(
+      `${error.message} (${error.cause?.message ?? 'no cause'})`,
+      { cause: error.cause },
+    );
+  }
   return deepFreeze(ir);
 }

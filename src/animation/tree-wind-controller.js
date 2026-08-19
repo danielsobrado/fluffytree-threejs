@@ -17,12 +17,31 @@ function requirePositiveFinite(value, name) {
   return number;
 }
 
+/**
+ * Whether the canopy should stand still.
+ *
+ * Two frames of a moving canopy are never the same image, so any comparison of
+ * one build against another measures the wind rather than the change.
+ * `?wind=off` freezes the crowns at the pose they were generated in.
+ */
+export function isWindDisabled(search) {
+  const query =
+    search ??
+    (typeof window === 'undefined' ? '' : window.location?.search ?? '');
+  const value = new URLSearchParams(query).get('wind');
+  return value === 'off' || value === '0' || value === 'false';
+}
+
 export class TreeWindController {
   constructor({
     strength = TREE_WIND_PROFILE.defaultStrength,
     speed = TREE_WIND_PROFILE.defaultSpeed,
+    enabled = true,
   } = {}) {
-    this.strength = requireNonNegativeFinite(strength, 'Tree wind strength');
+    this.enabled = enabled !== false;
+    this.strength = this.enabled
+      ? requireNonNegativeFinite(strength, 'Tree wind strength')
+      : 0;
     this.speed = requireNonNegativeFinite(speed, 'Tree wind speed');
     this.time = 0;
     this.states = [];
@@ -142,9 +161,10 @@ export class TreeWindController {
   }
 
   update(elapsedSeconds) {
-    this.time =
-      requireNonNegativeFinite(elapsedSeconds, 'Tree wind elapsed time') *
-      this.speed;
+    this.time = this.enabled
+      ? requireNonNegativeFinite(elapsedSeconds, 'Tree wind elapsed time') *
+        this.speed
+      : 0;
     for (const state of this.states) state.time = this.time;
   }
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { TreeWindController } from '../src/animation/tree-wind-controller.js';
+import { isWindDisabled, TreeWindController } from '../src/animation/tree-wind-controller.js';
 import { calculateTreeWindBoundsPadding } from '../src/animation/tree-wind-profile.js';
 
 const TREE_HEIGHT = 7.5;
@@ -179,4 +179,26 @@ test('wind controller rejects invalid runtime settings and tree heights', () => 
   const tree = createTree();
   tree.userData.tree.height = 0;
   assert.throws(() => controller.register(tree, 1), /height/);
+});
+
+test('wind query flags freeze the canopy at its generated pose', () => {
+  assert.equal(isWindDisabled(''), false);
+  assert.equal(isWindDisabled('?scene=forest'), false);
+  assert.equal(isWindDisabled('?wind=on'), false);
+  assert.equal(isWindDisabled('?wind=off'), true);
+  assert.equal(isWindDisabled('?wind=0'), true);
+  assert.equal(isWindDisabled('?wind=false'), true);
+});
+
+test('a disabled controller holds time at the generated rest pose', () => {
+  const controller = new TreeWindController({ enabled: false });
+  const state = { time: 1, phase: 0, strength: 1, treeHeight: 1 };
+  const tree = createTreeWithVisitor((visitor) => {
+    visitor(createWindMesh(state));
+  });
+
+  controller.register(tree, 1);
+  controller.update(12);
+  assert.equal(state.time, 0);
+  assert.equal(state.strength, 0);
 });

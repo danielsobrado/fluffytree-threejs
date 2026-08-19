@@ -29,7 +29,7 @@ export class FoliageCoreMaterialFactory {
       forceRadialFragmentNormal: true,
       colorMultiplier: foliage.core.brightness,
       surfaceBreakup: 0.1,
-      cacheKey: 'foliage-core-interior-mass-v4',
+      cacheKey: 'foliage-core-interior-mass-v5',
     });
   }
 }

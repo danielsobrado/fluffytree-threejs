@@ -78,6 +78,36 @@ export class TreeLodController {
     this.focalPixels = 0;
     this.focalCameraFov = Number.NaN;
     this.focalViewportHeight = Number.NaN;
+    this.updateStride = Math.max(1, Math.trunc(settings.updateStride ?? 1));
+    this.frameIndex = 0;
+  }
+
+  /**
+   * How many trees each level is carrying right now.
+   *
+   * A level is only worth having if something is using it, and the only way to
+   * see that a forest is running all four at once is to count them. A tree
+   * below the cull threshold is reported separately: it still costs an update,
+   * but it draws nothing.
+   */
+  summarize() {
+    const levels = [0, 0, 0, 0];
+    let culled = 0;
+
+    for (const entry of this.entries) {
+      const { currentLevel = 1, projectedPixels = 0 } = entry.tree.userData.lod;
+
+      if (
+        projectedPixels < this.settings.cullPixels ||
+        currentLevel >= levels.length
+      ) {
+        culled += 1;
+      } else {
+        levels[currentLevel] += 1;
+      }
+    }
+
+    return { levels, culled, total: this.entries.length };
   }
 
   register(tree) {
@@ -226,13 +256,24 @@ export class TreeLodController {
   }
 
   update(camera, viewportHeight, renderer) {
-    if (!this.inputsChanged(camera, viewportHeight)) return;
+    this.updateStride = Math.max(
+      1,
+      Math.trunc(this.settings.updateStride ?? 1),
+    );
+    if (!this.inputsChanged(camera, viewportHeight) && this.updateStride === 1) {
+      return;
+    }
 
     const focalPixels = this.resolveFocalPixels(camera, viewportHeight);
     const prewarmPixels = this.settings.nearPixels * (1 - this.settings.hysteresis);
     let shadowChanged = false;
+    const stride = this.updateStride;
+    const phase = this.frameIndex % stride;
+    this.frameIndex += 1;
 
-    for (const entry of this.entries) {
+    for (let entryIndex = 0; entryIndex < this.entries.length; entryIndex += 1) {
+      if (stride > 1 && entryIndex % stride !== phase) continue;
+      const entry = this.entries[entryIndex];
       const treeState = entry.tree.userData.tree;
       const lodState = entry.tree.userData.lod;
       entry.tree.getWorldPosition(this.worldPosition);

@@ -59,6 +59,38 @@ export function prepareExposureLobes(sourceLobes) {
   }));
 }
 
+/**
+ * The lobes each lobe's own surface can ever be shaded by.
+ *
+ * A clearance query rejects a lobe whose inflated reach does not contain the
+ * queried point, and every point it is asked about lies on the owner's surface,
+ * within one bounding radius of the owner's centre. A lobe further away than
+ * that plus its own reach therefore fails the test for every point on the
+ * owner, so it can be dropped once instead of re-tested per candidate.
+ */
+export function buildExposureNeighborhoods(lobes) {
+  const neighborhoods = new Map();
+
+  for (const owner of lobes) {
+    const near = [];
+
+    for (const lobe of lobes) {
+      if (lobe.id === owner.id) continue;
+
+      const limit =
+        owner.boundingRadius + lobe.boundingRadius * (1 + CLEARANCE_SATURATION);
+      const dx = owner.position.x - lobe.position.x;
+      const dy = owner.position.y - lobe.position.y;
+      const dz = owner.position.z - lobe.position.z;
+      if (dx * dx + dy * dy + dz * dz <= limit * limit) near.push(lobe);
+    }
+
+    neighborhoods.set(owner.id, near);
+  }
+
+  return neighborhoods;
+}
+
 export function calculateLobeClearance(point, lobes, ownerLobeId) {
   let minimum = CLEARANCE_SATURATION;
 

@@ -61,6 +61,30 @@ function fan({
   );
 }
 
+/**
+ * Blobs on a circle, which is what makes a scalloped outline.
+ *
+ * A fan shares one origin and so leaves the card's corners empty. A ring pushes
+ * its blobs outward instead, and the shallow notches where neighbouring blobs
+ * meet are the scallops the silhouette is made of.
+ */
+function ring({ count, radius, radiusX, radiusY, phase = 0, centerY = 0 }) {
+  return Object.freeze(
+    Array.from({ length: count }, (_unused, index) => {
+      const angle = phase + (index / count) * Math.PI * 2;
+
+      return blade(
+        Math.cos(angle) * radius,
+        centerY + Math.sin(angle) * radius,
+        radiusX,
+        radiusY,
+        // Radial, so each blob's own taper runs outward and thins the rim.
+        angle - Math.PI * 0.5,
+      );
+    }),
+  );
+}
+
 const LEAF_SHAPES = Object.freeze({
   broadleaf: Object.freeze({
     label: 'Broadleaf spray',
@@ -187,6 +211,28 @@ const LEAF_SHAPES = Object.freeze({
       centerY: 0.04,
     }),
     softness: Object.freeze([0.74, 1.04]),
+  }),
+
+  // Not a leaf spray but a cluster of foliage seen from far enough away that
+  // individual leaves have stopped being the subject. The card reads as a
+  // rounded mass with a scalloped rim, which is the storybook canopy the glade
+  // presets are built from. Wide softness feathers the edge, and with
+  // alpha-to-coverage that feathering is what removes the cut-out look at the
+  // silhouette rather than a wider alpha test would.
+  puff: Object.freeze({
+    label: 'Puff (storybook canopy)',
+    blades: Object.freeze([
+      blade(0, 0, 0.235, 0.245, 0),
+      ...ring({
+        count: 7,
+        radius: 0.225,
+        radiusX: 0.155,
+        radiusY: 0.175,
+        phase: 0.32,
+      }),
+    ]),
+    stem: null,
+    softness: Object.freeze([0.5, 1.08]),
   }),
 });
 

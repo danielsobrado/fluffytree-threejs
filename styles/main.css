@@ -64,6 +64,131 @@ canvas {
   text-align: center;
 }
 
+.scene-menu {
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: min(19rem, calc(100vw - 2rem));
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 0.75rem;
+  background: rgb(13 24 22 / 88%);
+  box-shadow: 0 0.8rem 2rem rgb(0 0 0 / 28%);
+  backdrop-filter: blur(12px);
+  font-size: 0.78rem;
+}
+
+.scene-menu.is-collapsed .scene-menu-body {
+  display: none;
+}
+
+/* The rows and the readout are laid out with `display`, which would otherwise
+   outrank the hidden attribute the menu hides them with. */
+.scene-menu [hidden] {
+  display: none;
+}
+
+.scene-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.scene-menu-header h2 {
+  margin: 0;
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+}
+
+.scene-menu-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.scene-menu-modes {
+  display: flex;
+  flex: 1;
+  gap: 0.25rem;
+}
+
+.scene-menu-mode {
+  flex: 1;
+}
+
+.scene-menu-mode[data-active='true'] {
+  border-color: rgb(155 216 143 / 65%);
+  background: rgb(155 216 143 / 22%);
+}
+
+.scene-menu-hint {
+  margin: 0;
+  color: rgb(238 247 239 / 55%);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.perf-hud {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 3%);
+}
+
+.perf-hud h3 {
+  margin: 0 0 0.15rem;
+  color: rgb(238 247 239 / 62%);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.perf-bar {
+  display: flex;
+  gap: 1px;
+  height: 0.42rem;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  border-radius: 0.21rem;
+  background: rgb(255 255 255 / 8%);
+}
+
+.perf-bar-segment[data-level='0'] {
+  background: #9bd88f;
+}
+
+.perf-bar-segment[data-level='1'] {
+  background: #7fc0a6;
+}
+
+.perf-bar-segment[data-level='2'] {
+  background: #6f9dc4;
+}
+
+.perf-bar-segment[data-level='3'] {
+  background: #b08fd8;
+}
+
+.perf-bar-segment[data-level='4'] {
+  background: rgb(238 247 239 / 22%);
+}
+
+.perf-levels {
+  margin: 0;
+  color: rgb(238 247 239 / 55%);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.68rem;
+}
+
 .tuning-panel {
   position: fixed;
   top: 1rem;
@@ -318,5 +443,17 @@ canvas {
     left: 0.5rem;
     width: auto;
     max-height: 58vh;
+  }
+
+  /* The studio takes the bottom of a narrow screen, so the scene menu moves
+     up under the title rather than sitting behind it. */
+  .scene-menu {
+    top: 8.5rem;
+    right: 0.5rem;
+    bottom: auto;
+    left: 0.5rem;
+    width: auto;
+    max-height: 52vh;
+    overflow-y: auto;
   }
 }

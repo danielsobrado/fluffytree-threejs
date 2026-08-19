@@ -17,6 +17,7 @@ import { PresetLibrary } from './domain/preset-library.js';
 import { parseShellCoverageQaConfig } from './qa/shell-coverage-qa-config.js';
 import { parseTreeStressQaPolicy } from './qa/tree-stress-qa-policy.js';
 import { showFatalError } from './ui/demo-overlay.js';
+import { createSceneMenu } from './ui/scene-menu.js';
 import { createTuningPanel } from './ui/tuning-panel.js';
 
 const CONFIG_URLS = Object.freeze({
@@ -95,11 +96,14 @@ async function bootstrap() {
       },
     );
 
-    // The QA modes drive the same page. A studio panel over the canvas would
-    // change what every screenshot gate measures, so it stays out of them.
+    // The QA modes drive the same page. A panel over the canvas would change
+    // what every screenshot gate measures, so they stay out of them.
     if (!new URLSearchParams(window.location.search).has('qa')) {
-      createTuningPanel(container, demo, library, {
+      const panel = createTuningPanel(container, demo, library, {
         coverageThresholds: coverageConfig.thresholds,
+      });
+      createSceneMenu(container, demo, {
+        onSceneChange: () => panel.collapse(),
       });
     }
   } catch (error) {

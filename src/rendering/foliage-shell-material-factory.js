@@ -37,7 +37,7 @@ export class FoliageShellMaterialFactory {
       heightExpression: 'uv.y',
       forceRadialFragmentNormal: true,
       surfaceBreakup: 0.025,
-      cacheKey: 'foliage-shell-phase-2-5-v2',
+      cacheKey: 'foliage-shell-phase-2-5-v3',
     });
     material.userData.disposables.push(alphaTexture);
     return material;

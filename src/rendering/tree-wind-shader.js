@@ -107,6 +107,50 @@ export function injectTreeWindVertexShader(vertexShader) {
   );
 }
 
+function createWoodWindTransform() {
+  const primaryTimeScale = TREE_WIND_PROFILE.primaryTimeScale.toFixed(4);
+  const secondaryTimeScale = TREE_WIND_PROFILE.secondaryTimeScale.toFixed(4);
+  const secondaryPhaseScale = TREE_WIND_PROFILE.secondaryPhaseScale.toFixed(4);
+  const secondaryStrengthRatio =
+    TREE_WIND_PROFILE.secondaryStrengthRatio.toFixed(4);
+  const minimumTreeHeight = TREE_WIND_PROFILE.minimumTreeHeight.toExponential(1);
+
+  return `
+    float treeWindWeight = clamp(
+      position.y / max( uTreeWindTreeHeight, ${minimumTreeHeight} ),
+      0.0,
+      1.0
+    );
+    float treeWindPrimary =
+      sin(uTreeWindTime * ${primaryTimeScale} + uTreeWindPhase) -
+      sin(uTreeWindPhase);
+    float treeWindSecondaryPhase =
+      uTreeWindPhase * ${secondaryPhaseScale};
+    float treeWindSecondary =
+      sin(uTreeWindTime * ${secondaryTimeScale} + treeWindSecondaryPhase) -
+      sin(treeWindSecondaryPhase);
+    transformed += vec3(
+      treeWindPrimary * uTreeWindStrength * treeWindWeight,
+      0.0,
+      treeWindSecondary * uTreeWindStrength * treeWindWeight *
+        ${secondaryStrengthRatio}
+    );
+  `;
+}
+
+/** Bends wood and meadow tufts from a planted base up to full canopy travel. */
+export function applyWoodWind(shader, windState, canopyBaseHeight) {
+  windState.treeHeight = Math.max(0.001, Number(canopyBaseHeight) || 1);
+  installTreeWindUniforms(shader, windState);
+  shader.vertexShader = `${createVertexDeclarations()}\n${shader.vertexShader}`.replace(
+    '#include <begin_vertex>',
+    `
+      #include <begin_vertex>
+      ${createWoodWindTransform()}
+    `,
+  );
+}
+
 export function configureTreeWindMaterial(
   material,
   { cacheKey = 'tree-wind-v2' } = {},

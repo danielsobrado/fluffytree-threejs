@@ -8,6 +8,7 @@ import {
 
 const THRESHOLDS = Object.freeze({
   roundOrchard: {
+    minimumWindMovedRatio: 0.15,
     crown: {
       holeRatio: 0.003,
       largestHoleRatio: 0.002,
@@ -107,14 +108,20 @@ test('non-finite configured limits fail closed', () => {
 
 test('missing thresholds fail rather than silently pass', () => {
   const withoutPreset = evaluateSolidityReport(
-    [{ presetId: 'unknown', views: [createView()] }],
+    [{ presetId: 'unknown', windMovedRatio: 0.2, views: [createView()] }],
     THRESHOLDS,
   );
   assert.equal(withoutPreset.length, 1);
   assert.match(withoutPreset[0], /Missing canopy solidity thresholds/);
 
   const withoutGroup = evaluateSolidityReport(
-    [{ presetId: 'roundOrchard', views: [createView({ group: 'canopy' })] }],
+    [
+      {
+        presetId: 'roundOrchard',
+        windMovedRatio: 0.2,
+        views: [createView({ group: 'canopy' })],
+      },
+    ],
     THRESHOLDS,
   );
   assert.equal(withoutGroup.length, 1);
@@ -166,6 +173,7 @@ test('report failures name the preset, LOD state, and view', () => {
     [
       {
         presetId: 'roundOrchard',
+        windMovedRatio: 0.2,
         views: [
           createView(),
           createView({

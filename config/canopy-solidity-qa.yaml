@@ -113,3 +113,58 @@ thresholds:
       holeRatio: 0.001
       largestHoleRatio: 0.001
       coverageRatio: 0.02
+  gladeCanopy:
+    minimumWindMovedRatio: 0.15
+    crown:
+      holeRatio: 0.003
+      largestHoleRatio: 0.002
+      coverageRatio: 0.04
+      coverageRetention: 0.8
+    base:
+      holeRatio: 0.001
+      largestHoleRatio: 0.001
+      coverageRatio: 0.04
+  gladeBlossom:
+    minimumWindMovedRatio: 0.15
+    crown:
+      holeRatio: 0.003
+      largestHoleRatio: 0.002
+      coverageRatio: 0.04
+      coverageRetention: 0.8
+    base:
+      holeRatio: 0.001
+      largestHoleRatio: 0.001
+      coverageRatio: 0.04
+  gladeBush:
+    minimumWindMovedRatio: 0.15
+    crown:
+      holeRatio: 0.003
+      largestHoleRatio: 0.002
+      coverageRatio: 0.04
+      coverageRetention: 0.8
+    base:
+      holeRatio: 0.001
+      largestHoleRatio: 0.001
+      coverageRatio: 0.04
+  gladeFrost:
+    minimumWindMovedRatio: 0.15
+    crown:
+      holeRatio: 0.003
+      largestHoleRatio: 0.002
+      coverageRatio: 0.04
+      coverageRetention: 0.8
+    base:
+      holeRatio: 0.001
+      largestHoleRatio: 0.001
+      coverageRatio: 0.04
+  gladeRust:
+    minimumWindMovedRatio: 0.15
+    crown:
+      holeRatio: 0.003
+      largestHoleRatio: 0.002
+      coverageRatio: 0.04
+      coverageRetention: 0.8
+    base:
+      holeRatio: 0.001
+      largestHoleRatio: 0.001
+      coverageRatio: 0.04

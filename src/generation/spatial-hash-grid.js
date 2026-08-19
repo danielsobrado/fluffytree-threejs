@@ -10,11 +10,12 @@ export class SpatialHashGrid {
     }
 
     this.cellSize = cellSize;
+    // Nested integer-keyed maps rather than one map on a joined string key.
+    // A neighbourhood query touches twenty-seven cells, and building a string
+    // for each of them allocated more than the selection it was serving. The
+    // nesting is exact where a numeric hash of the triple would collide, and a
+    // collision here would silently merge two cells.
     this.cells = new Map();
-  }
-
-  static key(x, y, z) {
-    return `${x}:${y}:${z}`;
   }
 
   cellIndex(value) {
@@ -22,15 +23,25 @@ export class SpatialHashGrid {
   }
 
   insert(position, entry) {
-    const key = SpatialHashGrid.key(
-      this.cellIndex(position.x),
-      this.cellIndex(position.y),
-      this.cellIndex(position.z),
-    );
-    const cell = this.cells.get(key);
+    const x = this.cellIndex(position.x);
+    const y = this.cellIndex(position.y);
+    const z = this.cellIndex(position.z);
 
+    let byY = this.cells.get(x);
+    if (!byY) {
+      byY = new Map();
+      this.cells.set(x, byY);
+    }
+
+    let byZ = byY.get(y);
+    if (!byZ) {
+      byZ = new Map();
+      byY.set(y, byZ);
+    }
+
+    const cell = byZ.get(z);
     if (cell) cell.push(entry);
-    else this.cells.set(key, [entry]);
+    else byZ.set(z, [entry]);
   }
 
   /**
@@ -43,9 +54,15 @@ export class SpatialHashGrid {
     const centerZ = this.cellIndex(position.z);
 
     for (let x = centerX - rings; x <= centerX + rings; x += 1) {
+      const byY = this.cells.get(x);
+      if (!byY) continue;
+
       for (let y = centerY - rings; y <= centerY + rings; y += 1) {
+        const byZ = byY.get(y);
+        if (!byZ) continue;
+
         for (let z = centerZ - rings; z <= centerZ + rings; z += 1) {
-          const cell = this.cells.get(SpatialHashGrid.key(x, y, z));
+          const cell = byZ.get(z);
           if (!cell) continue;
 
           for (const entry of cell) {
@@ -68,7 +85,11 @@ export class SpatialHashGrid {
 
   size() {
     let total = 0;
-    for (const cell of this.cells.values()) total += cell.length;
+    for (const byY of this.cells.values()) {
+      for (const byZ of byY.values()) {
+        for (const cell of byZ.values()) total += cell.length;
+      }
+    }
     return total;
   }
 }

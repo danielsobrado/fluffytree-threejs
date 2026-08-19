@@ -140,6 +140,21 @@ export class TuningPanel {
     return true;
   }
 
+  /**
+   * Closes the studio without restoring anything.
+   *
+   * Used when something else is about to replace the scene: the solo tree is
+   * already on its way out, and asking for the previous layout back first would
+   * generate a scene nobody sees.
+   */
+  collapse() {
+    if (this.root.classList.contains('is-collapsed')) return;
+
+    this.root.classList.add('is-collapsed');
+    this.collapseButton.textContent = '+';
+    this.collapseButton.title = 'Open the studio';
+  }
+
   createPresetRow() {
     this.presetSelect = createElement('select', 'tuning-select');
     for (const id of this.library.ids) {

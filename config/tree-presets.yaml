@@ -590,6 +590,325 @@ presets:
         planesPerCluster: 2
         shadowProxyScale: 0.98
 
+  # The glade family. Few large soft lobes rather than many small ones, a wide
+  # value range from near-cream tops to teal undersides, and the `puff` card,
+  # whose guaranteed opaque disc is over three times a leaf spray's. That disc
+  # is what lets the covering hold at a third of the candidates the spray
+  # presets need: coverage is carried by the card itself instead of by finding
+  # enough of them.
+  # Seven puffs rather than ten. Counting scallops around a crown in the
+  # reference gets five to seven, and the difference is not subtle: ten lobes at
+  # this radius read as a bumpy sphere, seven read as a handful of clouds pushed
+  # together. The scale multiplier grows to keep the crown the same volume, so
+  # the silhouette gets bolder without the tree getting smaller.
+  gladeCanopy:
+    label: Glade canopy
+    height: 7.4
+    crown:
+      profile: round
+      baseHeight: 2.4
+      height: 4.6
+      radius: 3.0
+      lobeCount: 7
+      lobeScale: [0.86, 1.08]
+      verticalScale: [0.84, 1.04]
+      radialBias: 0.46
+      asymmetry: 0.1
+      lean: [0.08, -0.03]
+      surfaceTension: 0.8
+      lobeScaleMultiplier: 1.85
+      scaleVariation: 0.07
+      clumps:
+        macroCount: 3
+        subClumpCount: [2, 3]
+        separation: 0.3
+        anchoring: 0.78
+        silhouetteBreakup: 0.1
+    trunk:
+      baseRadius: 0.42
+      topRadius: 0.16
+      bend: 0.3
+      flare: 0.5
+      segments: 8
+      branchCount: 5
+      color: '#6b543e'
+      branching:
+        depth: 2
+        primaryCount: 3
+        childCount: [1, 2]
+        lengthDecay: 0.62
+        radiusDecay: 0.6
+        upwardBias: 0.6
+        gnarl: 0.28
+        twist: 0.3
+        exposedTipRatio: 0.12
+      barkPalette: ['#4a3a2b', '#6b543e', '#8a705a']
+    foliage:
+      leafShape: puff
+      palette: ['#41684d', '#6d9463', '#9dc27e', '#d9e8ac']
+      variation: 0.08
+      paletteBase: 0.55
+      heightPaletteShift: 0.26
+      exposurePaletteShift: 0.14
+      radialNormalStrength: 0.88
+      crownNormalBlend: 0.68
+      wrapLight: 0.72
+      skyLightStrength: 0.3
+      cavityStrength: 0.22
+      heightLightStrength: 0.2
+      undersideTint: '#9fc0c4'
+      undersideStrength: 0.38
+      rimStrength: 0.35
+      rimPower: 2.5
+      translucencyStrength: 0.22
+      surfaceBreakup: 0.02
+      volume:
+        resolution: 26
+        smoothing: 0.68
+        padding: 0.32
+        noiseAmplitude: 0.035
+        noiseFrequency: 0.9
+        normalEpsilon: 0.024
+        colorPatchScale: 0.6
+        colorPatchStrength: 0.07
+      core:
+        scale: 0.7
+        brightness: 0.62
+      heroLeaves:
+        enabled: true
+        density: 0.09
+        scale: 1.5
+        embedRatio: 0.15
+        protrusionRatio: 0.2
+        leavesPerCluster: 5
+        colorLift: 0.1
+        colorJitter: 0.04
+        roughness: 0.92
+        layerCount: 1
+        layerOffsetRatio: 0.16
+      shell:
+        # Candidates are drawn per lobe, so dropping three lobes would have
+        # thinned the same surface by a third. The count rises to keep the
+        # crown's total candidate set where the covering was solved for.
+        candidatesPerLobe: 640
+        # At or below twice the puff's guaranteed radius ratio, so the greedy's
+        # covering is carried by each card's own opaque disc.
+        coverageCardRatio: 0.56
+        sizeRatio: [0.115, 0.185]
+        widthRatio: [0.8, 1.1]
+        outwardRatio: [1.0, 1.28]
+        radialOffsetRatio: 0.008
+        exposureThreshold: 0.05
+        colorJitter: 0.03
+        paletteLift: 0.07
+        cavityScale: 0.3
+        normalBlend: 0.3
+        alphaTest: 0.4
+        planesPerCluster: 2
+        shadowProxyScale: 0.98
+
+  gladeBlossom:
+    label: Glade blossom
+    height: 7.1
+    crown:
+      profile: round
+      baseHeight: 2.3
+      height: 4.4
+      radius: 2.9
+      lobeCount: 10
+      lobeScale: [0.86, 1.06]
+      verticalScale: [0.84, 1.02]
+      radialBias: 0.46
+      asymmetry: 0.12
+      lean: [-0.06, 0.05]
+      surfaceTension: 0.8
+      lobeScaleMultiplier: 1.55
+      scaleVariation: 0.07
+      clumps:
+        macroCount: 3
+        subClumpCount: [2, 3]
+        separation: 0.3
+        anchoring: 0.78
+        silhouetteBreakup: 0.11
+    trunk:
+      baseRadius: 0.38
+      topRadius: 0.15
+      bend: 0.32
+      flare: 0.48
+      segments: 8
+      branchCount: 5
+      color: '#6b543e'
+      branching:
+        depth: 2
+        primaryCount: 3
+        childCount: [1, 2]
+        lengthDecay: 0.62
+        radiusDecay: 0.6
+        upwardBias: 0.62
+        gnarl: 0.26
+        twist: 0.3
+        exposedTipRatio: 0.12
+      barkPalette: ['#4a3a2b', '#6b543e', '#8a705a']
+    foliage:
+      leafShape: puff
+      palette: ['#4a6b4f', '#7d9a68', '#c3cf96', '#efdcd3']
+      variation: 0.09
+      paletteBase: 0.58
+      heightPaletteShift: 0.3
+      exposurePaletteShift: 0.14
+      radialNormalStrength: 0.88
+      crownNormalBlend: 0.68
+      wrapLight: 0.72
+      skyLightStrength: 0.3
+      cavityStrength: 0.22
+      heightLightStrength: 0.2
+      undersideTint: '#a8b8c9'
+      undersideStrength: 0.36
+      rimStrength: 0.38
+      rimPower: 2.5
+      translucencyStrength: 0.24
+      surfaceBreakup: 0.02
+      volume:
+        resolution: 26
+        smoothing: 0.68
+        padding: 0.32
+        noiseAmplitude: 0.035
+        noiseFrequency: 0.9
+        normalEpsilon: 0.024
+        colorPatchScale: 0.6
+        colorPatchStrength: 0.07
+      core:
+        scale: 0.7
+        brightness: 0.63
+      heroLeaves:
+        enabled: true
+        density: 0.09
+        scale: 1.48
+        embedRatio: 0.15
+        protrusionRatio: 0.2
+        leavesPerCluster: 5
+        colorLift: 0.12
+        colorJitter: 0.04
+        roughness: 0.92
+        layerCount: 1
+        layerOffsetRatio: 0.16
+      shell:
+        candidatesPerLobe: 448
+        coverageCardRatio: 0.56
+        sizeRatio: [0.115, 0.185]
+        widthRatio: [0.8, 1.1]
+        outwardRatio: [1.0, 1.28]
+        radialOffsetRatio: 0.008
+        exposureThreshold: 0.05
+        colorJitter: 0.03
+        paletteLift: 0.08
+        cavityScale: 0.3
+        normalBlend: 0.3
+        alphaTest: 0.4
+        planesPerCluster: 2
+        shadowProxyScale: 0.98
+
+  gladeBush:
+    label: Glade bush
+    height: 1.7
+    crown:
+      profile: round
+      baseHeight: 0.24
+      height: 1.35
+      radius: 1.2
+      lobeCount: 7
+      lobeScale: [0.68, 0.9]
+      verticalScale: [0.72, 0.95]
+      radialBias: 0.5
+      asymmetry: 0.14
+      lean: [0.04, -0.02]
+      surfaceTension: 0.74
+      lobeScaleMultiplier: 1.5
+      scaleVariation: 0.08
+      clumps:
+        macroCount: 2
+        subClumpCount: [2, 3]
+        separation: 0.24
+        anchoring: 0.75
+        silhouetteBreakup: 0.14
+    trunk:
+      baseRadius: 0.1
+      topRadius: 0.05
+      bend: 0.12
+      flare: 0.3
+      segments: 4
+      branchCount: 3
+      color: '#54402f'
+      branching:
+        depth: 2
+        primaryCount: 3
+        childCount: [1, 2]
+        lengthDecay: 0.6
+        radiusDecay: 0.58
+        upwardBias: 0.68
+        gnarl: 0.18
+        twist: 0.24
+        exposedTipRatio: 0.1
+      barkPalette: ['#42332a', '#5f4b3a', '#826a55']
+    foliage:
+      leafShape: puff
+      palette: ['#3d6242', '#5f8c52', '#8fb56b', '#c9dd9a']
+      variation: 0.09
+      paletteBase: 0.52
+      heightPaletteShift: 0.2
+      exposurePaletteShift: 0.12
+      radialNormalStrength: 0.86
+      crownNormalBlend: 0.6
+      wrapLight: 0.7
+      skyLightStrength: 0.28
+      cavityStrength: 0.24
+      heightLightStrength: 0.16
+      undersideTint: '#8fb0ab'
+      undersideStrength: 0.32
+      rimStrength: 0.3
+      rimPower: 2.5
+      translucencyStrength: 0.18
+      surfaceBreakup: 0.02
+      volume:
+        resolution: 22
+        smoothing: 0.66
+        padding: 0.3
+        noiseAmplitude: 0.04
+        noiseFrequency: 1.0
+        normalEpsilon: 0.024
+        colorPatchScale: 0.55
+        colorPatchStrength: 0.08
+      core:
+        scale: 0.7
+        brightness: 0.6
+      heroLeaves:
+        enabled: true
+        density: 0.1
+        scale: 1.35
+        embedRatio: 0.14
+        protrusionRatio: 0.2
+        leavesPerCluster: 5
+        colorLift: 0.08
+        colorJitter: 0.04
+        roughness: 0.9
+        layerCount: 1
+        layerOffsetRatio: 0.16
+      shell:
+        candidatesPerLobe: 288
+        coverageCardRatio: 0.5
+        sizeRatio: [0.13, 0.21]
+        widthRatio: [0.78, 1.08]
+        outwardRatio: [1.0, 1.26]
+        radialOffsetRatio: 0.01
+        exposureThreshold: 0.05
+        colorJitter: 0.035
+        paletteLift: 0.06
+        cavityScale: 0.3
+        normalBlend: 0.28
+        alphaTest: 0.4
+        planesPerCluster: 2
+        shadowProxyScale: 0.98
+
   # Bushes reuse the tree pipeline unchanged: a short stem, a low wide crown, and
   # the same lobe, shell, core and LOD machinery. Nothing about them is special
   # cased in code, so every foliage gate covers them too.
@@ -778,5 +1097,224 @@ presets:
         cavityScale: 0.34
         normalBlend: 0.24
         alphaTest: 0.45
+        planesPerCluster: 2
+        shadowProxyScale: 0.98
+
+  # The winter pair. Snow is a coverage rather than a tint, so it is the same
+  # crown geometry under a `snowStrength` that whitens whatever faces the sky;
+  # `snowSharpness` is what separates a laden crown from a dusted one. Frost
+  # carries its snow nearly to the horizon of each puff, rust keeps it on the
+  # caps so the colour underneath still reads.
+  gladeFrost:
+    label: Glade frost
+    height: 7.4
+    crown:
+      profile: round
+      baseHeight: 2.4
+      height: 4.6
+      radius: 3.0
+      lobeCount: 7
+      lobeScale: [0.86, 1.08]
+      verticalScale: [0.84, 1.04]
+      radialBias: 0.46
+      asymmetry: 0.11
+      lean: [-0.05, 0.04]
+      surfaceTension: 0.8
+      lobeScaleMultiplier: 1.85
+      scaleVariation: 0.07
+      clumps:
+        macroCount: 3
+        subClumpCount: [2, 3]
+        separation: 0.3
+        anchoring: 0.78
+        silhouetteBreakup: 0.1
+    trunk:
+      baseRadius: 0.42
+      topRadius: 0.16
+      bend: 0.3
+      flare: 0.5
+      segments: 8
+      branchCount: 5
+      color: '#5d4a3b'
+      branching:
+        depth: 2
+        primaryCount: 3
+        childCount: [1, 2]
+        lengthDecay: 0.62
+        radiusDecay: 0.6
+        upwardBias: 0.6
+        gnarl: 0.28
+        twist: 0.3
+        exposedTipRatio: 0.12
+      barkPalette: ['#41332a', '#5d4a3b', '#7d6857']
+    foliage:
+      leafShape: puff
+      # Authored as a season in its own right, so a season leaves it alone.
+      seasonal: false
+      # Desaturated and cool even before the snow: a winter canopy under snow is
+      # grey-green, and a summer palette showing through the gaps reads wrong.
+      palette: ['#4a5a58', '#6f8079', '#9aa89a', '#cfd8cd']
+      variation: 0.07
+      paletteBase: 0.56
+      heightPaletteShift: 0.24
+      exposurePaletteShift: 0.13
+      radialNormalStrength: 0.88
+      crownNormalBlend: 0.68
+      wrapLight: 0.74
+      skyLightStrength: 0.34
+      cavityStrength: 0.24
+      heightLightStrength: 0.2
+      undersideTint: '#93a9c4'
+      undersideStrength: 0.44
+      rimStrength: 0.4
+      rimPower: 2.4
+      translucencyStrength: 0.16
+      surfaceBreakup: 0.02
+      snowColor: '#f4f7fb'
+      snowStrength: 0.78
+      snowSharpness: 1.6
+      volume:
+        resolution: 26
+        smoothing: 0.68
+        padding: 0.32
+        noiseAmplitude: 0.035
+        noiseFrequency: 0.9
+        normalEpsilon: 0.024
+        colorPatchScale: 0.6
+        colorPatchStrength: 0.06
+      core:
+        scale: 0.7
+        brightness: 0.66
+      heroLeaves:
+        enabled: true
+        density: 0.08
+        scale: 1.5
+        embedRatio: 0.15
+        protrusionRatio: 0.2
+        leavesPerCluster: 5
+        colorLift: 0.12
+        colorJitter: 0.03
+        roughness: 0.94
+        layerCount: 1
+        layerOffsetRatio: 0.16
+      shell:
+        candidatesPerLobe: 640
+        coverageCardRatio: 0.56
+        sizeRatio: [0.115, 0.185]
+        widthRatio: [0.8, 1.1]
+        outwardRatio: [1.0, 1.28]
+        radialOffsetRatio: 0.008
+        exposureThreshold: 0.05
+        colorJitter: 0.03
+        paletteLift: 0.07
+        cavityScale: 0.3
+        normalBlend: 0.3
+        alphaTest: 0.4
+        planesPerCluster: 2
+        shadowProxyScale: 0.98
+
+  gladeRust:
+    label: Glade rust
+    height: 6.9
+    crown:
+      profile: round
+      baseHeight: 2.2
+      height: 4.3
+      radius: 2.85
+      lobeCount: 7
+      lobeScale: [0.84, 1.06]
+      verticalScale: [0.82, 1.02]
+      radialBias: 0.46
+      asymmetry: 0.13
+      lean: [0.06, 0.05]
+      surfaceTension: 0.78
+      lobeScaleMultiplier: 1.85
+      scaleVariation: 0.08
+      clumps:
+        macroCount: 3
+        subClumpCount: [2, 3]
+        separation: 0.3
+        anchoring: 0.76
+        silhouetteBreakup: 0.12
+    trunk:
+      baseRadius: 0.4
+      topRadius: 0.15
+      bend: 0.34
+      flare: 0.48
+      segments: 8
+      branchCount: 5
+      color: '#5f4936'
+      branching:
+        depth: 2
+        primaryCount: 3
+        childCount: [1, 2]
+        lengthDecay: 0.62
+        radiusDecay: 0.6
+        upwardBias: 0.6
+        gnarl: 0.3
+        twist: 0.32
+        exposedTipRatio: 0.13
+      barkPalette: ['#3f3125', '#5f4936', '#80674f']
+    foliage:
+      leafShape: puff
+      # Authored as a season in its own right, so a season leaves it alone.
+      seasonal: false
+      palette: ['#6b3520', '#a85a2c', '#cf8442', '#eab97a']
+      variation: 0.09
+      paletteBase: 0.56
+      heightPaletteShift: 0.28
+      exposurePaletteShift: 0.15
+      radialNormalStrength: 0.88
+      crownNormalBlend: 0.68
+      wrapLight: 0.7
+      skyLightStrength: 0.28
+      cavityStrength: 0.24
+      heightLightStrength: 0.2
+      undersideTint: '#9db0c2'
+      undersideStrength: 0.4
+      rimStrength: 0.36
+      rimPower: 2.5
+      translucencyStrength: 0.26
+      surfaceBreakup: 0.02
+      snowColor: '#f2f5f8'
+      snowStrength: 0.45
+      snowSharpness: 2.8
+      volume:
+        resolution: 26
+        smoothing: 0.68
+        padding: 0.32
+        noiseAmplitude: 0.035
+        noiseFrequency: 0.9
+        normalEpsilon: 0.024
+        colorPatchScale: 0.6
+        colorPatchStrength: 0.07
+      core:
+        scale: 0.7
+        brightness: 0.6
+      heroLeaves:
+        enabled: true
+        density: 0.09
+        scale: 1.46
+        embedRatio: 0.15
+        protrusionRatio: 0.2
+        leavesPerCluster: 5
+        colorLift: 0.1
+        colorJitter: 0.05
+        roughness: 0.92
+        layerCount: 1
+        layerOffsetRatio: 0.16
+      shell:
+        candidatesPerLobe: 640
+        coverageCardRatio: 0.56
+        sizeRatio: [0.115, 0.185]
+        widthRatio: [0.8, 1.1]
+        outwardRatio: [1.0, 1.28]
+        radialOffsetRatio: 0.008
+        exposureThreshold: 0.05
+        colorJitter: 0.04
+        paletteLift: 0.07
+        cavityScale: 0.3
+        normalBlend: 0.3
+        alphaTest: 0.4
         planesPerCluster: 2
         shadowProxyScale: 0.98

@@ -2,25 +2,34 @@ const VECTOR_EPSILON = 1e-9;
 const UP = Object.freeze({ x: 0, y: 1, z: 0 });
 const RIGHT = Object.freeze({ x: 1, y: 0, z: 0 });
 
+function canonicalNumber(value) {
+  const number = Number(value);
+  return Object.is(number, -0) ? 0 : number;
+}
+
 function copyVector(vector) {
-  return { x: Number(vector.x), y: Number(vector.y), z: Number(vector.z) };
+  return {
+    x: canonicalNumber(vector.x),
+    y: canonicalNumber(vector.y),
+    z: canonicalNumber(vector.z),
+  };
 }
 
 function normalize(vector, fallback) {
   const length = Math.hypot(vector.x, vector.y, vector.z);
   if (length <= VECTOR_EPSILON) return copyVector(fallback);
   return {
-    x: vector.x / length,
-    y: vector.y / length,
-    z: vector.z / length,
+    x: canonicalNumber(vector.x / length),
+    y: canonicalNumber(vector.y / length),
+    z: canonicalNumber(vector.z / length),
   };
 }
 
 function cross(left, right) {
   return {
-    x: left.y * right.z - left.z * right.y,
-    y: left.z * right.x - left.x * right.z,
-    z: left.x * right.y - left.y * right.x,
+    x: canonicalNumber(left.y * right.z - left.z * right.y),
+    y: canonicalNumber(left.z * right.x - left.x * right.z),
+    z: canonicalNumber(left.x * right.y - left.y * right.x),
   };
 }
 

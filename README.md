@@ -29,7 +29,7 @@ The repository is a deterministic, configuration-driven procedural tree system s
 - Every lobe carries at least one cluster, so no lobe can render as bare core.
 - Sparse modeled hero leaves add close edge detail without filling the crown with geometry.
 - Crown-aware palette shading produces coherent cavity, sky, height, and sunward color.
-- Shader wind moves foliage without rotating the trunk or updating instance matrices on the CPU. The per-instance phase comes from the instance matrix, so clusters flutter independently, and the solidity gate measures that the canopy actually moves between two wind phases.
+- Shader wind moves the tree without updating instance matrices on the CPU. Cards, cores, hero leaves and wood share one sway function, and across the crown that sway is constant: the canopy is a rigid mass under wind, because a card lies tangent to its lobe and any relative motion buries it behind the core it covers. The wood ramps into the same travel from a planted base, and the solidity gate measures that the canopy actually moves between two wind phases.
 - Four projected-size levels retain the same generated silhouette from full geometry to a two-triangle impostor.
 - Stable hysteresis prevents LOD boundary flapping.
 - Complementary screen-door fades hide representation changes without transparent sorting.
@@ -37,6 +37,18 @@ The repository is a deterministic, configuration-driven procedural tree system s
 - Far impostors migrate into one instanced billboard draw per preset.
 - A single low-detail clump proxy casts canopy shadows; leaf cards never duplicate the shadow cost.
 - Current hero presets stay below 25,000 triangles at LOD0, 8,000 at LOD1, and 2,000 at LOD2.
+- Snow is a coverage rather than a tint: it mixes over what faces the sky instead of shading it, so a laden crown is white on top whatever colour it was underneath, and it keeps the sky term so snow in a crown's cavity stays in shade. `snowSharpness` is the difference between a laden crown and a dusted one. `gladeFrost` and `gladeRust` ship it; every preset written before it is untouched, because the strength defaults to zero.
+
+## The frame
+
+The scene is graded as a diorama rather than as a landscape, which is mostly the lens.
+
+- Depth of field over the scene's own depth buffer, ahead of the bloom. One band around whatever is being looked at stays sharp, the foreground melts fast and the tree line melts slowly. It reads the depth the scene pass already wrote rather than drawing the scene a second time the way three.js's `BokehPass` does, and pixels inside the sharp band take none of its sixteen taps.
+- Focus follows the orbit target, so pulling the camera back deepens the melt instead of defocusing the subject. Walking, it rests a fixed distance ahead.
+- A pool of ambient shade under every crown, all of them in one instanced multiply-blended draw. Not the sun's shadow, which the shadow map draws from wherever the sun stands: this is the sky being occluded, and without it a tree reads as hovering over the meadow.
+- A carpet of grass tufts and flower sprigs — crossed quads, one instanced draw, coloured from a shared meadow palette, bending on the same wind the crowns do and freezing with them under `?wind=off`.
+- Light pooling baked into the ground's own vertex colours: broad patches, several metres across, where the meadow is a shade paler and warmer. Costs one attribute and nothing per frame.
+- The whole chain is off under `?qa=`, because every gate that reads pixels was calibrated against the ungraded image. `?post=on` forces it back for a capture.
 
 ## Run locally
 
@@ -74,6 +86,53 @@ capture.
 
 Changing the trunk style adopts that style's taper, because taper is part of
 what a style is rather than an independent number.
+
+## Forest glade
+
+A **Scene** menu in the corner of the demo switches the hand-placed garden for a
+walkable forest, which is where the level-of-detail system is actually put to
+work: hundreds of trees, all four levels live at once, and a camera that can
+stand underneath the canopy instead of orbiting outside it.
+
+- Three sizes — small glade, woodland and deep forest — of roughly 150, 260 and
+  400 trees. Each is a deterministic jittered grid thinned by distance, so the
+  clearing stays open, the tree line around it reads as a wall, and the rim
+  fades out rather than ending on a circle. **New forest** lays the same size
+  out again from a different seed.
+- Presets are planted by height: the tall crowns form the canopy, the bonsai
+  families fill the understory, and the bushes cover the ground and the meadow.
+  Every tree carries a size variation, because a seed changes a tree's shape but
+  not how tall it grew.
+- **Orbit**, **Walk** and **Fly**. Walking is pinned to eye height and stopped by
+  trunks; flying goes where the view points. WASD or the arrow keys move, Shift
+  runs, Space and C change height in the air, and clicking the view captures the
+  mouse for looking around — Esc gives it back.
+- Trees past the point anyone is likely to walk to never build their near levels
+  and never generate the surface samples those levels need, which is most of a
+  large forest.
+- One shadow map cannot cover a forest, so the sun follows the viewer, anchored
+  to a grid so the map is rebuilt in steps rather than every frame.
+- The readout under the menu reports frames, draw calls, triangles, buffers and
+  the level-of-detail distribution. The distribution is the number that matters:
+  a forest that runs well because everything in it is an impostor has not proved
+  anything.
+- The forest grows through the same frame-budget queue as the stress scene,
+  nearest tree first, so the clearing you are standing in fills before the rim.
+
+The scene can be opened directly with `?scene=forest`, sized with
+`?forest=glade|woodland|deepForest`, and entered walking or flying with
+`?camera=walk|fly`.
+
+### Freezing the wind
+
+`?wind=off` holds every crown at the pose it was generated in. A moving canopy
+never renders the same image twice, so any before-and-after comparison of a
+shader, a preset or a culling change measures the wind instead of the change:
+two runs of the render smoke differ in about 17% of their pixels with the wind
+on, and in none at all with it off. The frozen pose is also the one the
+impostors and the shadow proxies are baked from, so a still scene is the
+self-consistent one to measure. The render QA passes it through with
+`RENDER_SMOKE_QUERY="wind=off"`.
 
 ## Deploy to GitHub Pages
 
@@ -160,16 +219,17 @@ The automated gates cover:
 ```text
 config/                 Runtime and QA YAML configuration
 qa/baselines/           Accepted deterministic numeric reports
-src/app/                Application orchestration
+src/app/                Application orchestration and scene layouts
 src/animation/          Runtime animation controllers
 src/config/             Configuration loading
+src/controls/           Walk and fly camera navigation
 src/core/               Cross-cutting utilities
 src/diagnostics/        Browser and rendering diagnostics
 src/domain/             Validated domain configuration
 src/generation/         Renderer-independent procedural generation, including trunk styles
 src/qa/                 Numeric topology, silhouette, shell, and screen-space solidity analysis
 src/rendering/          Three.js geometry, material, and mesh construction
-src/ui/                 DOM presentation and the tree studio panel
+src/ui/                 DOM presentation, the tree studio and the scene menu
 styles/                 Page styling
 tests/                  Deterministic generation, rendering-data, and QA tests
 tools/                  Command-line QA and deployment entry points

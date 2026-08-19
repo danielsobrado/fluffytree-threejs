@@ -76,5 +76,30 @@ thresholds:
     minimumLeafAreaIndex: 6.5
     bareExposedLobes: 0
 
+  gladeCanopy:
+    maximumCandidateCoverageRatio: 1.000001
+    gapCardRatio: 0.85
+    minimumLeafAreaIndex: 6.5
+    bareExposedLobes: 0
+  gladeBlossom:
+    maximumCandidateCoverageRatio: 1.000001
+    gapCardRatio: 0.85
+    minimumLeafAreaIndex: 6.5
+    bareExposedLobes: 0
+  gladeBush:
+    maximumCandidateCoverageRatio: 1.000001
+    gapCardRatio: 0.85
+    minimumLeafAreaIndex: 6.5
+    bareExposedLobes: 0
+  gladeFrost:
+    maximumCandidateCoverageRatio: 1.000001
+    gapCardRatio: 0.85
+    minimumLeafAreaIndex: 6.5
+    bareExposedLobes: 0
+  gladeRust:
+    maximumCandidateCoverageRatio: 1.000001
+    gapCardRatio: 0.85
+    minimumLeafAreaIndex: 6.5
+    bareExposedLobes: 0
 report:
   maxFailures: 6

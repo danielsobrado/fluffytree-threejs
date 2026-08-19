@@ -299,6 +299,65 @@ function validateFoliageTuning(id, foliage) {
   );
 }
 
+/**
+ * The directional light terms are optional, and a preset that omits them gets
+ * a strength of zero, which is what makes the shader's behaviour identical to
+ * the one that existed before they did.
+ */
+function validateStylizedLightTuning(id, foliage) {
+  if (foliage.undersideTint !== undefined) {
+    if (
+      typeof foliage.undersideTint !== 'string' ||
+      !/^#?[0-9a-f]{6}$/i.test(foliage.undersideTint.trim())
+    ) {
+      throw new Error(
+        `Configuration '${id}.foliage.undersideTint' must be a six digit hex colour.`,
+      );
+    }
+  }
+
+  if (foliage.undersideStrength !== undefined) {
+    requireRange(foliage.undersideStrength, 0, 1, `${id}.foliage.undersideStrength`);
+  }
+  if (foliage.rimStrength !== undefined) {
+    requireRange(foliage.rimStrength, 0, 2, `${id}.foliage.rimStrength`);
+  }
+  if (foliage.rimPower !== undefined) {
+    requireRange(foliage.rimPower, 0.25, 8, `${id}.foliage.rimPower`);
+  }
+  if (foliage.translucencyStrength !== undefined) {
+    requireRange(
+      foliage.translucencyStrength,
+      0,
+      1,
+      `${id}.foliage.translucencyStrength`,
+    );
+  }
+  if (foliage.surfaceBreakup !== undefined) {
+    requireRange(foliage.surfaceBreakup, 0, 1, `${id}.foliage.surfaceBreakup`);
+  }
+  if (foliage.snowColor !== undefined) {
+    if (
+      typeof foliage.snowColor !== 'string' ||
+      !/^#?[0-9a-f]{6}$/i.test(foliage.snowColor.trim())
+    ) {
+      throw new Error(
+        `Configuration '${id}.foliage.snowColor' must be a six digit hex colour.`,
+      );
+    }
+  }
+  if (foliage.snowStrength !== undefined) {
+    requireRange(foliage.snowStrength, 0, 1, `${id}.foliage.snowStrength`);
+  }
+  if (foliage.snowSharpness !== undefined) {
+    requireRange(foliage.snowSharpness, 0.25, 8, `${id}.foliage.snowSharpness`);
+  }
+  // A preset that is itself a season opts out of being turned by one.
+  if (foliage.seasonal !== undefined && typeof foliage.seasonal !== 'boolean') {
+    throw new Error(`Configuration '${id}.foliage.seasonal' must be a boolean.`);
+  }
+}
+
 function validateVolumeTuning(id, volume) {
   const path = `${id}.foliage.volume`;
   requirePositiveInteger(volume.resolution, `${path}.resolution`);
@@ -439,6 +498,7 @@ function createFoliageConfig(id, foliage) {
   }
 
   validateFoliageTuning(id, foliage);
+  validateStylizedLightTuning(id, foliage);
   validateVolumeTuning(id, foliage.volume);
   validateCoreTuning(id, foliage.core);
   validateHeroLeafTuning(id, foliage.heroLeaves);

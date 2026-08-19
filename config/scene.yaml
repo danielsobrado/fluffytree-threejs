@@ -1,10 +1,30 @@
 scene:
-  backgroundColor: '#b7d0dc'
-  fogColor: '#b7d0dc'
+  backgroundColor: '#cfe3ea'
+  fogColor: '#cfe3ea'
   fogNear: 24
   fogFar: 62
-  groundColor: '#789958'
+  groundColor: '#8aa860'
   groundSize: 72
+  # The pool of ambient shade under every crown. Not the sun's shadow, which the
+  # shadow map draws: this is what stops a tree from reading as hovering.
+  contactShadow:
+    enabled: true
+    radiusScale: 1.12
+    strength: 0.42
+  # Broad patches where the meadow is a shade paler and warmer, baked into the
+  # ground's own vertices so a flat disc reads as light pooling on grass.
+  lightPools:
+    enabled: true
+    cellSize: 9
+    amplitude: 0.06
+    warmth: 0.55
+  # A carpet of tufts and flower sprigs, so the ground has the same texture as
+  # the canopy and something for the lens to dissolve in the foreground.
+  meadow:
+    enabled: true
+    count: 3600
+    radius: 26
+    flowerShare: 0.3
 
 camera:
   fieldOfView: 42
@@ -16,6 +36,16 @@ camera:
 renderer:
   maxPixelRatio: 2
   shadowMapSize: 2048
+  # The lens. A narrow sharp band around whatever is being looked at, with the
+  # foreground melting fast and the tree line melting slowly, is what makes the
+  # scene read as a diorama rather than as a landscape.
+  depthOfField:
+    enabled: true
+    focusRange: 4.5
+    nearFalloff: 5
+    farFalloff: 26
+    blurRadius: 0.011
+    walkFocus: 15
 
 lod:
   nearPixels: 300
@@ -28,12 +58,14 @@ lod:
   generationBudgetMs: 8
 
 lighting:
-  hemisphereSkyColor: '#f0f7ff'
-  hemisphereGroundColor: '#71805c'
-  hemisphereIntensity: 1.85
-  sunColor: '#fff0d2'
-  sunIntensity: 2.15
-  sunPosition: [11, 17, 9]
+  # A storybook canopy is lit by a warm low sun against a strong cool sky, so
+  # the shadows stay luminous and shift toward blue instead of going black.
+  hemisphereSkyColor: '#dcecff'
+  hemisphereGroundColor: '#7f9058'
+  hemisphereIntensity: 2.1
+  sunColor: '#ffe7bd'
+  sunIntensity: 2.35
+  sunPosition: [14, 12, 7]
 
 layout:
   - preset: roundOrchard
@@ -84,3 +116,23 @@ layout:
     seed: 279431
     position: [4.4, 0, 4.6]
     rotationY: 0.9
+  - preset: gladeCanopy
+    seed: 401123
+    position: [-9.4, 0, 3.1]
+    rotationY: 0.55
+  - preset: gladeBlossom
+    seed: 415691
+    position: [10.6, 0, -1.4]
+    rotationY: -0.7
+  - preset: gladeBush
+    seed: 428893
+    position: [-0.9, 0, 7.5]
+    rotationY: 1.25
+  - preset: gladeFrost
+    seed: 442631
+    position: [-12.8, 0, -2.6]
+    rotationY: -0.35
+  - preset: gladeRust
+    seed: 456821
+    position: [13.4, 0, 4.2]
+    rotationY: 0.95

@@ -24,8 +24,15 @@ export function createCrownSummary(lobes) {
     y: total.y / lobes.length,
     z: total.z / lobes.length,
   };
+  // Where the foliage starts, which is where the wind stops ramping and the
+  // crown starts travelling as one.
+  const base = lobes.reduce(
+    (lowest, lobe) => Math.min(lowest, lobe.position.y - lobe.scale.y),
+    Number.POSITIVE_INFINITY,
+  );
 
   return Object.freeze({
     center: freezeVector(center),
+    base,
   });
 }

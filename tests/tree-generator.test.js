@@ -26,7 +26,7 @@ test('tree generation changes with the seed', () => {
 });
 
 test('generated tree respects requested topology counts', () => {
-  const tree = new TreeGenerator().generate(preset, 44);
+  const tree = new TreeGenerator().generate(preset, 44, { analysis: true });
   assert.equal(tree.lobes.length, preset.crown.lobeCount);
   assert.ok(tree.branches.length >= preset.crown.lobeCount);
   assert.equal(
@@ -52,6 +52,7 @@ test('generated tree respects requested topology counts', () => {
 test('runtime generation omits obsolete foliage surface samples', () => {
   const tree = new TreeGenerator().generate(preset, 44, {
     includeSurfaceSamples: false,
+    analysis: true,
   });
 
   assert.equal(tree.shell.length, 0);
@@ -80,4 +81,10 @@ test('LOD cost summary opt-in fails fast without an analyzer', () => {
       }),
     /require an injected analyzer/,
   );
+});
+
+test('a tree that is not being measured carries no budget analysis', () => {
+  const tree = new TreeGenerator().generate(preset, 44);
+
+  assert.equal(tree.lodCostSummaries, undefined);
 });

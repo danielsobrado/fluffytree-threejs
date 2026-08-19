@@ -95,8 +95,32 @@ function createCardBasis(normal, rotation) {
   };
 }
 
-function toClusterLocal(position, cluster) {
-  const basis = createCardBasis(cluster.normal, Number(cluster.rotation ?? 0));
+/**
+ * Per-cluster values that a coverage query rebuilds on every comparison.
+ *
+ * A cluster is compared against every candidate near it, and its card basis and
+ * alpha profile are the same every time: the basis costs a quaternion and two
+ * rotations, and rebuilding it dominated selection. Clusters are created once
+ * and never mutated, so caching on the object itself is safe.
+ */
+const CLUSTER_CACHE = new WeakMap();
+
+function clusterCoverageState(cluster) {
+  let state = CLUSTER_CACHE.get(cluster);
+  if (state) return state;
+
+  const profile = coverageProfile(cluster);
+  state = {
+    basis: createCardBasis(cluster.normal, Number(cluster.rotation ?? 0)),
+    profile,
+    maximumRadiusRatio:
+      profile.maximumRadiusRatio ?? Number.POSITIVE_INFINITY,
+  };
+  CLUSTER_CACHE.set(cluster, state);
+  return state;
+}
+
+function toClusterLocal(position, cluster, basis) {
   const offset = {
     x: position.x - cluster.position.x,
     y: position.y - cluster.position.y,
@@ -148,12 +172,21 @@ function isPointOpaque(position, cluster) {
   const width = Number(cluster.cardWidth);
   if (!(width > 0)) return false;
 
-  const local = toClusterLocal(position, cluster);
-  const profile = coverageProfile(cluster);
+  const state = clusterCoverageState(cluster);
+  const { profile, maximumRadiusRatio } = state;
+  const local = toClusterLocal(position, cluster, state.basis);
+  const rejectionRadiusSquared = maximumRadiusRatio * maximumRadiusRatio;
 
   for (let planeIndex = 0; planeIndex < profile.planesPerCluster; planeIndex += 1) {
     const plane = toPlaneLocal(local, planeIndex);
-    if (profile.isOpaque(plane.x / width, plane.y / width)) return true;
+    const u = plane.x / width;
+    const v = plane.y / width;
+    // No opaque texel of this shape reaches that far from the card centre, so
+    // the four texels a bilinear fetch would blend are all transparent. Skips
+    // the sampling for the many pairs that are near enough to be worth testing
+    // but too far to touch.
+    if (u * u + v * v > rejectionRadiusSquared) continue;
+    if (profile.isOpaque(u, v)) return true;
   }
 
   return false;
