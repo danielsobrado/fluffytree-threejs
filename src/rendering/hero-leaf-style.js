@@ -3,6 +3,7 @@ import { hashUnit } from './deterministic-hash.js';
 const HERO_SELECTION_SALT = 0x9e3779b1;
 const HERO_STRETCH_X_SALT = 0x85ebca6b;
 const HERO_STRETCH_Z_SALT = 0xc2b2ae35;
+const HERO_COLOR_SALT = 0x27d4eb2d;
 const HERO_LAYER_ID_STRIDE = 6151;
 const HERO_MINIMUM_EXPOSURE_MULTIPLIER = 0.55;
 const HERO_EXPOSURE_RANGE = 0.9;
@@ -44,4 +45,18 @@ export function calculateHeroClusterStretch(seed, sampleId, layer) {
       hashUnit(seed, elementId, HERO_STRETCH_Z_SALT) *
         HERO_CLUSTER_STRETCH_RANGE,
   });
+}
+
+export function calculateHeroLeafColorMix(
+  seed,
+  sampleId,
+  layer,
+  baseColorMix,
+  colorLift,
+  colorJitter,
+) {
+  const elementId = sampleId + layer * HERO_LAYER_ID_STRIDE;
+  const jitter =
+    (hashUnit(seed, elementId, HERO_COLOR_SALT) * 2 - 1) * colorJitter;
+  return clamp01(baseColorMix + colorLift + jitter);
 }
