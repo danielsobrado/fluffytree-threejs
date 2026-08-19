@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   calculateHeroClusterStretch,
   calculateHeroLeafColorMix,
+  calculateHeroLeafPaletteCoordinate,
   calculateHeroLeafSelectionProbability,
   selectHeroLeafSamples,
 } from '../src/rendering/hero-leaf-style.js';
@@ -47,7 +48,7 @@ test('hero cluster stretch is deterministic, subtle and anisotropic', () => {
   assert.notDeepEqual(first, layered);
 });
 
-test('hero leaf color variation is deterministic, bounded and layer specific', () => {
+test('hero leaf shader color variation is deterministic and layer specific', () => {
   const first = calculateHeroLeafColorMix(9, 12, 0, 0.5, 0.04, 0.08);
   const second = calculateHeroLeafColorMix(9, 12, 0, 0.5, 0.04, 0.08);
   const layered = calculateHeroLeafColorMix(9, 12, 1, 0.5, 0.04, 0.08);
@@ -56,6 +57,14 @@ test('hero leaf color variation is deterministic, bounded and layer specific', (
   assert.ok(first >= 0 && first <= 1);
   assert.ok(layered >= 0 && layered <= 1);
   assert.notEqual(first, layered);
-  assert.equal(calculateHeroLeafColorMix(1, 1, 0, 1, 1, 1), 1);
-  assert.equal(calculateHeroLeafColorMix(1, 1, 0, 0, -1, 1), 0);
+});
+
+test('fallback hero leaf palette coordinate preserves direct lift and clamps', () => {
+  const first = calculateHeroLeafPaletteCoordinate(9, 12, 0, 0.5, 0.1, 0.04);
+  const second = calculateHeroLeafPaletteCoordinate(9, 12, 0, 0.5, 0.1, 0.04);
+
+  assert.equal(first, second);
+  assert.ok(first >= 0.56 && first <= 0.64);
+  assert.equal(calculateHeroLeafPaletteCoordinate(1, 1, 0, 1, 1, 0), 1);
+  assert.equal(calculateHeroLeafPaletteCoordinate(1, 1, 0, 0, -1, 0), 0);
 });
