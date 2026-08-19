@@ -49,6 +49,10 @@ function findRoleIndex(levels, role) {
   return index >= 0 ? index : treeRepresentationIndex(role);
 }
 
+function resolveUpdateStride(settings) {
+  return Math.max(1, Math.trunc(settings.updateStride ?? 1));
+}
+
 export class TreeLodController {
   constructor(
     settings,
@@ -78,7 +82,8 @@ export class TreeLodController {
     this.focalPixels = 0;
     this.focalCameraFov = Number.NaN;
     this.focalViewportHeight = Number.NaN;
-    this.updateStride = Math.max(1, Math.trunc(settings.updateStride ?? 1));
+    this.updateStride = resolveUpdateStride(settings);
+    this.pendingStridePhases = 0;
     this.frameIndex = 0;
   }
 
@@ -256,11 +261,14 @@ export class TreeLodController {
   }
 
   update(camera, viewportHeight, renderer) {
-    this.updateStride = Math.max(
-      1,
-      Math.trunc(this.settings.updateStride ?? 1),
-    );
-    if (!this.inputsChanged(camera, viewportHeight) && this.updateStride === 1) {
+    const nextStride = resolveUpdateStride(this.settings);
+    const strideChanged = nextStride !== this.updateStride;
+    this.updateStride = nextStride;
+    const changed = this.inputsChanged(camera, viewportHeight) || strideChanged;
+
+    if (changed) {
+      this.pendingStridePhases = this.updateStride;
+    } else if (this.pendingStridePhases === 0) {
       return;
     }
 
@@ -271,8 +279,11 @@ export class TreeLodController {
     const phase = this.frameIndex % stride;
     this.frameIndex += 1;
 
-    for (let entryIndex = 0; entryIndex < this.entries.length; entryIndex += 1) {
-      if (stride > 1 && entryIndex % stride !== phase) continue;
+    for (
+      let entryIndex = phase;
+      entryIndex < this.entries.length;
+      entryIndex += stride
+    ) {
       const entry = this.entries[entryIndex];
       const treeState = entry.tree.userData.tree;
       const lodState = entry.tree.userData.lod;
@@ -344,5 +355,6 @@ export class TreeLodController {
 
     if (shadowChanged && renderer?.shadowMap) renderer.shadowMap.needsUpdate = true;
     this.captureInputs(camera, viewportHeight);
+    this.pendingStridePhases = Math.max(0, this.pendingStridePhases - 1);
   }
 }

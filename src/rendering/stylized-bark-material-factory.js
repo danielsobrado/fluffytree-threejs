@@ -3,6 +3,7 @@ import { calculateTreeBarkColorMix } from './tree-bark-color-profile.js';
 import { TREE_BARK_PATTERNS } from './tree-bark-style-constants.js';
 
 const TAU = Math.PI * 2;
+const MINIMUM_TREE_HEIGHT = 0.001;
 
 export function addStylizedBarkColors(
   geometry,
@@ -14,33 +15,37 @@ export function addStylizedBarkColors(
 ) {
   const colors = palette.map((value) => new THREE.Color(value));
   const positions = geometry.getAttribute('position');
+  const uvs = geometry.getAttribute('uv');
   const output = new Float32Array(positions.count * 3);
   const color = new THREE.Color();
   const phase = (((Number(seed) >>> 0) % 4093) / 4093) * TAU + order * 0.73;
+  const inverseTreeHeight = 1 / Math.max(MINIMUM_TREE_HEIGHT, treeHeight);
+  const colorProfile = {
+    u: 0,
+    v: 0,
+    phase,
+    order,
+    treeHeight,
+    pattern,
+  };
 
   for (let index = 0; index < positions.count; index += 1) {
-    const u = geometry.getAttribute('uv')?.getX(index) ?? 0;
-    const v = Math.min(
+    colorProfile.u = uvs?.getX(index) ?? 0;
+    colorProfile.v = Math.min(
       1,
-      Math.max(0, positions.getY(index) / Math.max(0.001, treeHeight)),
+      Math.max(0, positions.getY(index) * inverseTreeHeight),
     );
-    const baseMix = calculateTreeBarkColorMix({
-      u,
-      v,
-      phase,
-      order,
-      treeHeight,
-      pattern,
-    });
+    const baseMix = calculateTreeBarkColorMix(colorProfile);
 
     if (baseMix < 0.52) {
       color.lerpColors(colors[0], colors[1], baseMix / 0.52);
     } else {
       color.lerpColors(colors[1], colors[2], (baseMix - 0.52) / 0.48);
     }
-    output[index * 3] = color.r;
-    output[index * 3 + 1] = color.g;
-    output[index * 3 + 2] = color.b;
+    const offset = index * 3;
+    output[offset] = color.r;
+    output[offset + 1] = color.g;
+    output[offset + 2] = color.b;
   }
 
   geometry.setAttribute('color', new THREE.BufferAttribute(output, 3));
