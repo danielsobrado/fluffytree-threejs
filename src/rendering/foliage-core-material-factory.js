@@ -12,6 +12,11 @@ export class FoliageCoreMaterialFactory {
       ),
       cavityStrength: Math.min(1, foliage.cavityStrength + 0.06),
       heightLightStrength: foliage.heightLightStrength * 0.72,
+      rimStrength:
+        Number(foliage.rimStrength ?? 0) * FOLIAGE_RENDERING_CONSTANTS.coreRimScale,
+      translucencyStrength:
+        Number(foliage.translucencyStrength ?? 0) *
+        FOLIAGE_RENDERING_CONSTANTS.coreTranslucencyScale,
     });
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
@@ -29,7 +34,7 @@ export class FoliageCoreMaterialFactory {
       forceRadialFragmentNormal: true,
       colorMultiplier: foliage.core.brightness,
       surfaceBreakup: foliage.surfaceBreakup ?? 0.1,
-      cacheKey: 'foliage-core-interior-mass-v6',
+      cacheKey: 'foliage-core-interior-mass-v7',
     });
   }
 }
