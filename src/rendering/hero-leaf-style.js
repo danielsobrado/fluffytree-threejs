@@ -9,9 +9,22 @@ const HERO_MINIMUM_EXPOSURE_MULTIPLIER = 0.55;
 const HERO_EXPOSURE_RANGE = 0.9;
 const HERO_MINIMUM_CLUSTER_STRETCH = 0.92;
 const HERO_CLUSTER_STRETCH_RANGE = 0.16;
+const MINIMUM_PALETTE_VARIATION = 0.001;
 
 function clamp01(value) {
   return Math.min(1, Math.max(0, value));
+}
+
+function calculateHeroLeafColorJitter(
+  seed,
+  sampleId,
+  layer,
+  colorJitter,
+) {
+  const elementId = sampleId + layer * HERO_LAYER_ID_STRIDE;
+  return (
+    (hashUnit(seed, elementId, HERO_COLOR_SALT) * 2 - 1) * colorJitter
+  );
 }
 
 export function calculateHeroLeafSelectionProbability(density, exposure) {
@@ -52,11 +65,31 @@ export function calculateHeroLeafColorMix(
   sampleId,
   layer,
   baseColorMix,
+  colorJitter,
+  paletteVariation,
+) {
+  const variation = Math.max(
+    MINIMUM_PALETTE_VARIATION,
+    Math.abs(Number(paletteVariation)),
+  );
+  return clamp01(
+    baseColorMix +
+      calculateHeroLeafColorJitter(seed, sampleId, layer, colorJitter) /
+        variation,
+  );
+}
+
+export function calculateHeroLeafPaletteCoordinate(
+  seed,
+  sampleId,
+  layer,
+  baseColorMix,
   colorLift,
   colorJitter,
 ) {
-  const elementId = sampleId + layer * HERO_LAYER_ID_STRIDE;
-  const jitter =
-    (hashUnit(seed, elementId, HERO_COLOR_SALT) * 2 - 1) * colorJitter;
-  return clamp01(baseColorMix + colorLift + jitter);
+  return clamp01(
+    baseColorMix +
+      colorLift +
+      calculateHeroLeafColorJitter(seed, sampleId, layer, colorJitter),
+  );
 }
