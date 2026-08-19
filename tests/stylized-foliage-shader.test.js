@@ -79,6 +79,11 @@ test('stylized foliage shader installs crown-aware attributes and lighting', () 
   assert.match(shader.vertexShader, /foliageCrownRadialWorld/);
   assert.match(shader.vertexShader, /foliageRadialLocal/);
   assert.match(shader.vertexShader, /vFoliagePaletteCoordinate/);
+  assert.match(shader.vertexShader, /foliageInstanceWorldPosition/);
+  assert.match(
+    shader.vertexShader,
+    /instanceMatrix \* foliageInstanceWorldPosition/,
+  );
   assert.match(shader.fragmentShader, /uniform sampler2D uFoliagePalette/);
   assert.match(shader.fragmentShader, /foliageWrappedLight/);
   assert.match(shader.fragmentShader, /foliageCavityFactor/);
