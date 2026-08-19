@@ -24,6 +24,12 @@ export const FOLIAGE_RENDERING_CONSTANTS = Object.freeze({
   minimumSunFactor: 0.64,
   maximumSunFactor: 1.02,
   skyHighlightRatio: 0.22,
+  rimExposureFloor: 0.35,
+  rimSunFloor: 0.55,
+  translucencyExposureFloor: 0.2,
+  translucencySurfaceFloor: 0.55,
+  translucencyRimFloor: 0.45,
+  translucencyTint: Object.freeze([1.05, 1.0, 0.72]),
 });
 
 export const FOLIAGE_ALPHA_SHAPES = Object.freeze([
