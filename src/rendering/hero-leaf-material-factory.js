@@ -10,7 +10,9 @@ export class HeroLeafMaterialFactory {
   create({ foliage, settings, paletteTexture, sunDirection }) {
     const heroFoliage = Object.freeze({
       ...foliage,
-      paletteBase: clamp01(foliage.paletteBase + settings.colorLift),
+      paletteBase: clamp01(
+        foliage.paletteBase + Number(settings.colorLift ?? 0),
+      ),
     });
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
