@@ -23,7 +23,8 @@ function calculateHeroLeafColorJitter(
 ) {
   const elementId = sampleId + layer * HERO_LAYER_ID_STRIDE;
   return (
-    (hashUnit(seed, elementId, HERO_COLOR_SALT) * 2 - 1) * colorJitter
+    (hashUnit(seed, elementId, HERO_COLOR_SALT) * 2 - 1) *
+    Number(colorJitter ?? 0)
   );
 }
 
@@ -70,10 +71,10 @@ export function calculateHeroLeafColorMix(
 ) {
   const variation = Math.max(
     MINIMUM_PALETTE_VARIATION,
-    Math.abs(Number(paletteVariation)),
+    Math.abs(Number(paletteVariation ?? 1)),
   );
   return clamp01(
-    baseColorMix +
+    Number(baseColorMix) +
       calculateHeroLeafColorJitter(seed, sampleId, layer, colorJitter) /
         variation,
   );
@@ -88,8 +89,8 @@ export function calculateHeroLeafPaletteCoordinate(
   colorJitter,
 ) {
   return clamp01(
-    baseColorMix +
-      colorLift +
+    Number(baseColorMix) +
+      Number(colorLift ?? 0) +
       calculateHeroLeafColorJitter(seed, sampleId, layer, colorJitter),
   );
 }
