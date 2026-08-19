@@ -7,6 +7,8 @@ export const FOLIAGE_RENDERING_CONSTANTS = Object.freeze({
   // neighbouring cores still overlap in the crevices between clumps, which is
   // where an alpha-cut shell alone leaves the sky visible through the crown.
   coreScaleMultiplier: 1.35,
+  coreRimScale: 0.45,
+  coreTranslucencyScale: 0.35,
   // Inward copies of exterior cards. They add parallax behind the canopy surface
   // but cannot fill a region the exterior pass never covered, so the triangle
   // budget goes to exterior coverage first and this layer takes what is left.
