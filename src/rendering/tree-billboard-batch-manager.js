@@ -8,6 +8,7 @@ import { releaseTreeBillboardBatchReferences } from './tree-billboard-batch-life
 import { TreeBillboardBatchState } from './tree-billboard-batch-state.js';
 import { calculateTreeBillboardWorldSize } from './tree-billboard-scale.js';
 import { calculateTreeWorldYaw } from './tree-world-yaw.js';
+import { freezeStaticLocalTransform } from './static-object-transform.js';
 
 const DITHER_FRAGMENT = `
   float treeBatchNoise = fract(
@@ -194,6 +195,8 @@ export class TreeBillboardBatchManager {
   }
 
   register(tree) {
+    freezeStaticLocalTransform(tree);
+    tree.updateMatrixWorld(true);
     const presetId = tree.userData.tree.presetId;
     tree.getWorldQuaternion(this.worldQuaternion);
     this.worldForward.set(0, 0, 1).applyQuaternion(this.worldQuaternion);
