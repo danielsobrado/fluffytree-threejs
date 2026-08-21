@@ -335,9 +335,11 @@ export class TuningPanel {
   }
 
   scheduleApply() {
+    if (this.destroyed) return;
     if (this.commitTimer !== null) clearTimeout(this.commitTimer);
     this.commitTimer = setTimeout(() => {
       this.commitTimer = null;
+      if (this.destroyed) return;
       void this.apply();
     }, COMMIT_DELAY_MS);
   }
@@ -746,6 +748,14 @@ export class TuningPanel {
     }
 
     if (selected) this.variantSelect.value = selected;
+  }
+  destroy() {
+    if (this.commitTimer !== null) {
+      clearTimeout(this.commitTimer);
+      this.commitTimer = null;
+    }
+    this.destroyed = true;
+    this.root?.remove();
   }
 }
 

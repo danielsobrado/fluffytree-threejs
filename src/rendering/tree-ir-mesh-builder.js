@@ -404,7 +404,7 @@ export class TreeIrMeshBuilder {
 
       const rebuildImpostor = (rotationY) => {
         const currentRotation = impostor.userData.impostor?.rotationY ?? 0;
-        if (Math.abs(currentRotation - rotationY) <= Number.EPSILON) return;
+        if (Math.abs(currentRotation - rotationY) <= 1e-3) return;
         const previous = impostor;
         const next = this.impostorBuilder.build(treeIr, {
           rotationY,

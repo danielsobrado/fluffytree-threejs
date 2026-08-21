@@ -61,6 +61,10 @@ for (const file of files) {
     encoding: 'utf8',
   });
 
+  if (result.error) {
+    process.stderr.write(`Failed to spawn syntax check: ${result.error.message}\n`);
+    process.exit(1);
+  }
   if (result.status !== 0) {
     process.stderr.write(result.stderr);
     process.exit(result.status ?? 1);

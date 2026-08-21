@@ -17,6 +17,9 @@ function runChecker(files, repositoryRoot, returnDependencies) {
     },
   );
 
+  if (result.error) {
+    throw new Error(`Failed to spawn module dependency parser: ${result.error.message}`);
+  }
   if (result.status === 0) return result.stdout;
 
   const diagnostics = [result.stderr, result.stdout].filter(Boolean).join('\n');

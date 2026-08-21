@@ -89,10 +89,18 @@ test('module parser ignores comments, validates imports, and can return dependen
     const valid = runImportChecker(root, [entry], true);
     assert.equal(valid.status, 0, valid.stderr);
     const dependencies = JSON.parse(valid.stdout);
-    assert.deepEqual(dependencies[entry], [
-      './dependency.js',
-      './dependency.js',
-    ]);
+    // Node >= 22 deduplicates SourceTextModule.dependencySpecifiers, so an
+    // import and a re-export from the same module may yield one or two entries.
+    const deps = dependencies[entry];
+    assert.ok(Array.isArray(deps), 'dependencies should be an array');
+    assert.ok(
+      deps.length === 1 || deps.length === 2,
+      `expected 1 or 2 dependency entries, got ${deps.length}`,
+    );
+    assert.ok(
+      deps.every((d) => d === './dependency.js'),
+      'all entries should be ./dependency.js',
+    );
 
     writeFileSync(entry, "import './missing.js';\n");
     const invalid = runImportChecker(root, [entry]);

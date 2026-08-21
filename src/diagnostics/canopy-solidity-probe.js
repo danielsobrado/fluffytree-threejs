@@ -426,11 +426,10 @@ export class CanopySolidityProbe {
         continue;
       }
 
-      setObjectLodFade(
-        lodState.levels[assignment.index],
-        assignment.fade,
-        assignment.invert,
-      );
+      const level = lodState.levels[assignment.index];
+      if (level) {
+        setObjectLodFade(level, assignment.fade, assignment.invert);
+      }
     }
   }
 

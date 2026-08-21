@@ -77,16 +77,19 @@ export class RefCountedResourceCache {
   }
 
   trim() {
-    while (this.entries.size > this.maximumEntries) {
-      let candidate = null;
-      for (const entry of this.entries.values()) {
-        if (entry.refCount !== 0) continue;
-        if (!candidate || entry.lastAccess < candidate.lastAccess) {
-          candidate = entry;
-        }
-      }
-      if (!candidate) return;
-      this.evictEntry(candidate);
+    const excess = this.entries.size - this.maximumEntries;
+    if (excess <= 0) return;
+
+    const candidates = [];
+    for (const entry of this.entries.values()) {
+      if (entry.refCount === 0) candidates.push(entry);
+    }
+    if (candidates.length === 0) return;
+
+    candidates.sort((a, b) => a.lastAccess - b.lastAccess);
+    const evictCount = Math.min(candidates.length, excess);
+    for (let i = 0; i < evictCount; i++) {
+      this.evictEntry(candidates[i]);
     }
   }
 

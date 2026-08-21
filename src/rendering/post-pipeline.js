@@ -143,8 +143,10 @@ export function createPostPipeline({
   composer.addPass(bloom);
   // Applies the tone mapping the renderer no longer does, then the grade sits
   // after it so the vignette is applied in display space.
-  composer.addPass(new OutputPass());
-  composer.addPass(new ShaderPass(GRADE_SHADER));
+  const outputPass = new OutputPass();
+  const gradePass = new ShaderPass(GRADE_SHADER);
+  composer.addPass(outputPass);
+  composer.addPass(gradePass);
 
   return {
     focusSettings,
@@ -169,6 +171,9 @@ export function createPostPipeline({
     },
     dispose() {
       depthOfFieldPass?.dispose();
+      bloom.dispose();
+      outputPass.dispose();
+      gradePass.dispose();
       composer.dispose();
       target.dispose();
     },

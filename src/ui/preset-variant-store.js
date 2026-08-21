@@ -55,6 +55,8 @@ export class PresetVariantStore {
       const parsed = JSON.parse(this.storage.getItem(STORAGE_KEY) ?? '{}');
       return isRecord(parsed) ? parsed : {};
     } catch {
+      console.warn('PresetVariantStore: corrupted localStorage entry removed.');
+      try { this.storage.removeItem(STORAGE_KEY); } catch { /* storage may be unavailable */ }
       return {};
     }
   }
