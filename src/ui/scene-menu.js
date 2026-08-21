@@ -1,8 +1,8 @@
-import { FOREST_SIZES } from '../app/forest-scene.js';
-import { SEASONS } from '../app/season.js';
-import { FOREST_SCENE, GARDEN_SCENE } from '../app/tree-demo.js';
-import { PerformanceHud } from './performance-hud.js';
-import { createElement } from './tuning-controls.js';
+import { FOREST_SIZES } from '../app/forest-scene.js?v=2.0.0-20260814.2';
+import { SEASONS } from '../app/season.js?v=2.0.0-20260814.2';
+import { FOREST_SCENE, GARDEN_SCENE } from '../app/tree-demo.js?v=2.0.0-20260814.2';
+import { PerformanceHud } from './performance-hud.js?v=2.0.0-20260814.2';
+import { createElement } from './tuning-controls.js?v=2.0.0-20260814.2';
 
 /**
  * The scene menu.

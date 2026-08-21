@@ -1,13 +1,13 @@
-import { TreeWindController } from '../animation/tree-wind-controller.js';
-import { logger } from '../core/logger.js';
-import { NativeRenderSmokeProbe } from '../diagnostics/native-render-smoke-probe.js';
-import { FrameBudgetQueue } from '../generation/frame-budget-queue.js';
-import { TreeBillboardBatchManager } from '../rendering/tree-billboard-batch-manager.js';
-import { TreeImpostorRenderer } from '../rendering/tree-impostor-renderer.js';
-import { TreeLodController } from '../rendering/tree-lod-controller.js';
-import { measureViewport } from '../rendering/viewport-size.js';
-import { disposeObject } from '../rendering/object-disposer.js';
-import { createDemoOverlay, showFatalError } from '../ui/demo-overlay.js';
+import { TreeWindController } from '../animation/tree-wind-controller.js?v=2.0.0-20260814.2';
+import { logger } from '../core/logger.js?v=2.0.0-20260814.2';
+import { NativeRenderSmokeProbe } from '../diagnostics/native-render-smoke-probe.js?v=2.0.0-20260814.2';
+import { FrameBudgetQueue } from '../generation/frame-budget-queue.js?v=2.0.0-20260814.2';
+import { TreeBillboardBatchManager } from '../rendering/tree-billboard-batch-manager.js?v=2.0.0-20260814.2';
+import { TreeImpostorRenderer } from '../rendering/tree-impostor-renderer.js?v=2.0.0-20260814.2';
+import { TreeLodController } from '../rendering/tree-lod-controller.js?v=2.0.0-20260814.2';
+import { measureViewport } from '../rendering/viewport-size.js?v=2.0.0-20260814.2';
+import { disposeObject } from '../rendering/object-disposer.js?v=2.0.0-20260814.2';
+import { createDemoOverlay, showFatalError } from '../ui/demo-overlay.js?v=2.0.0-20260814.2';
 
 export class UniversalTreeShowcase {
   constructor({

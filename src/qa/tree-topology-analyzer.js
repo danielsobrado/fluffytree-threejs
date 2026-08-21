@@ -1,7 +1,7 @@
 import {
   lobeOverlapRatio,
   normalizedRotatedPointDistance,
-} from '../generation/lobe-geometry.js';
+} from '../generation/lobe-geometry.js?v=2.0.0-20260814.2';
 
 function createAdjacency(lobes) {
   const adjacency = Array.from({ length: lobes.length }, () => []);

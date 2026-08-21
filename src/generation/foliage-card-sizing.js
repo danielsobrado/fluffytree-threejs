@@ -1,5 +1,5 @@
-import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js';
-import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
+import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js?v=2.0.0-20260814.2';
+import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js?v=2.0.0-20260814.2';
 
 function midpoint(pair) {
   return (Number(pair[0]) + Number(pair[1])) * 0.5;

@@ -1,23 +1,23 @@
 import * as THREE from 'three';
-import { logger } from '../core/logger.js';
-import { setObjectLodFade } from './lod-dither-fade.js';
+import { logger } from '../core/logger.js?v=2.0.0-20260814.2';
+import { setObjectLodFade } from './lod-dither-fade.js?v=2.0.0-20260814.2';
 import {
   calculateLodWeights,
   remapUnavailableLodWeights,
   resolveStableLod,
-} from './tree-lod-math.js';
+} from './tree-lod-math.js?v=2.0.0-20260814.2';
 import {
   calculateCameraFocalPixels,
   calculateProjectedTreePixels,
   resolveTreeWorldScale,
-} from './tree-projection-math.js';
+} from './tree-projection-math.js?v=2.0.0-20260814.2';
 import {
   isImpostorRepresentation,
   TREE_REPRESENTATION_ROLES,
   treeRepresentationIndex,
   treeRepresentationRoleAt,
-} from './tree-representation-role.js';
-import { shouldRenderTreeShadowProxy } from './tree-shadow-lod-policy.js';
+} from './tree-representation-role.js?v=2.0.0-20260814.2';
+import { shouldRenderTreeShadowProxy } from './tree-shadow-lod-policy.js?v=2.0.0-20260814.2';
 
 const VISIBLE_FADE_THRESHOLD = 0.001;
 const MINIMUM_TREE_DISTANCE = 0.001;

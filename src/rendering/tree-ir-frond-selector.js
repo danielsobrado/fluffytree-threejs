@@ -1,4 +1,4 @@
-import { hashCanonicalValue } from '../core/canonical-value-hash.js';
+import { hashCanonicalValue } from '../core/canonical-value-hash.js?v=2.0.0-20260814.2';
 
 const TAU = Math.PI * 2;
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));

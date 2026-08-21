@@ -1,5 +1,5 @@
-import { expandTreeWindBounds } from './tree-wind-bounds.js';
-import { TREE_WIND_PROFILE } from './tree-wind-profile.js';
+import { expandTreeWindBounds } from './tree-wind-bounds.js?v=2.0.0-20260814.2';
+import { TREE_WIND_PROFILE } from './tree-wind-profile.js?v=2.0.0-20260814.2';
 
 function requireNonNegativeFinite(value, name) {
   const number = Number(value);

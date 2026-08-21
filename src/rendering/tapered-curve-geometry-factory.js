@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import {
   createSweepFrames,
   createSweepParameters,
-} from './swept-tube-sampling.js';
-import { TREE_STRUCTURE_RENDERING_CONSTANTS } from './tree-structure-rendering-constants.js';
+} from './swept-tube-sampling.js?v=2.0.0-20260814.2';
+import { TREE_STRUCTURE_RENDERING_CONSTANTS } from './tree-structure-rendering-constants.js?v=2.0.0-20260814.2';
 
 function toVector3(point) {
   return new THREE.Vector3(point.x, point.y, point.z);

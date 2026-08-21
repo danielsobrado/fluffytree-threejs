@@ -1,5 +1,5 @@
-import { FOLIAGE_PRIMITIVE_FAMILIES } from '../generation/tree-ir-schema.js';
-import { TREE_REPRESENTATION_ROLES } from './tree-representation-role.js';
+import { FOLIAGE_PRIMITIVE_FAMILIES } from '../generation/tree-ir-schema.js?v=2.0.0-20260814.2';
+import { TREE_REPRESENTATION_ROLES } from './tree-representation-role.js?v=2.0.0-20260814.2';
 
 function requireDensity(value, label) {
   if (!Number.isFinite(value) || value < 0 || value > 1) {

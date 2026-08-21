@@ -1,8 +1,8 @@
-import { calculateCrownEnvelopeBounds } from '../generation/crown-envelope.js';
+import { calculateCrownEnvelopeBounds } from '../generation/crown-envelope.js?v=2.0.0-20260814.2';
 import {
   lobeAxisAlignedExtents,
   normalizedRotatedPointDistance,
-} from '../generation/lobe-geometry.js';
+} from '../generation/lobe-geometry.js?v=2.0.0-20260814.2';
 
 const ENVELOPE_RADIUS_MARGIN = 1.2;
 

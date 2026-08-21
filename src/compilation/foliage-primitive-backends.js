@@ -1,10 +1,10 @@
-import { FOLIAGE_PRIMITIVE_FAMILIES } from '../generation/tree-ir-schema.js';
-import { TREE_REPRESENTATION_ROLES } from '../rendering/tree-representation-role.js';
+import { FOLIAGE_PRIMITIVE_FAMILIES } from '../generation/tree-ir-schema.js?v=2.0.0-20260814.2';
+import { TREE_REPRESENTATION_ROLES } from '../rendering/tree-representation-role.js?v=2.0.0-20260814.2';
 import {
   FOLIAGE_BACKEND_IDS,
   FOLIAGE_COVERAGE_POLICIES,
   FOLIAGE_REPRESENTATION_KINDS,
-} from './foliage-compilation-constants.js';
+} from './foliage-compilation-constants.js?v=2.0.0-20260814.2';
 
 function policy(kind, coveragePolicy) {
   return Object.freeze({ kind, coveragePolicy });

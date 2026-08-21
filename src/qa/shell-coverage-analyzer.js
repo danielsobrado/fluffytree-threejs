@@ -1,15 +1,15 @@
-import { FOLIAGE_SHELL_CONSTANTS } from '../generation/foliage-shell-constants.js';
+import { FOLIAGE_SHELL_CONSTANTS } from '../generation/foliage-shell-constants.js?v=2.0.0-20260814.2';
 import {
   calculateLobeExposure,
   prepareExposureLobes,
-} from '../generation/lobe-exposure.js';
+} from '../generation/lobe-exposure.js?v=2.0.0-20260814.2';
 import {
   lobeSurfaceNormal,
   pointOnLobeSurface,
-} from '../generation/lobe-geometry.js';
-import { SpatialHashGrid } from '../generation/spatial-hash-grid.js';
-import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js';
-import { analyzeContinuousShellCoverage } from './continuous-shell-coverage-analyzer.js';
+} from '../generation/lobe-geometry.js?v=2.0.0-20260814.2';
+import { SpatialHashGrid } from '../generation/spatial-hash-grid.js?v=2.0.0-20260814.2';
+import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js?v=2.0.0-20260814.2';
+import { analyzeContinuousShellCoverage } from './continuous-shell-coverage-analyzer.js?v=2.0.0-20260814.2';
 
 const GRID_SEARCH_RINGS = 3;
 

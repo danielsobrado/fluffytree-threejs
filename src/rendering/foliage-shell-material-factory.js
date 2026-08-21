@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js';
-import { configureStylizedFoliageShader } from './stylized-foliage-shader.js';
+import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js?v=2.0.0-20260814.2';
+import { configureStylizedFoliageShader } from './stylized-foliage-shader.js?v=2.0.0-20260814.2';
 
 function clamp01(value) {
   return Math.min(1, Math.max(0, value));

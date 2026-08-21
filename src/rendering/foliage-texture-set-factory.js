@@ -1,6 +1,6 @@
-import { RefCountedResourceCache } from '../core/ref-counted-resource-cache.js';
-import { FoliageAlphaTextureFactory } from './foliage-alpha-texture-factory.js';
-import { PaletteTextureFactory } from './palette-texture-factory.js';
+import { RefCountedResourceCache } from '../core/ref-counted-resource-cache.js?v=2.0.0-20260814.2';
+import { FoliageAlphaTextureFactory } from './foliage-alpha-texture-factory.js?v=2.0.0-20260814.2';
+import { PaletteTextureFactory } from './palette-texture-factory.js?v=2.0.0-20260814.2';
 
 function createTextureSetLease(paletteLease, alphaLease, onRelease) {
   let released = false;

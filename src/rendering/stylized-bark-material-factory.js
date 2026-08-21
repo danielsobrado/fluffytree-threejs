@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { calculateTreeBarkColorMix } from './tree-bark-color-profile.js';
-import { TREE_BARK_PATTERNS } from './tree-bark-style-constants.js';
+import { calculateTreeBarkColorMix } from './tree-bark-color-profile.js?v=2.0.0-20260814.2';
+import { TREE_BARK_PATTERNS } from './tree-bark-style-constants.js?v=2.0.0-20260814.2';
 
 const TAU = Math.PI * 2;
 const MINIMUM_TREE_HEIGHT = 0.001;

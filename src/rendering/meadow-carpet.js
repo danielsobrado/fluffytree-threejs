@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { createMeadowScatter, resolveMeadowSettings } from './meadow-scatter.js';
-import { applyWoodWind, createTreeWindState } from './tree-wind-shader.js';
+import { createMeadowScatter, resolveMeadowSettings } from './meadow-scatter.js?v=2.0.0-20260814.2';
+import { applyWoodWind, createTreeWindState } from './tree-wind-shader.js?v=2.0.0-20260814.2';
 
 /**
  * The meadow, as one instanced draw.

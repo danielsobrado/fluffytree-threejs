@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constants.js';
+import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constants.js?v=2.0.0-20260814.2';
 
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 

@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { hashUnit } from './deterministic-hash.js';
+import { hashUnit } from './deterministic-hash.js?v=2.0.0-20260814.2';
 import {
   calculateSurfaceLayerScale,
   calculateSurfaceRadialOffset,
   getTangentialJitterRatio,
-} from './leaf-cluster-layer-layout.js';
-import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constants.js';
+} from './leaf-cluster-layer-layout.js?v=2.0.0-20260814.2';
+import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constants.js?v=2.0.0-20260814.2';
 
 export {
   getInnerInsetRatio,

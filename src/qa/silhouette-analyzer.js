@@ -1,11 +1,11 @@
-import { calculateCrownEnvelopeBounds } from '../generation/crown-envelope.js';
-import { correlation, mean, rootMeanSquareError } from './qa-math.js';
-import { calculateHoleRatio, countComponents } from './mask-analyzer.js';
+import { calculateCrownEnvelopeBounds } from '../generation/crown-envelope.js?v=2.0.0-20260814.2';
+import { correlation, mean, rootMeanSquareError } from './qa-math.js?v=2.0.0-20260814.2';
+import { calculateHoleRatio, countComponents } from './mask-analyzer.js?v=2.0.0-20260814.2';
 import {
   createLobeProjection,
   projectedLobeContains,
   projectedLobeRow,
-} from './lobe-projection.js';
+} from './lobe-projection.js?v=2.0.0-20260814.2';
 
 const PROJECTION_PADDING = 0.03;
 const PROFILE_BANDS = Object.freeze({

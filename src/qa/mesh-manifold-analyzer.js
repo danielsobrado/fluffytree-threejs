@@ -1,4 +1,4 @@
-import { analyzeTriangleSelfIntersections } from './triangle-self-intersection-analyzer.js';
+import { analyzeTriangleSelfIntersections } from './triangle-self-intersection-analyzer.js?v=2.0.0-20260814.2';
 
 function edgeKey(left, right) {
   return left < right ? `${left}:${right}` : `${right}:${left}`;

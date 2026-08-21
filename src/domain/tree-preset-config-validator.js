@@ -7,7 +7,7 @@ import {
   REQUIRED_NUMBER_PATHS,
   STRING_ARRAY_RULES,
   UNIT_INTERVAL_PATHS,
-} from './tree-preset-validation-rules.js';
+} from './tree-preset-validation-rules.js?v=2.0.0-20260814.2';
 
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 

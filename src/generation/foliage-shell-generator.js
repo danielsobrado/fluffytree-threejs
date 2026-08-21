@@ -1,15 +1,15 @@
-import { resolveFoliageContinuityProfile } from '../domain/foliage-continuity-config.js';
-import { createFoliageAlphaProfile } from '../rendering/foliage-alpha-profile.js';
-import { repairAdaptiveFoliageCoverage } from './foliage-adaptive-repair-runner.js';
-import { resolveFoliageCoveragePolicy } from './foliage-coverage-policy.js';
-import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
+import { resolveFoliageContinuityProfile } from '../domain/foliage-continuity-config.js?v=2.0.0-20260814.2';
+import { createFoliageAlphaProfile } from '../rendering/foliage-alpha-profile.js?v=2.0.0-20260814.2';
+import { repairAdaptiveFoliageCoverage } from './foliage-adaptive-repair-runner.js?v=2.0.0-20260814.2';
+import { resolveFoliageCoveragePolicy } from './foliage-coverage-policy.js?v=2.0.0-20260814.2';
+import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js?v=2.0.0-20260814.2';
 import {
   calculateFoliageCrownCenter,
   createFibonacciDirection,
   createFoliageShellCandidate,
-} from './foliage-shell-candidate-factory.js';
-import { selectDeterministicFoliageMaxCover } from './foliage-max-cover-selector.js';
-import { prepareExposureLobes } from './lobe-exposure.js';
+} from './foliage-shell-candidate-factory.js?v=2.0.0-20260814.2';
+import { selectDeterministicFoliageMaxCover } from './foliage-max-cover-selector.js?v=2.0.0-20260814.2';
+import { prepareExposureLobes } from './lobe-exposure.js?v=2.0.0-20260814.2';
 
 function compareCandidates(left, right) {
   return (

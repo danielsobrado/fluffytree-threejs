@@ -1,9 +1,9 @@
-import { CrownEnvelope } from '../generation/crown-envelope.js';
-import { lobeAxisAlignedExtents } from '../generation/lobe-geometry.js';
-import { analyzeFoliageShell } from './foliage-shell-analyzer.js';
-import { analyzeSilhouette } from './silhouette-analyzer.js';
-import { analyzeTopology } from './tree-topology-analyzer.js';
-import { analyzeVolume } from './volume-analyzer.js';
+import { CrownEnvelope } from '../generation/crown-envelope.js?v=2.0.0-20260814.2';
+import { lobeAxisAlignedExtents } from '../generation/lobe-geometry.js?v=2.0.0-20260814.2';
+import { analyzeFoliageShell } from './foliage-shell-analyzer.js?v=2.0.0-20260814.2';
+import { analyzeSilhouette } from './silhouette-analyzer.js?v=2.0.0-20260814.2';
+import { analyzeTopology } from './tree-topology-analyzer.js?v=2.0.0-20260814.2';
+import { analyzeVolume } from './volume-analyzer.js?v=2.0.0-20260814.2';
 
 function calculateBounds(lobes) {
   const minimum = { x: Infinity, y: Infinity, z: Infinity };

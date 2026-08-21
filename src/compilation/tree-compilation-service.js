@@ -1,7 +1,7 @@
-import { BoundedLruCache } from '../core/bounded-lru-cache.js';
-import { RefCountedResourceCache } from '../core/ref-counted-resource-cache.js';
-import { createRepresentationCacheKey, createTreeIrCacheKey } from './tree-cache-key.js';
-import { TreeRepresentationCompiler } from './tree-representation-compiler.js';
+import { BoundedLruCache } from '../core/bounded-lru-cache.js?v=2.0.0-20260814.2';
+import { RefCountedResourceCache } from '../core/ref-counted-resource-cache.js?v=2.0.0-20260814.2';
+import { createRepresentationCacheKey, createTreeIrCacheKey } from './tree-cache-key.js?v=2.0.0-20260814.2';
+import { TreeRepresentationCompiler } from './tree-representation-compiler.js?v=2.0.0-20260814.2';
 
 export class TreeCompilationService {
   constructor({

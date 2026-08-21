@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js';
-import { BILLBOARD_TEXTURE_SIZE } from './tree-billboard-atlas.js';
-import { calculateRootFlareScale } from './root-flare-profile.js';
+import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js?v=2.0.0-20260814.2';
+import { BILLBOARD_TEXTURE_SIZE } from './tree-billboard-atlas.js?v=2.0.0-20260814.2';
+import { calculateRootFlareScale } from './root-flare-profile.js?v=2.0.0-20260814.2';
 import {
   calculateImpostorLayout,
   projectImpostorLobe,
-} from './tree-impostor-math.js';
+} from './tree-impostor-math.js?v=2.0.0-20260814.2';
 
 const PADDING_RATIO = 0.08;
 // Painted bark over-covers slightly. Extra dark pixels are invisible at the

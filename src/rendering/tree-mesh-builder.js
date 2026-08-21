@@ -1,19 +1,19 @@
 import * as THREE from 'three';
-import { BranchMeshBuilder } from './branch-mesh-builder.js';
-import { CrownShadowProxyBuilder } from './crown-shadow-proxy-builder.js';
-import { FoliageCoreBuilder } from './foliage-core-builder.js';
-import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js';
-import { FoliageShellBuilder } from './foliage-shell-builder.js';
-import { FoliageTextureSetFactory } from './foliage-texture-set-factory.js';
-import { LeafClusterBuilder } from './leaf-cluster-builder.js';
-import { configureObjectLodFade, setObjectLodFade } from './lod-dither-fade.js';
-import { disposeObject } from './object-disposer.js';
-import { TreeImpostorBuilder } from './tree-impostor-builder.js';
+import { BranchMeshBuilder } from './branch-mesh-builder.js?v=2.0.0-20260814.2';
+import { CrownShadowProxyBuilder } from './crown-shadow-proxy-builder.js?v=2.0.0-20260814.2';
+import { FoliageCoreBuilder } from './foliage-core-builder.js?v=2.0.0-20260814.2';
+import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js?v=2.0.0-20260814.2';
+import { FoliageShellBuilder } from './foliage-shell-builder.js?v=2.0.0-20260814.2';
+import { FoliageTextureSetFactory } from './foliage-texture-set-factory.js?v=2.0.0-20260814.2';
+import { LeafClusterBuilder } from './leaf-cluster-builder.js?v=2.0.0-20260814.2';
+import { configureObjectLodFade, setObjectLodFade } from './lod-dither-fade.js?v=2.0.0-20260814.2';
+import { disposeObject } from './object-disposer.js?v=2.0.0-20260814.2';
+import { TreeImpostorBuilder } from './tree-impostor-builder.js?v=2.0.0-20260814.2';
 import {
   TREE_RENDER_REPRESENTATION_ROLES,
   TREE_REPRESENTATION_ROLES,
   treeRepresentationIndex,
-} from './tree-representation-role.js';
+} from './tree-representation-role.js?v=2.0.0-20260814.2';
 
 function coverOnlyCoreScale(treeData) {
   const shell = treeData.palette.shell;

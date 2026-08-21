@@ -1,17 +1,17 @@
-import { CrownLobeTreeGenerator } from './crown-lobe-tree-generator.js';
+import { CrownLobeTreeGenerator } from './crown-lobe-tree-generator.js?v=2.0.0-20260814.2';
 import {
   DEFAULT_TREE_GENERATION_MODEL,
   resolveTreeGenerationModelId,
-} from './tree-generation-model.js';
-import { adaptTreeIrToLegacyTreeData } from './tree-ir-legacy-adapter.js';
-import { validateTreeIr } from './tree-ir-validator.js';
-import { applyTreeEnvironment } from './tree-environment-processor.js';
-import { PALM_TREE_MODEL_ID } from './palm-tree-constants.js';
-import { PalmTreeGenerator } from './palm-tree-generator.js';
-import { SYMPODIAL_BROADLEAF_MODEL_ID } from './sympodial-broadleaf-constants.js';
-import { SympodialBroadleafTreeGenerator } from './sympodial-broadleaf-tree-generator.js';
-import { WHORLED_CONIFER_MODEL_ID } from './whorled-conifer-constants.js';
-import { WhorledConiferTreeGenerator } from './whorled-conifer-tree-generator.js';
+} from './tree-generation-model.js?v=2.0.0-20260814.2';
+import { adaptTreeIrToLegacyTreeData } from './tree-ir-legacy-adapter.js?v=2.0.0-20260814.2';
+import { validateTreeIr } from './tree-ir-validator.js?v=2.0.0-20260814.2';
+import { applyTreeEnvironment } from './tree-environment-processor.js?v=2.0.0-20260814.2';
+import { PALM_TREE_MODEL_ID } from './palm-tree-constants.js?v=2.0.0-20260814.2';
+import { PalmTreeGenerator } from './palm-tree-generator.js?v=2.0.0-20260814.2';
+import { SYMPODIAL_BROADLEAF_MODEL_ID } from './sympodial-broadleaf-constants.js?v=2.0.0-20260814.2';
+import { SympodialBroadleafTreeGenerator } from './sympodial-broadleaf-tree-generator.js?v=2.0.0-20260814.2';
+import { WHORLED_CONIFER_MODEL_ID } from './whorled-conifer-constants.js?v=2.0.0-20260814.2';
+import { WhorledConiferTreeGenerator } from './whorled-conifer-tree-generator.js?v=2.0.0-20260814.2';
 
 function modelEntries(modelGenerators) {
   if (modelGenerators === null || modelGenerators === undefined) return [];

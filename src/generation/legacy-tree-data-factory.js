@@ -1,5 +1,5 @@
-import { lobeAxisAlignedExtents } from './lobe-geometry.js';
-import { DEFAULT_TREE_GENERATION_MODEL } from './tree-generation-model.js';
+import { lobeAxisAlignedExtents } from './lobe-geometry.js?v=2.0.0-20260814.2';
+import { DEFAULT_TREE_GENERATION_MODEL } from './tree-generation-model.js?v=2.0.0-20260814.2';
 
 export function createEmptyFoliageShell(lobes) {
   return {

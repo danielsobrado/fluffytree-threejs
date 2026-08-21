@@ -1,7 +1,7 @@
-import { TreeGenerator } from '../generation/tree-generator.js';
-import { TrunkGeometryFactory } from '../rendering/trunk-geometry-factory.js';
-import { analyzeBufferGeometryManifold } from './mesh-manifold-analyzer.js';
-import { parseStemManifoldQaConfig } from './stem-manifold-qa-config.js';
+import { TreeGenerator } from '../generation/tree-generator.js?v=2.0.0-20260814.2';
+import { TrunkGeometryFactory } from '../rendering/trunk-geometry-factory.js?v=2.0.0-20260814.2';
+import { analyzeBufferGeometryManifold } from './mesh-manifold-analyzer.js?v=2.0.0-20260814.2';
+import { parseStemManifoldQaConfig } from './stem-manifold-qa-config.js?v=2.0.0-20260814.2';
 
 function collectFailures(metrics) {
   const checks = [

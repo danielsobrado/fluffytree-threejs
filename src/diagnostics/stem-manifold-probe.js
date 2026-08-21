@@ -1,10 +1,10 @@
-import { logger } from '../core/logger.js';
-import { StemManifoldQaRunner } from '../qa/stem-manifold-qa-runner.js';
+import { logger } from '../core/logger.js?v=2.0.0-20260814.2';
+import { StemManifoldQaRunner } from '../qa/stem-manifold-qa-runner.js?v=2.0.0-20260814.2';
 import {
   postQaReport,
   reportQaStatus,
   serializeQaError,
-} from './qa-status-reporter.js';
+} from './qa-status-reporter.js?v=2.0.0-20260814.2';
 
 const QUERY_VALUE = 'manifold';
 const STATUS_ATTRIBUTE = 'manifoldStatus';

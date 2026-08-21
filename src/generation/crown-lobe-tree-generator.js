@@ -1,17 +1,17 @@
-import { BranchGenerator } from './branch-generator.js';
-import { CrownEnvelope } from './crown-envelope.js';
-import { createCrownSummary } from './crown-summary.js';
-import { FoliageShellGenerator } from './foliage-shell-generator.js';
-import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
-import { LobeConnectionAnalyzer } from './lobe-connection-analyzer.js';
-import { LobeConnectivityEnforcer } from './lobe-connectivity-enforcer.js';
-import { LobeGenerator } from './lobe-generator.js';
+import { BranchGenerator } from './branch-generator.js?v=2.0.0-20260814.2';
+import { CrownEnvelope } from './crown-envelope.js?v=2.0.0-20260814.2';
+import { createCrownSummary } from './crown-summary.js?v=2.0.0-20260814.2';
+import { FoliageShellGenerator } from './foliage-shell-generator.js?v=2.0.0-20260814.2';
+import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js?v=2.0.0-20260814.2';
+import { LobeConnectionAnalyzer } from './lobe-connection-analyzer.js?v=2.0.0-20260814.2';
+import { LobeConnectivityEnforcer } from './lobe-connectivity-enforcer.js?v=2.0.0-20260814.2';
+import { LobeGenerator } from './lobe-generator.js?v=2.0.0-20260814.2';
 import {
   createEmptyFoliageShell,
   createLegacyTreeData,
-} from './legacy-tree-data-factory.js';
-import { SeededRandom } from './seeded-random.js';
-import { createTreeIrFromLegacyTreeData } from './tree-ir-from-legacy-data.js';
+} from './legacy-tree-data-factory.js?v=2.0.0-20260814.2';
+import { SeededRandom } from './seeded-random.js?v=2.0.0-20260814.2';
+import { createTreeIrFromLegacyTreeData } from './tree-ir-from-legacy-data.js?v=2.0.0-20260814.2';
 
 function createShellSeed(seed) {
   return (Number(seed) ^ FOLIAGE_SHELL_CONSTANTS.seedSalt) >>> 0;

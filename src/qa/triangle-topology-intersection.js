@@ -1,6 +1,6 @@
-import { trianglesIntersect } from './triangle-intersection-test.js';
-import { coplanarTrianglesIntersectBeyondSharedTopology } from './coplanar-triangle-topology.js';
-import { nonCoplanarTrianglesIntersectBeyondSharedVertex } from './noncoplanar-triangle-topology.js';
+import { trianglesIntersect } from './triangle-intersection-test.js?v=2.0.0-20260814.2';
+import { coplanarTrianglesIntersectBeyondSharedTopology } from './coplanar-triangle-topology.js?v=2.0.0-20260814.2';
+import { nonCoplanarTrianglesIntersectBeyondSharedVertex } from './noncoplanar-triangle-topology.js?v=2.0.0-20260814.2';
 
 function subtract(left, right) {
   return [

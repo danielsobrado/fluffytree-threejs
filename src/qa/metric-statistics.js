@@ -1,4 +1,4 @@
-import { mean, quantile, standardDeviation } from './qa-math.js';
+import { mean, quantile, standardDeviation } from './qa-math.js?v=2.0.0-20260814.2';
 
 const QUANTILES = Object.freeze([
   ['p01', 0.01],

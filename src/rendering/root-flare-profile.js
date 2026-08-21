@@ -1,4 +1,4 @@
-import { TREE_STRUCTURE_RENDERING_CONSTANTS } from './tree-structure-rendering-constants.js';
+import { TREE_STRUCTURE_RENDERING_CONSTANTS } from './tree-structure-rendering-constants.js?v=2.0.0-20260814.2';
 
 const TAU = Math.PI * 2;
 

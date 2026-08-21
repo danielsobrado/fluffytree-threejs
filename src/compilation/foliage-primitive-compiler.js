@@ -1,5 +1,5 @@
-import { validateTreeIr } from '../generation/tree-ir-validator.js';
-import { resolveFoliageBackendRolePolicy } from './foliage-primitive-backends.js';
+import { validateTreeIr } from '../generation/tree-ir-validator.js?v=2.0.0-20260814.2';
+import { resolveFoliageBackendRolePolicy } from './foliage-primitive-backends.js?v=2.0.0-20260814.2';
 
 function groupSitesByFamily(sites) {
   const groups = new Map();

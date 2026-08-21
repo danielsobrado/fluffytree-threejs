@@ -1,7 +1,7 @@
 import {
   FOREST_CHUNK_STATES,
   forestChunkStateRank,
-} from './forest-chunk-state.js';
+} from './forest-chunk-state.js?v=2.0.0-20260814.2';
 
 function createRecord() {
   return {

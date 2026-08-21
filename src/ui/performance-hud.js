@@ -1,4 +1,4 @@
-import { createElement } from './tuning-controls.js';
+import { createElement } from './tuning-controls.js?v=2.0.0-20260814.2';
 
 /**
  * What the current frame costs.

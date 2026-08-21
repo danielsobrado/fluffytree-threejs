@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { FOLIAGE_PRIMITIVE_FAMILIES } from '../generation/tree-ir-schema.js';
-import { BILLBOARD_TEXTURE_SIZE } from './tree-billboard-atlas.js';
-import { calculateTreeIrImpostorLayout } from './tree-ir-impostor-layout.js';
+import { FOLIAGE_PRIMITIVE_FAMILIES } from '../generation/tree-ir-schema.js?v=2.0.0-20260814.2';
+import { BILLBOARD_TEXTURE_SIZE } from './tree-billboard-atlas.js?v=2.0.0-20260814.2';
+import { calculateTreeIrImpostorLayout } from './tree-ir-impostor-layout.js?v=2.0.0-20260814.2';
 
 const PADDING_RATIO = 0.08;
 const STRUCTURE_WIDTH_MARGIN = 1.5;

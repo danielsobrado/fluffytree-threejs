@@ -4,8 +4,8 @@ import {
   calculateBillboardAtlasSlot,
   calculateBillboardAtlasUvTransform,
   createBillboardAtlasLayout,
-} from './tree-billboard-atlas.js';
-import { drawBillboardAtlasCell } from './tree-billboard-atlas-rasterizer.js';
+} from './tree-billboard-atlas.js?v=2.0.0-20260814.2';
+import { drawBillboardAtlasCell } from './tree-billboard-atlas-rasterizer.js?v=2.0.0-20260814.2';
 
 function requireImage(texture) {
   const image = texture?.image;

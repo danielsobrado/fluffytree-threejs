@@ -1,4 +1,4 @@
-import { hashCanonicalValue } from '../core/canonical-value-hash.js';
+import { hashCanonicalValue } from '../core/canonical-value-hash.js?v=2.0.0-20260814.2';
 
 export function treeIrStyleUnit(treeIr, id, channel) {
   const hash = hashCanonicalValue([treeIr.seed, id, channel]);

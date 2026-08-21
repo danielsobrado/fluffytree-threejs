@@ -1,4 +1,4 @@
-import { readPath } from './tuning-schema.js';
+import { readPath } from './tuning-schema.js?v=2.0.0-20260814.2';
 
 /**
  * One DOM control per schema entry.

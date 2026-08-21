@@ -1,9 +1,9 @@
-import { parseCanopySolidityQaConfig } from '../qa/canopy-solidity-qa-config.js';
+import { parseCanopySolidityQaConfig } from '../qa/canopy-solidity-qa-config.js?v=2.0.0-20260814.2';
 import {
   restoreObjectLodFade,
   snapshotObjectLodFade,
-} from '../rendering/lod-dither-fade.js';
-import { CanopySolidityProbe } from './canopy-solidity-probe.js';
+} from '../rendering/lod-dither-fade.js?v=2.0.0-20260814.2';
+import { CanopySolidityProbe } from './canopy-solidity-probe.js?v=2.0.0-20260814.2';
 
 const SOLIDITY_CONFIG_SUFFIX = 'canopy-solidity-qa.yaml';
 

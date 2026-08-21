@@ -1,4 +1,4 @@
-import { TREE_RENDER_REPRESENTATION_ROLES } from '../rendering/tree-representation-role.js';
+import { TREE_RENDER_REPRESENTATION_ROLES } from '../rendering/tree-representation-role.js?v=2.0.0-20260814.2';
 
 function validateEntry(entry, index) {
   if (!entry?.assignment) {

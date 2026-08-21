@@ -1,8 +1,8 @@
-import { foliageCardCoverageRatio } from './foliage-card-coverage.js';
-import { FoliageCoverageIndex } from './foliage-coverage-index.js';
-import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
-import { SpatialHashGrid } from './spatial-hash-grid.js';
-import { StableMaxHeap } from './stable-max-heap.js';
+import { foliageCardCoverageRatio } from './foliage-card-coverage.js?v=2.0.0-20260814.2';
+import { FoliageCoverageIndex } from './foliage-coverage-index.js?v=2.0.0-20260814.2';
+import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js?v=2.0.0-20260814.2';
+import { SpatialHashGrid } from './spatial-hash-grid.js?v=2.0.0-20260814.2';
+import { StableMaxHeap } from './stable-max-heap.js?v=2.0.0-20260814.2';
 
 function compareIds(left, right) {
   if (typeof left === 'number' && typeof right === 'number') return left - right;

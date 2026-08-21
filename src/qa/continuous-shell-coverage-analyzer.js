@@ -1,24 +1,24 @@
-import { FOLIAGE_SHELL_CONSTANTS } from '../generation/foliage-shell-constants.js';
+import { FOLIAGE_SHELL_CONSTANTS } from '../generation/foliage-shell-constants.js?v=2.0.0-20260814.2';
 import {
   calculateExposureLipschitz,
   calculateLobeExposure,
   prepareExposureLobes,
-} from '../generation/lobe-exposure.js';
+} from '../generation/lobe-exposure.js?v=2.0.0-20260814.2';
 import {
   lobeSurfaceNormal,
   pointOnLobeSurface,
-} from '../generation/lobe-geometry.js';
+} from '../generation/lobe-geometry.js?v=2.0.0-20260814.2';
 import {
   createIcosahedronDirectionTriangles,
   directionTriangleCentroid,
   directionTriangleDiameter,
   subdivideDirectionTriangle,
-} from './ellipsoid-surface-triangulation.js';
+} from './ellipsoid-surface-triangulation.js?v=2.0.0-20260814.2';
 import {
   createShellCoverageClusterIndex,
   findSampleCoverageRatio,
   findTriangleCoverageUpperBound,
-} from './shell-coverage-cluster-index.js';
+} from './shell-coverage-cluster-index.js?v=2.0.0-20260814.2';
 
 function createTriangleSamples(lobe, triangle) {
   const children = subdivideDirectionTriangle(triangle);

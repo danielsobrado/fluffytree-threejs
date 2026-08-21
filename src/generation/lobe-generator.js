@@ -1,4 +1,4 @@
-import { GENERATION_CONSTANTS } from './generation-constants.js';
+import { GENERATION_CONSTANTS } from './generation-constants.js?v=2.0.0-20260814.2';
 
 function lerp(minimum, maximum, ratio) {
   return minimum + (maximum - minimum) * ratio;

@@ -1,11 +1,11 @@
 import {
   FOLIAGE_RENDERING_CONSTANTS,
-} from './foliage-rendering-constants.js';
+} from './foliage-rendering-constants.js?v=2.0.0-20260814.2';
 import {
   createTreeWindState,
   injectTreeWindVertexShader,
   installTreeWindUniforms,
-} from './tree-wind-shader.js';
+} from './tree-wind-shader.js?v=2.0.0-20260814.2';
 
 function srgbChannelToLinear(value) {
   return value <= 0.04045

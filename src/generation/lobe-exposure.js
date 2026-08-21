@@ -1,5 +1,5 @@
-import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
-import { normalizedRotatedPointDistance } from './lobe-geometry.js';
+import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js?v=2.0.0-20260814.2';
+import { normalizedRotatedPointDistance } from './lobe-geometry.js?v=2.0.0-20260814.2';
 
 const CLEARANCE_SATURATION =
   FOLIAGE_SHELL_CONSTANTS.clearanceRange -

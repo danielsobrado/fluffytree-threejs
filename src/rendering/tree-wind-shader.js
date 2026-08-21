@@ -1,4 +1,4 @@
-import { TREE_WIND_PROFILE } from '../animation/tree-wind-profile.js';
+import { TREE_WIND_PROFILE } from '../animation/tree-wind-profile.js?v=2.0.0-20260814.2';
 
 function createVertexDeclarations() {
   return `

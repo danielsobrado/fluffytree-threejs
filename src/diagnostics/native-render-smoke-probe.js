@@ -1,15 +1,15 @@
-import { logger } from '../core/logger.js';
-import { reportQaStatus, serializeQaError } from './qa-status-reporter.js';
+import { logger } from '../core/logger.js?v=2.0.0-20260814.2';
+import { reportQaStatus, serializeQaError } from './qa-status-reporter.js?v=2.0.0-20260814.2';
 import {
   restoreObjectLodFade,
   setObjectLodFade,
   snapshotObjectLodFade,
-} from '../rendering/lod-dither-fade.js';
+} from '../rendering/lod-dither-fade.js?v=2.0.0-20260814.2';
 import {
   TREE_RENDER_REPRESENTATION_ROLES,
   TREE_REPRESENTATION_ROLES,
   treeRepresentationIndex,
-} from '../rendering/tree-representation-role.js';
+} from '../rendering/tree-representation-role.js?v=2.0.0-20260814.2';
 
 const RENDER_SMOKE_QUERY_VALUE = 'render-smoke';
 const STATUS_ATTRIBUTE = 'renderStatus';

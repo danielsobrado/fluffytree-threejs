@@ -7,7 +7,7 @@ import {
   offsetTreeIrFrondPoint,
   setTreeIrFrondColor,
   treeIrFrondWindPhase,
-} from './tree-ir-frond-geometry-common.js';
+} from './tree-ir-frond-geometry-common.js?v=2.0.0-20260814.2';
 
 function appendRachis(
   treeIr,

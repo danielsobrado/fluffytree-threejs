@@ -1,13 +1,13 @@
 import {
   createPathAttachmentFrame,
   createTreeIrFrame,
-} from './tree-ir-frame.js';
+} from './tree-ir-frame.js?v=2.0.0-20260814.2';
 import {
   resolveFoliagePrimitiveFamily,
   TREE_IR_ROOT_STEM_ID,
   TREE_IR_SCHEMA_VERSION,
-} from './tree-ir-schema.js';
-import { validateTreeIr } from './tree-ir-validator.js';
+} from './tree-ir-schema.js?v=2.0.0-20260814.2';
+import { validateTreeIr } from './tree-ir-validator.js?v=2.0.0-20260814.2';
 
 function stemId(branchId) {
   return branchId === null || branchId === undefined

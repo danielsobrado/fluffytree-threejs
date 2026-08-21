@@ -1,9 +1,9 @@
-import { CROWN_PROFILE_IDS } from '../generation/crown-envelope.js';
+import { CROWN_PROFILE_IDS } from '../generation/crown-envelope.js?v=2.0.0-20260814.2';
 import {
   getTrunkStyleTaperPower,
   TRUNK_STYLE_OPTIONS,
-} from '../generation/trunk-style.js';
-import { LEAF_SHAPE_OPTIONS } from '../rendering/leaf-shape-library.js';
+} from '../generation/trunk-style.js?v=2.0.0-20260814.2';
+import { LEAF_SHAPE_OPTIONS } from '../rendering/leaf-shape-library.js?v=2.0.0-20260814.2';
 
 /**
  * What the tuning panel exposes, and the bounds it is allowed to explore.

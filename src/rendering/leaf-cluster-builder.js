@@ -1,16 +1,16 @@
 import * as THREE from 'three';
-import { CrownVolumeField } from '../generation/crown-volume-field.js';
+import { CrownVolumeField } from '../generation/crown-volume-field.js?v=2.0.0-20260814.2';
 import {
   calculateHeroClusterStretch,
   calculateHeroLeafColorMix,
   calculateHeroLeafPaletteCoordinate,
   selectHeroLeafSamples,
-} from './hero-leaf-style.js';
-import { HeroLeafMaterialFactory } from './hero-leaf-material-factory.js';
-import { addFoliageInstanceAttributes } from './instanced-foliage-attributes.js';
-import { LeafClusterGeometryFactory } from './leaf-cluster-geometry-factory.js';
-import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constants.js';
-import { createSurfaceRecords } from './leaf-cluster-record-factory.js';
+} from './hero-leaf-style.js?v=2.0.0-20260814.2';
+import { HeroLeafMaterialFactory } from './hero-leaf-material-factory.js?v=2.0.0-20260814.2';
+import { addFoliageInstanceAttributes } from './instanced-foliage-attributes.js?v=2.0.0-20260814.2';
+import { LeafClusterGeometryFactory } from './leaf-cluster-geometry-factory.js?v=2.0.0-20260814.2';
+import { LEAF_DETAIL_RENDERING_CONSTANTS } from './leaf-detail-rendering-constants.js?v=2.0.0-20260814.2';
+import { createSurfaceRecords } from './leaf-cluster-record-factory.js?v=2.0.0-20260814.2';
 import {
   calculateInstanceScale,
   getInnerInsetRatio,
@@ -18,9 +18,9 @@ import {
   getTangentialJitterRatio,
   resolvePlacement,
   resolvePosition,
-} from './leaf-cluster-placement.js';
-import { samplePaletteColor } from './palette-color-sampler.js';
-import { configureTreeWindMaterial } from './tree-wind-shader.js';
+} from './leaf-cluster-placement.js?v=2.0.0-20260814.2';
+import { samplePaletteColor } from './palette-color-sampler.js?v=2.0.0-20260814.2';
+import { configureTreeWindMaterial } from './tree-wind-shader.js?v=2.0.0-20260814.2';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { createFoliageAlphaPixels } from './foliage-alpha-profile.js';
-import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js';
-import { DEFAULT_LEAF_SHAPE_ID } from './leaf-shape-library.js';
+import { createFoliageAlphaPixels } from './foliage-alpha-profile.js?v=2.0.0-20260814.2';
+import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js?v=2.0.0-20260814.2';
+import { DEFAULT_LEAF_SHAPE_ID } from './leaf-shape-library.js?v=2.0.0-20260814.2';
 
 export class FoliageAlphaTextureFactory {
   create(shapeId = DEFAULT_LEAF_SHAPE_ID) {

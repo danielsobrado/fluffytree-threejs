@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { configureTreeIrFoliageLighting } from './tree-ir-foliage-lighting.js';
-import { TreeIrFrondGeometryFactory } from './tree-ir-frond-geometry-factory.js';
-import { configureTreeIrFrondWindMaterial } from './tree-ir-frond-wind-material.js';
+import { configureTreeIrFoliageLighting } from './tree-ir-foliage-lighting.js?v=2.0.0-20260814.2';
+import { TreeIrFrondGeometryFactory } from './tree-ir-frond-geometry-factory.js?v=2.0.0-20260814.2';
+import { configureTreeIrFrondWindMaterial } from './tree-ir-frond-wind-material.js?v=2.0.0-20260814.2';
 
 export class TreeIrFrondBuilder {
   constructor({ geometryFactory = new TreeIrFrondGeometryFactory() } = {}) {

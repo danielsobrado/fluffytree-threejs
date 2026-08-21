@@ -1,5 +1,5 @@
-import { TREE_ANIMATION_MODE_IDS } from './tree-animation-mode.js';
-import { TREE_REPRESENTATION_ROLES } from '../rendering/tree-representation-role.js';
+import { TREE_ANIMATION_MODE_IDS } from './tree-animation-mode.js?v=2.0.0-20260814.2';
+import { TREE_REPRESENTATION_ROLES } from '../rendering/tree-representation-role.js?v=2.0.0-20260814.2';
 
 const REQUIRED_ROLES = Object.freeze([
   TREE_REPRESENTATION_ROLES.HERO,

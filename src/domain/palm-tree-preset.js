@@ -1,5 +1,5 @@
-import { PALM_TREE_LIMITS, PALM_TREE_MODEL_ID } from '../generation/palm-tree-constants.js';
-import { parseTreeEnvironmentResponse } from '../generation/tree-environment-response.js';
+import { PALM_TREE_LIMITS, PALM_TREE_MODEL_ID } from '../generation/palm-tree-constants.js?v=2.0.0-20260814.2';
+import { parseTreeEnvironmentResponse } from '../generation/tree-environment-response.js?v=2.0.0-20260814.2';
 import {
   requireConfigColor,
   requireConfigInteger,
@@ -10,7 +10,7 @@ import {
   requireConfigString,
   requireConfigVector2,
   requirePositiveConfig,
-} from './botanical-preset-validation.js';
+} from './botanical-preset-validation.js?v=2.0.0-20260814.2';
 
 export function createPalmTreePreset(id, value) {
   requireConfigString(id, 'tree preset id');

@@ -1,4 +1,4 @@
-import { FOLIAGE_SHELL_CONSTANTS } from '../generation/foliage-shell-constants.js';
+import { FOLIAGE_SHELL_CONSTANTS } from '../generation/foliage-shell-constants.js?v=2.0.0-20260814.2';
 
 export function evaluateShellCoverageQa(report, thresholds) {
   const physicalLimit =

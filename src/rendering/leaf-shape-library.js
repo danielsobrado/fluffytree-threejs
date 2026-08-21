@@ -1,4 +1,4 @@
-import { FOLIAGE_ALPHA_SHAPES } from './foliage-rendering-constants.js';
+import { FOLIAGE_ALPHA_SHAPES } from './foliage-rendering-constants.js?v=2.0.0-20260814.2';
 
 /**
  * Leaf silhouettes for the alpha-cut foliage cards.

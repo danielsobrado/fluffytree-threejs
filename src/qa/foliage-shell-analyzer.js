@@ -1,13 +1,13 @@
 import {
   normalizeVector,
   normalizedRotatedPointDistance,
-} from '../generation/lobe-geometry.js';
-import { calculateHoleRatio, countComponents } from './mask-analyzer.js';
+} from '../generation/lobe-geometry.js?v=2.0.0-20260814.2';
+import { calculateHoleRatio, countComponents } from './mask-analyzer.js?v=2.0.0-20260814.2';
 import {
   createLobeProjection,
   projectedLobeContains,
   projectedLobeRow,
-} from './lobe-projection.js';
+} from './lobe-projection.js?v=2.0.0-20260814.2';
 
 const PROJECTION_PADDING = 0.04;
 const FIN_WIDTH_PROJECTION_FACTOR = 0.55;

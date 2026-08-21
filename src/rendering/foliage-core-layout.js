@@ -1,4 +1,4 @@
-import { resolveFoliageContinuityProfile } from '../domain/foliage-continuity-config.js';
+import { resolveFoliageContinuityProfile } from '../domain/foliage-continuity-config.js?v=2.0.0-20260814.2';
 
 const MINIMUM_BRIDGE_RADIUS = 0.02;
 

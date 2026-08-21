@@ -1,10 +1,10 @@
-import { PrioritizedFrameBudgetQueue } from '../generation/prioritized-frame-budget-queue.js';
-import { validateTreeIr } from '../generation/tree-ir-validator.js';
-import { createTreeGenerationWorker } from './tree-generation-worker-factory.js';
+import { PrioritizedFrameBudgetQueue } from '../generation/prioritized-frame-budget-queue.js?v=2.0.0-20260814.2';
+import { validateTreeIr } from '../generation/tree-ir-validator.js?v=2.0.0-20260814.2';
+import { createTreeGenerationWorker } from './tree-generation-worker-factory.js?v=2.0.0-20260814.2';
 import {
   createTreeGenerationRequest,
   TREE_GENERATION_WORKER_MESSAGES,
-} from './tree-generation-worker-protocol.js';
+} from './tree-generation-worker-protocol.js?v=2.0.0-20260814.2';
 
 class TreeGenerationCancelledError extends Error {
   constructor(message) {

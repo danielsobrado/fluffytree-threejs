@@ -1,25 +1,25 @@
 import * as THREE from 'three';
-import { logger } from '../core/logger.js';
-import { CANOPY_SOLIDITY_CONSTANTS } from './canopy-solidity-constants.js';
+import { logger } from '../core/logger.js?v=2.0.0-20260814.2';
+import { CANOPY_SOLIDITY_CONSTANTS } from './canopy-solidity-constants.js?v=2.0.0-20260814.2';
 import {
   postQaReport,
   reportQaStatus,
   serializeQaError,
-} from './qa-status-reporter.js';
+} from './qa-status-reporter.js?v=2.0.0-20260814.2';
 import {
   evaluateSolidityReport,
   summarizeViewMetrics,
-} from '../qa/canopy-solidity-gate.js';
-import { CANOPY_SOLIDITY_LOD_STATES } from '../qa/canopy-solidity-lod-states.js';
-import { createWindSolidityStates } from '../qa/canopy-solidity-wind-states.js';
-import { calculateTransitionHoleThresholds } from '../qa/canopy-solidity-scale.js';
+} from '../qa/canopy-solidity-gate.js?v=2.0.0-20260814.2';
+import { CANOPY_SOLIDITY_LOD_STATES } from '../qa/canopy-solidity-lod-states.js?v=2.0.0-20260814.2';
+import { createWindSolidityStates } from '../qa/canopy-solidity-wind-states.js?v=2.0.0-20260814.2';
+import { calculateTransitionHoleThresholds } from '../qa/canopy-solidity-scale.js?v=2.0.0-20260814.2';
 import {
   analyzeSilhouetteHoles,
   createAlphaMask,
-} from '../qa/silhouette-hole-analyzer.js';
-import { YamlConfigLoader } from '../config/yaml-config-loader.js';
-import { createSolidityViewImage } from './solidity-view-image.js';
-import { setObjectLodFade } from '../rendering/lod-dither-fade.js';
+} from '../qa/silhouette-hole-analyzer.js?v=2.0.0-20260814.2';
+import { YamlConfigLoader } from '../config/yaml-config-loader.js?v=2.0.0-20260814.2';
+import { createSolidityViewImage } from './solidity-view-image.js?v=2.0.0-20260814.2';
+import { setObjectLodFade } from '../rendering/lod-dither-fade.js?v=2.0.0-20260814.2';
 
 const STATUS_ATTRIBUTE = 'solidityStatus';
 const THRESHOLD_URL = './config/canopy-solidity-qa.yaml';

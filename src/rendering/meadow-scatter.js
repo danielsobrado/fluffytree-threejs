@@ -1,4 +1,4 @@
-import { SeededRandom } from '../generation/seeded-random.js';
+import { SeededRandom } from '../generation/seeded-random.js?v=2.0.0-20260814.2';
 
 /**
  * Where the grass tufts and flower sprigs stand.

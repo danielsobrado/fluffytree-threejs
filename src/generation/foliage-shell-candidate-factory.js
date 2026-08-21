@@ -1,17 +1,17 @@
 import {
   createFoliageCardSizing,
   createMaximumFoliageCardSizing,
-} from './foliage-card-sizing.js';
-import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
+} from './foliage-card-sizing.js?v=2.0.0-20260814.2';
+import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js?v=2.0.0-20260814.2';
 import {
   calculateLobeClearance,
   clearanceToExposure,
-} from './lobe-exposure.js';
+} from './lobe-exposure.js?v=2.0.0-20260814.2';
 import {
   lobeSurfaceNormal,
   normalizeVector,
   pointOnLobeSurface,
-} from './lobe-geometry.js';
+} from './lobe-geometry.js?v=2.0.0-20260814.2';
 
 function clamp01(value) {
   return Math.min(1, Math.max(0, value));

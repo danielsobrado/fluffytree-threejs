@@ -1,15 +1,15 @@
-import { resolveRawLod, resolveStableLod } from '../rendering/tree-lod-math.js';
+import { resolveRawLod, resolveStableLod } from '../rendering/tree-lod-math.js?v=2.0.0-20260814.2';
 import {
   TREE_REPRESENTATION_ROLES,
   treeRepresentationRoleAt,
-} from '../rendering/tree-representation-role.js';
+} from '../rendering/tree-representation-role.js?v=2.0.0-20260814.2';
 import {
   calculateCameraFocalPixels,
   calculateProjectedTreePixels,
-} from '../rendering/tree-projection-math.js';
-import { FOREST_CHUNK_STATES, forestChunkStateRank } from './forest-chunk-state.js';
-import { ForestChunkStateTracker } from './forest-chunk-state-tracker.js';
-import { ForestSpatialGrid } from './forest-spatial-grid.js';
+} from '../rendering/tree-projection-math.js?v=2.0.0-20260814.2';
+import { FOREST_CHUNK_STATES, forestChunkStateRank } from './forest-chunk-state.js?v=2.0.0-20260814.2';
+import { ForestChunkStateTracker } from './forest-chunk-state-tracker.js?v=2.0.0-20260814.2';
+import { ForestSpatialGrid } from './forest-spatial-grid.js?v=2.0.0-20260814.2';
 
 function roleForLevel(level) {
   return treeRepresentationRoleAt(level) ?? TREE_REPRESENTATION_ROLES.CULLED;

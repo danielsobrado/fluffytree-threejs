@@ -1,13 +1,13 @@
-import { expandTreeIrFrondBounds } from './tree-ir-frond-bounds.js';
-import { createPathAttachmentFrame, createTreeIrFrame } from './tree-ir-frame.js';
+import { expandTreeIrFrondBounds } from './tree-ir-frond-bounds.js?v=2.0.0-20260814.2';
+import { createPathAttachmentFrame, createTreeIrFrame } from './tree-ir-frame.js?v=2.0.0-20260814.2';
 import {
   FOLIAGE_PRIMITIVE_FAMILIES,
   TREE_IR_ROOT_STEM_ID,
   TREE_IR_SCHEMA_VERSION,
-} from './tree-ir-schema.js';
-import { validateTreeIr } from './tree-ir-validator.js';
-import { PALM_TREE_MODEL_ID } from './palm-tree-constants.js';
-import { SeededRandom } from './seeded-random.js';
+} from './tree-ir-schema.js?v=2.0.0-20260814.2';
+import { validateTreeIr } from './tree-ir-validator.js?v=2.0.0-20260814.2';
+import { PALM_TREE_MODEL_ID } from './palm-tree-constants.js?v=2.0.0-20260814.2';
+import { SeededRandom } from './seeded-random.js?v=2.0.0-20260814.2';
 
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const ROOT_WIND_NODE_ID = 'wind:stem:root';

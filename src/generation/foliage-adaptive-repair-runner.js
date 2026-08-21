@@ -1,8 +1,8 @@
-import { inspectAdaptiveFoliageCoverage } from './adaptive-foliage-coverage-repair.js';
-import { calculateFoliageRepairBudget } from './foliage-coverage-policy.js';
-import { repairFoliageCoverage } from './foliage-coverage-repair.js';
-import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
-import { createFoliageShellCandidate } from './foliage-shell-candidate-factory.js';
+import { inspectAdaptiveFoliageCoverage } from './adaptive-foliage-coverage-repair.js?v=2.0.0-20260814.2';
+import { calculateFoliageRepairBudget } from './foliage-coverage-policy.js?v=2.0.0-20260814.2';
+import { repairFoliageCoverage } from './foliage-coverage-repair.js?v=2.0.0-20260814.2';
+import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js?v=2.0.0-20260814.2';
+import { createFoliageShellCandidate } from './foliage-shell-candidate-factory.js?v=2.0.0-20260814.2';
 
 function createRepairCandidates(
   holes,

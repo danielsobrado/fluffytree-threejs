@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { CrownVolumeGenerator } from '../generation/crown-volume-generator.js';
-import { createCrownVertexColors } from './crown-color-sampler.js';
+import { CrownVolumeGenerator } from '../generation/crown-volume-generator.js?v=2.0.0-20260814.2';
+import { createCrownVertexColors } from './crown-color-sampler.js?v=2.0.0-20260814.2';
 
 export class CrownVolumeGeometryFactory {
   constructor({ volumeGenerator = new CrownVolumeGenerator() } = {}) {

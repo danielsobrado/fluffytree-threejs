@@ -1,5 +1,5 @@
-import { hashCanonicalValue } from '../core/canonical-value-hash.js';
-import { TREE_IR_SCHEMA_VERSION } from '../generation/tree-ir-schema.js';
+import { hashCanonicalValue } from '../core/canonical-value-hash.js?v=2.0.0-20260814.2';
+import { TREE_IR_SCHEMA_VERSION } from '../generation/tree-ir-schema.js?v=2.0.0-20260814.2';
 
 export const TREE_REPRESENTATION_COMPILER_VERSION = 1;
 

@@ -1,4 +1,4 @@
-import { TREE_GENERATION_WORKER_MESSAGES } from './tree-generation-worker-protocol.js';
+import { TREE_GENERATION_WORKER_MESSAGES } from './tree-generation-worker-protocol.js?v=2.0.0-20260814.2';
 
 function serializeError(error) {
   return {

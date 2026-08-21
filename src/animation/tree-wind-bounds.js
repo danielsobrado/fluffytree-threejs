@@ -1,4 +1,4 @@
-import { calculateTreeWindBoundsPadding } from './tree-wind-profile.js';
+import { calculateTreeWindBoundsPadding } from './tree-wind-profile.js?v=2.0.0-20260814.2';
 
 function expandInstancedBounds(object, additionalPadding) {
   if (!object.boundingBox) object.computeBoundingBox?.();

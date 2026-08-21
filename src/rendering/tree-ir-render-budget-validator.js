@@ -1,4 +1,4 @@
-import { TREE_REPRESENTATION_ROLES } from './tree-representation-role.js';
+import { TREE_REPRESENTATION_ROLES } from './tree-representation-role.js?v=2.0.0-20260814.2';
 
 const COST_EPSILON = 1e-12;
 const PINNATE_FROND_TRIANGLE_FACTOR = 2;

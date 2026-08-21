@@ -1,12 +1,12 @@
 import {
   SYMPODIAL_BROADLEAF_LIMITS,
   SYMPODIAL_BROADLEAF_MODEL_ID,
-} from '../generation/sympodial-broadleaf-constants.js';
-import { parseTreeEnvironmentResponse } from '../generation/tree-environment-response.js';
+} from '../generation/sympodial-broadleaf-constants.js?v=2.0.0-20260814.2';
+import { parseTreeEnvironmentResponse } from '../generation/tree-environment-response.js?v=2.0.0-20260814.2';
 import {
   DEFAULT_LEAF_SHAPE_ID,
   isLeafShapeId,
-} from '../rendering/leaf-shape-library.js';
+} from '../rendering/leaf-shape-library.js?v=2.0.0-20260814.2';
 import {
   requireConfigColor,
   requireConfigInteger,
@@ -18,7 +18,7 @@ import {
   requireConfigString,
   requireConfigVector2,
   requirePositiveConfig,
-} from './botanical-preset-validation.js';
+} from './botanical-preset-validation.js?v=2.0.0-20260814.2';
 
 function requireLeafShape(value, path) {
   const leafShape = value ?? DEFAULT_LEAF_SHAPE_ID;

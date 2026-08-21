@@ -1,4 +1,4 @@
-import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js';
+import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js?v=2.0.0-20260814.2';
 
 /**
  * The directions a foliage card is hidden from by the core it sits on.

@@ -1,7 +1,7 @@
-import { CROWN_PROFILE_IDS } from '../generation/crown-envelope.js';
-import { createTrunkStyle, isTrunkStyleId } from '../generation/trunk-style.js';
-import { isLeafShapeId } from '../rendering/leaf-shape-library.js';
-import { validateTreePresetConfig } from './tree-preset-config-validator.js';
+import { CROWN_PROFILE_IDS } from '../generation/crown-envelope.js?v=2.0.0-20260814.2';
+import { createTrunkStyle, isTrunkStyleId } from '../generation/trunk-style.js?v=2.0.0-20260814.2';
+import { isLeafShapeId } from '../rendering/leaf-shape-library.js?v=2.0.0-20260814.2';
+import { validateTreePresetConfig } from './tree-preset-config-validator.js?v=2.0.0-20260814.2';
 
 const REQUIRED_CROWN_FIELDS = [
   'profile',

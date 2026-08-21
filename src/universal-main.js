@@ -1,17 +1,17 @@
-import { UniversalTreeShowcase } from './app/universal-tree-showcase.js';
-import { parseTreeQualityProfiles } from './compilation/tree-quality-profile-config.js';
-import { validateSceneConfig } from './config/scene-config-validator.js';
-import { parseTreeShowcaseLayout } from './config/tree-showcase-layout-config.js';
-import { YamlConfigLoader } from './config/yaml-config-loader.js';
-import { logger } from './core/logger.js';
-import { markNativeRenderSmokeBootstrapFailure } from './diagnostics/native-render-smoke-probe.js';
-import { PresetLibrary } from './domain/preset-library.js';
-import { TreeGenerator } from './generation/tree-generator.js';
-import { SceneFactory } from './rendering/scene-factory.js';
-import { TreeIrMeshBuilder } from './rendering/tree-ir-mesh-builder.js';
-import { parseTreeIrRenderingConfig } from './rendering/tree-ir-rendering-config.js';
-import { UniversalTreeMeshBuilder } from './rendering/universal-tree-mesh-builder.js';
-import { showFatalError } from './ui/demo-overlay.js';
+import { UniversalTreeShowcase } from './app/universal-tree-showcase.js?v=2.0.0-20260814.2';
+import { parseTreeQualityProfiles } from './compilation/tree-quality-profile-config.js?v=2.0.0-20260814.2';
+import { validateSceneConfig } from './config/scene-config-validator.js?v=2.0.0-20260814.2';
+import { parseTreeShowcaseLayout } from './config/tree-showcase-layout-config.js?v=2.0.0-20260814.2';
+import { YamlConfigLoader } from './config/yaml-config-loader.js?v=2.0.0-20260814.2';
+import { logger } from './core/logger.js?v=2.0.0-20260814.2';
+import { markNativeRenderSmokeBootstrapFailure } from './diagnostics/native-render-smoke-probe.js?v=2.0.0-20260814.2';
+import { PresetLibrary } from './domain/preset-library.js?v=2.0.0-20260814.2';
+import { TreeGenerator } from './generation/tree-generator.js?v=2.0.0-20260814.2';
+import { SceneFactory } from './rendering/scene-factory.js?v=2.0.0-20260814.2';
+import { TreeIrMeshBuilder } from './rendering/tree-ir-mesh-builder.js?v=2.0.0-20260814.2';
+import { parseTreeIrRenderingConfig } from './rendering/tree-ir-rendering-config.js?v=2.0.0-20260814.2';
+import { UniversalTreeMeshBuilder } from './rendering/universal-tree-mesh-builder.js?v=2.0.0-20260814.2';
+import { showFatalError } from './ui/demo-overlay.js?v=2.0.0-20260814.2';
 
 const CONFIG_URLS = Object.freeze({
   scene: './config/scene.yaml',

@@ -1,4 +1,4 @@
-import { hashCanonicalValue } from '../core/canonical-value-hash.js';
+import { hashCanonicalValue } from '../core/canonical-value-hash.js?v=2.0.0-20260814.2';
 
 const GOLDEN_RATIO_UINT32 = 0x9e3779b9;
 const VARIANT_SEED_SALT = 0x6a09e667;

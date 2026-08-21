@@ -1,4 +1,4 @@
-import { hashUnit } from './deterministic-hash.js';
+import { hashUnit } from './deterministic-hash.js?v=2.0.0-20260814.2';
 
 const HERO_SELECTION_SALT = 0x9e3779b1;
 const HERO_STRETCH_X_SALT = 0x85ebca6b;

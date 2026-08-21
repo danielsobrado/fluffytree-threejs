@@ -1,7 +1,7 @@
 import {
   PALM_BARK_STYLE,
   TREE_BARK_PATTERNS,
-} from './tree-bark-style-constants.js';
+} from './tree-bark-style-constants.js?v=2.0.0-20260814.2';
 
 const TAU = Math.PI * 2;
 

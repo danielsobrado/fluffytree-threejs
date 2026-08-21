@@ -1,4 +1,4 @@
-import { createRenderableTreeIrStemPath } from './tree-ir-render-path.js';
+import { createRenderableTreeIrStemPath } from './tree-ir-render-path.js?v=2.0.0-20260814.2';
 
 export function createTreeIrTrunkRenderData(treeIr, stem) {
   return {

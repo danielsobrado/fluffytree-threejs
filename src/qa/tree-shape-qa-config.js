@@ -1,4 +1,4 @@
-import { CROWN_PROFILE_IDS } from '../generation/crown-envelope.js';
+import { CROWN_PROFILE_IDS } from '../generation/crown-envelope.js?v=2.0.0-20260814.2';
 import {
   assertQaSeedRange,
   parseQaExactMap,
@@ -8,7 +8,7 @@ import {
   requireQaObject,
   requireQaStringArray,
   requireQaUint32,
-} from './qa-config-validation.js';
+} from './qa-config-validation.js?v=2.0.0-20260814.2';
 
 const CONFIG_PATH = 'tree-shape-qa';
 const VERTICAL_BAND_COUNT = 3;

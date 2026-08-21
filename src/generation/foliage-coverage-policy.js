@@ -1,4 +1,4 @@
-import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
+import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js?v=2.0.0-20260814.2';
 
 function clamp(value, minimum, maximum) {
   return Math.min(maximum, Math.max(minimum, value));

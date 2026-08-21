@@ -1,14 +1,14 @@
-import { PALM_TREE_MODEL_ID } from '../generation/palm-tree-constants.js';
+import { PALM_TREE_MODEL_ID } from '../generation/palm-tree-constants.js?v=2.0.0-20260814.2';
 import {
   DEFAULT_TREE_GENERATION_MODEL,
   resolveTreeGenerationModelId,
-} from '../generation/tree-generation-model.js';
-import { parseTreeEnvironmentResponse } from '../generation/tree-environment-response.js';
-import { SYMPODIAL_BROADLEAF_MODEL_ID } from '../generation/sympodial-broadleaf-constants.js';
-import { resolveFoliageContinuityProfile } from './foliage-continuity-config.js';
-import { createPalmTreePreset } from './palm-tree-preset.js';
-import { createSympodialBroadleafPreset } from './sympodial-broadleaf-preset.js';
-import { createTreePreset } from './tree-preset.js';
+} from '../generation/tree-generation-model.js?v=2.0.0-20260814.2';
+import { parseTreeEnvironmentResponse } from '../generation/tree-environment-response.js?v=2.0.0-20260814.2';
+import { SYMPODIAL_BROADLEAF_MODEL_ID } from '../generation/sympodial-broadleaf-constants.js?v=2.0.0-20260814.2';
+import { resolveFoliageContinuityProfile } from './foliage-continuity-config.js?v=2.0.0-20260814.2';
+import { createPalmTreePreset } from './palm-tree-preset.js?v=2.0.0-20260814.2';
+import { createSympodialBroadleafPreset } from './sympodial-broadleaf-preset.js?v=2.0.0-20260814.2';
+import { createTreePreset } from './tree-preset.js?v=2.0.0-20260814.2';
 
 function clone(value) {
   return structuredClone(value);

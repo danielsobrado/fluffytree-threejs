@@ -1,4 +1,4 @@
-import { validateTreeIr } from '../generation/tree-ir-validator.js';
+import { validateTreeIr } from '../generation/tree-ir-validator.js?v=2.0.0-20260814.2';
 
 function requireRolePolicy(policy, role) {
   const rolePolicy = policy?.roles?.[role];

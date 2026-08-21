@@ -1,9 +1,9 @@
-import { resolveFoliageCoverageGuard } from './foliage-coverage-guard-plan.js';
-import { FoliageShellGeometryFactory } from './foliage-shell-geometry-factory.js';
-import { buildFoliageShellInstanceMesh } from './foliage-shell-instance-mesh-builder.js';
-import { FoliageShellMaterialFactory } from './foliage-shell-material-factory.js';
-import { hashUnit } from './deterministic-hash.js';
-import { selectFoliageLodInstances } from './foliage-lod-selector.js';
+import { resolveFoliageCoverageGuard } from './foliage-coverage-guard-plan.js?v=2.0.0-20260814.2';
+import { FoliageShellGeometryFactory } from './foliage-shell-geometry-factory.js?v=2.0.0-20260814.2';
+import { buildFoliageShellInstanceMesh } from './foliage-shell-instance-mesh-builder.js?v=2.0.0-20260814.2';
+import { FoliageShellMaterialFactory } from './foliage-shell-material-factory.js?v=2.0.0-20260814.2';
+import { hashUnit } from './deterministic-hash.js?v=2.0.0-20260814.2';
+import { selectFoliageLodInstances } from './foliage-lod-selector.js?v=2.0.0-20260814.2';
 
 function averageLobeScale(lobe) {
   return (lobe.scale.x + lobe.scale.y + lobe.scale.z) / 3;

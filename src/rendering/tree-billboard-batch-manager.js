@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { BILLBOARD_BATCH_CAPACITY } from './tree-billboard-atlas.js';
+import { BILLBOARD_BATCH_CAPACITY } from './tree-billboard-atlas.js?v=2.0.0-20260814.2';
 import {
   createTreeBillboardAtlas,
   writeTreeBillboardAtlasCell,
-} from './tree-billboard-atlas-resource.js';
-import { releaseTreeBillboardBatchReferences } from './tree-billboard-batch-lifecycle.js';
-import { TreeBillboardBatchState } from './tree-billboard-batch-state.js';
-import { calculateTreeBillboardWorldSize } from './tree-billboard-scale.js';
-import { calculateTreeWorldYaw } from './tree-world-yaw.js';
-import { freezeStaticLocalTransform } from './static-object-transform.js';
+} from './tree-billboard-atlas-resource.js?v=2.0.0-20260814.2';
+import { releaseTreeBillboardBatchReferences } from './tree-billboard-batch-lifecycle.js?v=2.0.0-20260814.2';
+import { TreeBillboardBatchState } from './tree-billboard-batch-state.js?v=2.0.0-20260814.2';
+import { calculateTreeBillboardWorldSize } from './tree-billboard-scale.js?v=2.0.0-20260814.2';
+import { calculateTreeWorldYaw } from './tree-world-yaw.js?v=2.0.0-20260814.2';
+import { freezeStaticLocalTransform } from './static-object-transform.js?v=2.0.0-20260814.2';
 
 const DITHER_FRAGMENT = `
   float treeBatchNoise = fract(

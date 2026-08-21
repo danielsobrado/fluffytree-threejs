@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {
   resolveContactShadowFootprint,
   resolveContactShadowSettings,
-} from './contact-shadow-layout.js';
+} from './contact-shadow-layout.js?v=2.0.0-20260814.2';
 
 /**
  * Every tree's ground pool, in one draw call.

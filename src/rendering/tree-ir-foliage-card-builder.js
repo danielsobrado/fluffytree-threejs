@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { DEFAULT_LEAF_SHAPE_ID } from './leaf-shape-library.js';
-import { createTreeIrFoliageAlphaTexture } from './tree-ir-foliage-alpha-texture.js';
-import { createTreeIrFoliageCardGeometry } from './tree-ir-foliage-card-geometry.js';
-import { calculateTreeIrFoliageCardStyle } from './tree-ir-foliage-card-style.js';
-import { configureTreeIrFoliageLighting } from './tree-ir-foliage-lighting.js';
-import { setTreeIrPaletteColor } from './tree-ir-palette.js';
-import { configureTreeWindMaterial } from './tree-wind-shader.js';
+import { DEFAULT_LEAF_SHAPE_ID } from './leaf-shape-library.js?v=2.0.0-20260814.2';
+import { createTreeIrFoliageAlphaTexture } from './tree-ir-foliage-alpha-texture.js?v=2.0.0-20260814.2';
+import { createTreeIrFoliageCardGeometry } from './tree-ir-foliage-card-geometry.js?v=2.0.0-20260814.2';
+import { calculateTreeIrFoliageCardStyle } from './tree-ir-foliage-card-style.js?v=2.0.0-20260814.2';
+import { configureTreeIrFoliageLighting } from './tree-ir-foliage-lighting.js?v=2.0.0-20260814.2';
+import { setTreeIrPaletteColor } from './tree-ir-palette.js?v=2.0.0-20260814.2';
+import { configureTreeWindMaterial } from './tree-wind-shader.js?v=2.0.0-20260814.2';
 
 function siteScale(site) {
   return Number(

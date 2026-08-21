@@ -1,9 +1,9 @@
 import {
   calculateRootRadiusScale,
   extendPathBelowGround,
-} from './root-flare-profile.js';
-import { TaperedCurveGeometryFactory } from './tapered-curve-geometry-factory.js';
-import { TREE_STRUCTURE_RENDERING_CONSTANTS } from './tree-structure-rendering-constants.js';
+} from './root-flare-profile.js?v=2.0.0-20260814.2';
+import { TaperedCurveGeometryFactory } from './tapered-curve-geometry-factory.js?v=2.0.0-20260814.2';
+import { TREE_STRUCTURE_RENDERING_CONSTANTS } from './tree-structure-rendering-constants.js?v=2.0.0-20260814.2';
 
 export class TrunkGeometryFactory {
   constructor({ geometryFactory = new TaperedCurveGeometryFactory() } = {}) {

@@ -1,7 +1,7 @@
 import {
   WHORLED_CONIFER_LIMITS,
   WHORLED_CONIFER_MODEL_ID,
-} from './whorled-conifer-constants.js';
+} from './whorled-conifer-constants.js?v=2.0.0-20260814.2';
 
 const REQUIRED_FIELDS = Object.freeze([
   'whorlCount',

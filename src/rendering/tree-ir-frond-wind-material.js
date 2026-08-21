@@ -1,8 +1,8 @@
-import { TREE_WIND_PROFILE } from '../animation/tree-wind-profile.js';
+import { TREE_WIND_PROFILE } from '../animation/tree-wind-profile.js?v=2.0.0-20260814.2';
 import {
   createTreeWindState,
   installTreeWindUniforms,
-} from './tree-wind-shader.js';
+} from './tree-wind-shader.js?v=2.0.0-20260814.2';
 
 const PRIMARY_SCALE = TREE_WIND_PROFILE.primaryTimeScale.toFixed(4);
 const SECONDARY_SCALE = TREE_WIND_PROFILE.secondaryTimeScale.toFixed(4);

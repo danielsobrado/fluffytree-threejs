@@ -1,9 +1,9 @@
-import { GENERATION_CONSTANTS } from './generation-constants.js';
+import { GENERATION_CONSTANTS } from './generation-constants.js?v=2.0.0-20260814.2';
 import {
   lobeOverlapRatio,
   lobeRadiusTowards,
   normalizeVector,
-} from './lobe-geometry.js';
+} from './lobe-geometry.js?v=2.0.0-20260814.2';
 
 function cloneLobes(lobes) {
   return lobes.map((lobe) => ({

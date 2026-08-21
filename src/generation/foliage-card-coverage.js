@@ -1,5 +1,5 @@
-import { createFoliageAlphaProfile } from '../rendering/foliage-alpha-profile.js';
-import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
+import { createFoliageAlphaProfile } from '../rendering/foliage-alpha-profile.js?v=2.0.0-20260814.2';
+import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js?v=2.0.0-20260814.2';
 
 const CARD_ROTATION_RADIANS = 0.52;
 const UNIT_X = Object.freeze({ x: 1, y: 0, z: 0 });

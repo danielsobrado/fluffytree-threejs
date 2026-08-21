@@ -1,7 +1,7 @@
 import {
   treeIrStyleSigned,
   treeIrStyleUnit,
-} from './tree-ir-style-random.js';
+} from './tree-ir-style-random.js?v=2.0.0-20260814.2';
 
 function clamp01(value) {
   return Math.min(1, Math.max(0, value));

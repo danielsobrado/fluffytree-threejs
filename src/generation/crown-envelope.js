@@ -1,4 +1,4 @@
-import { GENERATION_CONSTANTS } from './generation-constants.js';
+import { GENERATION_CONSTANTS } from './generation-constants.js?v=2.0.0-20260814.2';
 
 // The pad profile is widest a short way above its base. Scaling by the fall-off
 // at that height keeps `crown.radius` meaning the widest point, as it does for

@@ -1,4 +1,4 @@
-import { evaluateShellCoverageQa } from '../qa/shell-coverage-qa-evaluator.js';
+import { evaluateShellCoverageQa } from '../qa/shell-coverage-qa-evaluator.js?v=2.0.0-20260814.2';
 
 const AUTO_FIT_GAP_TARGET_RATIO = 0.85;
 const AUTO_FIT_LEAF_AREA_MARGIN = 0.5;

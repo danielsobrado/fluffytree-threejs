@@ -1,21 +1,21 @@
 import {
   findSampleCoverageRatio,
   findTriangleCoverageUpperBound,
-} from './foliage-coverage-certification-index.js';
-import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
+} from './foliage-coverage-certification-index.js?v=2.0.0-20260814.2';
+import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js?v=2.0.0-20260814.2';
 import {
   calculateExposureLipschitz,
   calculateLobeExposure,
-} from './lobe-exposure.js';
+} from './lobe-exposure.js?v=2.0.0-20260814.2';
 import {
   lobeSurfaceNormal,
   pointOnLobeSurface,
-} from './lobe-geometry.js';
+} from './lobe-geometry.js?v=2.0.0-20260814.2';
 import {
   directionTriangleCentroid,
   directionTriangleDiameter,
   subdivideDirectionTriangle,
-} from './surface-direction-triangulation.js';
+} from './surface-direction-triangulation.js?v=2.0.0-20260814.2';
 
 function maximumScale(lobe) {
   return Math.max(lobe.scale.x, lobe.scale.y, lobe.scale.z);

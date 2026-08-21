@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { FoliageCoreGeometryFactory } from './foliage-core-geometry-factory.js';
-import { createFoliageCoreLayout } from './foliage-core-layout.js';
-import { FoliageCoreMaterialFactory } from './foliage-core-material-factory.js';
-import { addFoliageInstanceAttributes } from './instanced-foliage-attributes.js';
+import { FoliageCoreGeometryFactory } from './foliage-core-geometry-factory.js?v=2.0.0-20260814.2';
+import { createFoliageCoreLayout } from './foliage-core-layout.js?v=2.0.0-20260814.2';
+import { FoliageCoreMaterialFactory } from './foliage-core-material-factory.js?v=2.0.0-20260814.2';
+import { addFoliageInstanceAttributes } from './instanced-foliage-attributes.js?v=2.0.0-20260814.2';
 
 const LOCAL_BRIDGE_AXIS = new THREE.Vector3(0, 1, 0);
 

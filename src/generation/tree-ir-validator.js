@@ -1,8 +1,8 @@
-import { assertCanonicalValue } from '../core/canonical-value-hash.js';
+import { assertCanonicalValue } from '../core/canonical-value-hash.js?v=2.0.0-20260814.2';
 import {
   FOLIAGE_PRIMITIVE_FAMILY_IDS,
   TREE_IR_SCHEMA_VERSION,
-} from './tree-ir-schema.js';
+} from './tree-ir-schema.js?v=2.0.0-20260814.2';
 
 function fail(path, message) {
   throw new Error(`Tree IR '${path}' ${message}.`);

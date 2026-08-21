@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { SCENE_RUNTIME_CONSTANTS } from '../config/scene-runtime-constants.js';
+import { SCENE_RUNTIME_CONSTANTS } from '../config/scene-runtime-constants.js?v=2.0.0-20260814.2';
 import {
   applyGroundPool,
   resolveGroundPoolSettings,
-} from './ground-light-pools.js';
-import { disposeObject } from './object-disposer.js';
-import { measureViewport } from './viewport-size.js';
+} from './ground-light-pools.js?v=2.0.0-20260814.2';
+import { disposeObject } from './object-disposer.js?v=2.0.0-20260814.2';
+import { measureViewport } from './viewport-size.js?v=2.0.0-20260814.2';
 
 function createRenderer(container, config) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });

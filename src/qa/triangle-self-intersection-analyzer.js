@@ -2,8 +2,8 @@ import {
   calculatePositionBoundsDiagonal,
   createTriangleRecord,
   trianglesHaveOverlappingBounds,
-} from './triangle-intersection-test.js';
-import { trianglesIntersectBeyondSharedTopology } from './triangle-topology-intersection.js';
+} from './triangle-intersection-test.js?v=2.0.0-20260814.2';
+import { trianglesIntersectBeyondSharedTopology } from './triangle-topology-intersection.js?v=2.0.0-20260814.2';
 
 function createTriangleRecords(positions, indices) {
   const triangleCount = Math.floor(indices.length / 3);

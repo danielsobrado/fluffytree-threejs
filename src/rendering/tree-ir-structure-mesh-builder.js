@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { analyzeBufferGeometryManifold } from '../qa/mesh-manifold-analyzer.js';
-import { TaperedCurveGeometryFactory } from './tapered-curve-geometry-factory.js';
-import { TREE_BARK_PATTERNS } from './tree-bark-style-constants.js';
-import { createRenderableTreeIrStemPath } from './tree-ir-render-path.js';
-import { createTreeIrTrunkRenderData } from './tree-ir-trunk-render-data.js';
-import { TrunkGeometryFactory } from './trunk-geometry-factory.js';
+import { analyzeBufferGeometryManifold } from '../qa/mesh-manifold-analyzer.js?v=2.0.0-20260814.2';
+import { TaperedCurveGeometryFactory } from './tapered-curve-geometry-factory.js?v=2.0.0-20260814.2';
+import { TREE_BARK_PATTERNS } from './tree-bark-style-constants.js?v=2.0.0-20260814.2';
+import { createRenderableTreeIrStemPath } from './tree-ir-render-path.js?v=2.0.0-20260814.2';
+import { createTreeIrTrunkRenderData } from './tree-ir-trunk-render-data.js?v=2.0.0-20260814.2';
+import { TrunkGeometryFactory } from './trunk-geometry-factory.js?v=2.0.0-20260814.2';
 import {
   addStylizedBarkColors,
   StylizedBarkMaterialFactory,
-} from './stylized-bark-material-factory.js';
+} from './stylized-bark-material-factory.js?v=2.0.0-20260814.2';
 
 function rootStem(treeIr) {
   const root = treeIr.stems.find((stem) => stem.id === treeIr.root.stemId);

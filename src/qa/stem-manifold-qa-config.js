@@ -4,7 +4,7 @@ import {
   requireQaInteger,
   requireQaObject,
   requireQaUint32,
-} from './qa-config-validation.js';
+} from './qa-config-validation.js?v=2.0.0-20260814.2';
 
 const CONFIG_PATH = 'stem-manifold-qa';
 

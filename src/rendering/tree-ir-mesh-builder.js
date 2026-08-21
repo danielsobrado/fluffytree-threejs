@@ -1,17 +1,17 @@
 import * as THREE from 'three';
-import { FOLIAGE_PRIMITIVE_FAMILIES } from '../generation/tree-ir-schema.js';
-import { configureObjectLodFade, setObjectLodFade } from './lod-dither-fade.js';
-import { disposeObject } from './object-disposer.js';
-import { TreeIrCrownVolumeBuilder } from './tree-ir-crown-volume-builder.js';
-import { TreeIrFoliageBuilder } from './tree-ir-foliage-builder.js';
-import { shouldBuildTreeIrFoliage } from './tree-ir-foliage-lod-policy.js';
-import { TreeIrImpostorBuilder } from './tree-ir-impostor-builder.js';
+import { FOLIAGE_PRIMITIVE_FAMILIES } from '../generation/tree-ir-schema.js?v=2.0.0-20260814.2';
+import { configureObjectLodFade, setObjectLodFade } from './lod-dither-fade.js?v=2.0.0-20260814.2';
+import { disposeObject } from './object-disposer.js?v=2.0.0-20260814.2';
+import { TreeIrCrownVolumeBuilder } from './tree-ir-crown-volume-builder.js?v=2.0.0-20260814.2';
+import { TreeIrFoliageBuilder } from './tree-ir-foliage-builder.js?v=2.0.0-20260814.2';
+import { shouldBuildTreeIrFoliage } from './tree-ir-foliage-lod-policy.js?v=2.0.0-20260814.2';
+import { TreeIrImpostorBuilder } from './tree-ir-impostor-builder.js?v=2.0.0-20260814.2';
 import {
   TREE_RENDER_REPRESENTATION_ROLES,
   TREE_REPRESENTATION_ROLES,
   treeRepresentationIndex,
-} from './tree-representation-role.js';
-import { TreeIrStructureMeshBuilder } from './tree-ir-structure-mesh-builder.js';
+} from './tree-representation-role.js?v=2.0.0-20260814.2';
+import { TreeIrStructureMeshBuilder } from './tree-ir-structure-mesh-builder.js?v=2.0.0-20260814.2';
 
 function createLevel(role) {
   const index = treeRepresentationIndex(role);

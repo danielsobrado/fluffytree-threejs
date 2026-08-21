@@ -1,4 +1,4 @@
-import { assertCanonicalValue } from '../core/canonical-value-hash.js';
+import { assertCanonicalValue } from '../core/canonical-value-hash.js?v=2.0.0-20260814.2';
 
 export const TREE_GENERATION_WORKER_MESSAGES = Object.freeze({
   GENERATE: 'tree-generation:generate',

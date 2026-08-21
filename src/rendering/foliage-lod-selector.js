@@ -1,10 +1,10 @@
-import { FoliageCoverageIndex } from '../generation/foliage-coverage-index.js';
-import { selectDeterministicFoliageMaxCover } from '../generation/foliage-max-cover-selector.js';
+import { FoliageCoverageIndex } from '../generation/foliage-coverage-index.js?v=2.0.0-20260814.2';
+import { selectDeterministicFoliageMaxCover } from '../generation/foliage-max-cover-selector.js?v=2.0.0-20260814.2';
 import {
   createFoliageLodCoverageRepresentation,
   foliageLodCoverageCacheKey,
-} from './foliage-lod-coverage-representation.js';
-import { FOLIAGE_LOD_CONSTANTS } from './foliage-lod-constants.js';
+} from './foliage-lod-coverage-representation.js?v=2.0.0-20260814.2';
+import { FOLIAGE_LOD_CONSTANTS } from './foliage-lod-constants.js?v=2.0.0-20260814.2';
 
 const SELECTION_CACHE = new WeakMap();
 

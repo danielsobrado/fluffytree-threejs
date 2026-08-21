@@ -1,6 +1,6 @@
-import { requireTreeIrFrond } from './tree-ir-frond-geometry-common.js';
-import { createTreeIrFrondLeafletGeometry } from './tree-ir-frond-leaflet-geometry.js';
-import { createTreeIrFrondRibbonGeometry } from './tree-ir-frond-ribbon-geometry.js';
+import { requireTreeIrFrond } from './tree-ir-frond-geometry-common.js?v=2.0.0-20260814.2';
+import { createTreeIrFrondLeafletGeometry } from './tree-ir-frond-leaflet-geometry.js?v=2.0.0-20260814.2';
+import { createTreeIrFrondRibbonGeometry } from './tree-ir-frond-ribbon-geometry.js?v=2.0.0-20260814.2';
 
 export class TreeIrFrondGeometryFactory {
   create(

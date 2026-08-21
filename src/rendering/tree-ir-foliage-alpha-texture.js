@@ -3,7 +3,7 @@ import {
   DEFAULT_LEAF_SHAPE_ID,
   getLeafShape,
   sampleLeafAlpha,
-} from './leaf-shape-library.js';
+} from './leaf-shape-library.js?v=2.0.0-20260814.2';
 
 function alphaShapeId(primitiveFamily, requestedShapeId) {
   if (primitiveFamily === 'needle-cluster') return 'needle';

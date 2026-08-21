@@ -2,23 +2,23 @@ import {
   applyDocumentTitle,
   formatOverlayTitle,
   formatReleaseVersion,
-} from './app/release-title.js';
-import { TreeDemo } from './app/tree-demo.js';
-import { validateSceneConfig } from './config/scene-config-validator.js';
-import { YamlConfigLoader } from './config/yaml-config-loader.js';
-import { logger } from './core/logger.js';
-import { IsolatedCanopySolidityProbe } from './diagnostics/isolated-canopy-solidity-probe.js';
-import { markRenderSmokeBootstrapFailure } from './diagnostics/render-smoke-probe.js';
+} from './app/release-title.js?v=2.0.0-20260814.2';
+import { TreeDemo } from './app/tree-demo.js?v=2.0.0-20260814.2';
+import { validateSceneConfig } from './config/scene-config-validator.js?v=2.0.0-20260814.2';
+import { YamlConfigLoader } from './config/yaml-config-loader.js?v=2.0.0-20260814.2';
+import { logger } from './core/logger.js?v=2.0.0-20260814.2';
+import { IsolatedCanopySolidityProbe } from './diagnostics/isolated-canopy-solidity-probe.js?v=2.0.0-20260814.2';
+import { markRenderSmokeBootstrapFailure } from './diagnostics/render-smoke-probe.js?v=2.0.0-20260814.2';
 import {
   markStemManifoldBootstrapFailure,
   StemManifoldProbe,
-} from './diagnostics/stem-manifold-probe.js';
-import { PresetLibrary } from './domain/preset-library.js';
-import { parseShellCoverageQaConfig } from './qa/shell-coverage-qa-config.js';
-import { parseTreeStressQaPolicy } from './qa/tree-stress-qa-policy.js';
-import { showFatalError } from './ui/demo-overlay.js';
-import { createSceneMenu } from './ui/scene-menu.js';
-import { createTuningPanel } from './ui/tuning-panel.js';
+} from './diagnostics/stem-manifold-probe.js?v=2.0.0-20260814.2';
+import { PresetLibrary } from './domain/preset-library.js?v=2.0.0-20260814.2';
+import { parseShellCoverageQaConfig } from './qa/shell-coverage-qa-config.js?v=2.0.0-20260814.2';
+import { parseTreeStressQaPolicy } from './qa/tree-stress-qa-policy.js?v=2.0.0-20260814.2';
+import { showFatalError } from './ui/demo-overlay.js?v=2.0.0-20260814.2';
+import { createSceneMenu } from './ui/scene-menu.js?v=2.0.0-20260814.2';
+import { createTuningPanel } from './ui/tuning-panel.js?v=2.0.0-20260814.2';
 
 const CONFIG_URLS = Object.freeze({
   release: './config/release.yaml',

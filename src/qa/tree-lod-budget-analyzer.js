@@ -1,7 +1,7 @@
-import { createFoliageCoreLayout } from '../rendering/foliage-core-layout.js';
-import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js';
-import { hashUnit } from '../rendering/deterministic-hash.js';
-import { selectFoliageLodInstances } from '../rendering/foliage-lod-selector.js';
+import { createFoliageCoreLayout } from '../rendering/foliage-core-layout.js?v=2.0.0-20260814.2';
+import { FOLIAGE_RENDERING_CONSTANTS } from '../rendering/foliage-rendering-constants.js?v=2.0.0-20260814.2';
+import { hashUnit } from '../rendering/deterministic-hash.js?v=2.0.0-20260814.2';
+import { selectFoliageLodInstances } from '../rendering/foliage-lod-selector.js?v=2.0.0-20260814.2';
 
 function countBranches(tree, maximumOrder) {
   return tree.branches.filter((branch) => branch.order <= maximumOrder);

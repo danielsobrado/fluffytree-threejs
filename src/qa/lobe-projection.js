@@ -1,4 +1,4 @@
-import { rotateVectorEuler } from '../generation/lobe-geometry.js';
+import { rotateVectorEuler } from '../generation/lobe-geometry.js?v=2.0.0-20260814.2';
 
 const MINIMUM_DETERMINANT = 1e-12;
 

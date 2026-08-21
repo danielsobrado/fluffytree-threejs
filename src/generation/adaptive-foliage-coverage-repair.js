@@ -1,10 +1,10 @@
-import { createFoliageCoverageCertificationIndex } from './foliage-coverage-certification-index.js';
-import { analyzeFoliageCoveragePatch } from './foliage-coverage-patch-analysis.js';
-import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
+import { createFoliageCoverageCertificationIndex } from './foliage-coverage-certification-index.js?v=2.0.0-20260814.2';
+import { analyzeFoliageCoveragePatch } from './foliage-coverage-patch-analysis.js?v=2.0.0-20260814.2';
+import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js?v=2.0.0-20260814.2';
 import {
   createIcosahedronDirectionTriangles,
   subdivideDirectionTriangle,
-} from './surface-direction-triangulation.js';
+} from './surface-direction-triangulation.js?v=2.0.0-20260814.2';
 
 const DIRECTION_KEY_SCALE = 1e6;
 

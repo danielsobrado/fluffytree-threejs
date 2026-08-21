@@ -1,11 +1,11 @@
-import { hashCanonicalValue } from '../core/canonical-value-hash.js';
-import { createPathAttachmentFrame, createTreeIrFrame } from './tree-ir-frame.js';
-import { expandTreeIrFrondBounds } from './tree-ir-frond-bounds.js';
-import { validateTreeIr } from './tree-ir-validator.js';
-import { pruneUnreferencedTreeIrWindNodes } from './tree-ir-wind-node-pruner.js';
-import { createTreeEnvironmentContext } from './tree-environment-context.js';
-import { TREE_ENVIRONMENT_CONSTANTS } from './tree-environment-constants.js';
-import { parseTreeEnvironmentResponse } from './tree-environment-response.js';
+import { hashCanonicalValue } from '../core/canonical-value-hash.js?v=2.0.0-20260814.2';
+import { createPathAttachmentFrame, createTreeIrFrame } from './tree-ir-frame.js?v=2.0.0-20260814.2';
+import { expandTreeIrFrondBounds } from './tree-ir-frond-bounds.js?v=2.0.0-20260814.2';
+import { validateTreeIr } from './tree-ir-validator.js?v=2.0.0-20260814.2';
+import { pruneUnreferencedTreeIrWindNodes } from './tree-ir-wind-node-pruner.js?v=2.0.0-20260814.2';
+import { createTreeEnvironmentContext } from './tree-environment-context.js?v=2.0.0-20260814.2';
+import { TREE_ENVIRONMENT_CONSTANTS } from './tree-environment-constants.js?v=2.0.0-20260814.2';
+import { parseTreeEnvironmentResponse } from './tree-environment-response.js?v=2.0.0-20260814.2';
 
 function clamp01(value) {
   return Math.min(1, Math.max(0, value));

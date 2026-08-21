@@ -1,4 +1,4 @@
-import { SCENE_RUNTIME_CONSTANTS } from './scene-runtime-constants.js';
+import { SCENE_RUNTIME_CONSTANTS } from './scene-runtime-constants.js?v=2.0.0-20260814.2';
 
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 const MAXIMUM_SEED = 0xffffffff;

@@ -4,8 +4,8 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { DepthOfFieldPass } from './depth-of-field-pass.js';
-import { resolveDepthOfFieldSettings } from './depth-of-field-math.js';
+import { DepthOfFieldPass } from './depth-of-field-pass.js?v=2.0.0-20260814.2';
+import { resolveDepthOfFieldSettings } from './depth-of-field-math.js?v=2.0.0-20260814.2';
 
 /**
  * The storybook grade: a lens that holds one band of the scene in focus, a

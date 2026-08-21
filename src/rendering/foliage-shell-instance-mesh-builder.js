@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { addFoliageInstanceAttributes } from './instanced-foliage-attributes.js';
+import { addFoliageInstanceAttributes } from './instanced-foliage-attributes.js?v=2.0.0-20260814.2';
 
 const LOCAL_OUTWARD = new THREE.Vector3(0, 0, 1);
 

@@ -1,5 +1,5 @@
-import { BoundedLruCache } from '../core/bounded-lru-cache.js';
-import { createTreeIrCacheKey } from '../compilation/tree-cache-key.js';
+import { BoundedLruCache } from '../core/bounded-lru-cache.js?v=2.0.0-20260814.2';
+import { createTreeIrCacheKey } from '../compilation/tree-cache-key.js?v=2.0.0-20260814.2';
 
 export class WorkerTreeGenerationService {
   constructor({ workerPool, maximumCacheEntries = 128 } = {}) {

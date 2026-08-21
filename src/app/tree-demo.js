@@ -2,53 +2,53 @@ import * as THREE from 'three';
 import {
   isWindDisabled,
   TreeWindController,
-} from '../animation/tree-wind-controller.js';
+} from '../animation/tree-wind-controller.js?v=2.0.0-20260814.2';
 import {
   createForestSceneConfig,
   DEFAULT_FOREST_SIZE,
   FOREST_SEED,
   FOREST_SIZES,
   isForestSceneRequested,
-} from './forest-scene.js';
+} from './forest-scene.js?v=2.0.0-20260814.2';
 import {
   createStressSceneConfig,
   isStressSceneRequested,
-} from './stress-scene.js';
-import { buildTreeReplacement } from './tree-rebuild-transaction.js';
-import { FirstPersonNavigator } from '../controls/first-person-navigator.js';
-import { logger } from '../core/logger.js';
-import { CanopySolidityProbe } from '../diagnostics/canopy-solidity-probe.js';
-import { FrameStatistics } from '../diagnostics/frame-statistics.js';
+} from './stress-scene.js?v=2.0.0-20260814.2';
+import { buildTreeReplacement } from './tree-rebuild-transaction.js?v=2.0.0-20260814.2';
+import { FirstPersonNavigator } from '../controls/first-person-navigator.js?v=2.0.0-20260814.2';
+import { logger } from '../core/logger.js?v=2.0.0-20260814.2';
+import { CanopySolidityProbe } from '../diagnostics/canopy-solidity-probe.js?v=2.0.0-20260814.2';
+import { FrameStatistics } from '../diagnostics/frame-statistics.js?v=2.0.0-20260814.2';
 import {
   reportQaStatus,
   serializeQaError,
-} from '../diagnostics/qa-status-reporter.js';
-import { RenderSmokeProbe } from '../diagnostics/render-smoke-probe.js';
-import { FrameBudgetQueue } from '../generation/frame-budget-queue.js';
-import { TreeGenerator } from '../generation/tree-generator.js';
-import { analyzeShellCoverage } from '../qa/shell-coverage-analyzer.js';
-import { disposeObject } from '../rendering/object-disposer.js';
-import { applySceneSettings, SceneFactory } from '../rendering/scene-factory.js';
-import { resolveShadowAnchor } from '../rendering/shadow-anchor.js';
-import { TreeImpostorRenderer } from '../rendering/tree-impostor-renderer.js';
-import { TreeMeshBuilder } from '../rendering/tree-mesh-builder.js';
-import { createPostPipeline } from '../rendering/post-pipeline.js';
-import { isPostProcessingEnabled } from '../rendering/post-processing-mode.js';
-import { resolveFocusDistance } from '../rendering/depth-of-field-math.js';
-import { ContactShadowField } from '../rendering/contact-shadow-field.js';
-import { MeadowCarpet } from '../rendering/meadow-carpet.js';
-import { DEFAULT_MEADOW } from '../rendering/meadow-scatter.js';
+} from '../diagnostics/qa-status-reporter.js?v=2.0.0-20260814.2';
+import { RenderSmokeProbe } from '../diagnostics/render-smoke-probe.js?v=2.0.0-20260814.2';
+import { FrameBudgetQueue } from '../generation/frame-budget-queue.js?v=2.0.0-20260814.2';
+import { TreeGenerator } from '../generation/tree-generator.js?v=2.0.0-20260814.2';
+import { analyzeShellCoverage } from '../qa/shell-coverage-analyzer.js?v=2.0.0-20260814.2';
+import { disposeObject } from '../rendering/object-disposer.js?v=2.0.0-20260814.2';
+import { applySceneSettings, SceneFactory } from '../rendering/scene-factory.js?v=2.0.0-20260814.2';
+import { resolveShadowAnchor } from '../rendering/shadow-anchor.js?v=2.0.0-20260814.2';
+import { TreeImpostorRenderer } from '../rendering/tree-impostor-renderer.js?v=2.0.0-20260814.2';
+import { TreeMeshBuilder } from '../rendering/tree-mesh-builder.js?v=2.0.0-20260814.2';
+import { createPostPipeline } from '../rendering/post-pipeline.js?v=2.0.0-20260814.2';
+import { isPostProcessingEnabled } from '../rendering/post-processing-mode.js?v=2.0.0-20260814.2';
+import { resolveFocusDistance } from '../rendering/depth-of-field-math.js?v=2.0.0-20260814.2';
+import { ContactShadowField } from '../rendering/contact-shadow-field.js?v=2.0.0-20260814.2';
+import { MeadowCarpet } from '../rendering/meadow-carpet.js?v=2.0.0-20260814.2';
+import { DEFAULT_MEADOW } from '../rendering/meadow-scatter.js?v=2.0.0-20260814.2';
 import {
   applySeasonToPresets,
   applySeasonToScene,
   requestedSeason,
   resolveSeason,
   SUMMER_SEASON,
-} from './season.js';
-import { TreeBillboardBatchManager } from '../rendering/tree-billboard-batch-manager.js';
-import { TreeLodController } from '../rendering/tree-lod-controller.js';
-import { measureViewport } from '../rendering/viewport-size.js';
-import { createDemoOverlay, showFatalError } from '../ui/demo-overlay.js';
+} from './season.js?v=2.0.0-20260814.2';
+import { TreeBillboardBatchManager } from '../rendering/tree-billboard-batch-manager.js?v=2.0.0-20260814.2';
+import { TreeLodController } from '../rendering/tree-lod-controller.js?v=2.0.0-20260814.2';
+import { measureViewport } from '../rendering/viewport-size.js?v=2.0.0-20260814.2';
+import { createDemoOverlay, showFatalError } from '../ui/demo-overlay.js?v=2.0.0-20260814.2';
 
 const DEFAULT_COVERAGE_PROBE_OPTIONS = Object.freeze({
   probeDensityMultiplier: 2,

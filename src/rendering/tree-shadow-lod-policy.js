@@ -1,4 +1,4 @@
-import { isDetailedTreeRepresentation } from './tree-representation-role.js';
+import { isDetailedTreeRepresentation } from './tree-representation-role.js?v=2.0.0-20260814.2';
 
 export function shouldRenderTreeShadowProxy(
   role,

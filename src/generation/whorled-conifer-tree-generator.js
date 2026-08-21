@@ -1,14 +1,14 @@
-import { createCrownSummary } from './crown-summary.js';
-import { FoliageShellGenerator } from './foliage-shell-generator.js';
-import { LobeConnectionAnalyzer } from './lobe-connection-analyzer.js';
+import { createCrownSummary } from './crown-summary.js?v=2.0.0-20260814.2';
+import { FoliageShellGenerator } from './foliage-shell-generator.js?v=2.0.0-20260814.2';
+import { LobeConnectionAnalyzer } from './lobe-connection-analyzer.js?v=2.0.0-20260814.2';
 import {
   createEmptyFoliageShell,
   createLegacyTreeData,
-} from './legacy-tree-data-factory.js';
-import { SeededRandom } from './seeded-random.js';
-import { createTreeIrFromLegacyTreeData } from './tree-ir-from-legacy-data.js';
-import { parseWhorledConiferConfig } from './whorled-conifer-config.js';
-import { WHORLED_CONIFER_CONSTANTS } from './whorled-conifer-constants.js';
+} from './legacy-tree-data-factory.js?v=2.0.0-20260814.2';
+import { SeededRandom } from './seeded-random.js?v=2.0.0-20260814.2';
+import { createTreeIrFromLegacyTreeData } from './tree-ir-from-legacy-data.js?v=2.0.0-20260814.2';
+import { parseWhorledConiferConfig } from './whorled-conifer-config.js?v=2.0.0-20260814.2';
+import { WHORLED_CONIFER_CONSTANTS } from './whorled-conifer-constants.js?v=2.0.0-20260814.2';
 
 function lerp(minimum, maximum, ratio) {
   return minimum + (maximum - minimum) * ratio;

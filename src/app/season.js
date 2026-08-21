@@ -1,4 +1,4 @@
-import { blendPaletteToSeason } from '../rendering/seasonal-palette.js';
+import { blendPaletteToSeason } from '../rendering/seasonal-palette.js?v=2.0.0-20260814.2';
 
 /**
  * The seasons, as a modifier over whatever scene is on screen.

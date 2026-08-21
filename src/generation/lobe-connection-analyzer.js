@@ -2,7 +2,7 @@ import {
   lobeOverlapRatio,
   lobeRadiusTowards,
   normalizeVector,
-} from './lobe-geometry.js';
+} from './lobe-geometry.js?v=2.0.0-20260814.2';
 
 function negate(vector) {
   return { x: -vector.x, y: -vector.y, z: -vector.z };

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { setTreeIrPaletteColor } from './tree-ir-palette.js';
-import { treeIrStyleUnit } from './tree-ir-style-random.js';
+import { setTreeIrPaletteColor } from './tree-ir-palette.js?v=2.0.0-20260814.2';
+import { treeIrStyleUnit } from './tree-ir-style-random.js?v=2.0.0-20260814.2';
 
 const TAU = Math.PI * 2;
 

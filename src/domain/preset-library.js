@@ -1,4 +1,4 @@
-import { compileTreePreset } from './tree-preset-compiler.js';
+import { compileTreePreset } from './tree-preset-compiler.js?v=2.0.0-20260814.2';
 
 function clone(value) {
   return structuredClone(value);

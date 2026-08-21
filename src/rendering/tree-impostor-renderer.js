@@ -3,7 +3,7 @@ import {
   restoreObjectLodFade,
   setObjectLodFade,
   snapshotObjectLodFade,
-} from './lod-dither-fade.js';
+} from './lod-dither-fade.js?v=2.0.0-20260814.2';
 
 function restoreChild(parent, child, index) {
   if (!parent) return;

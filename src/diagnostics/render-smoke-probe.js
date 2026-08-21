@@ -1,6 +1,6 @@
-import { logger } from '../core/logger.js';
-import { RENDER_SMOKE_CONSTANTS } from './render-smoke-constants.js';
-import { reportQaStatus, serializeQaError } from './qa-status-reporter.js';
+import { logger } from '../core/logger.js?v=2.0.0-20260814.2';
+import { RENDER_SMOKE_CONSTANTS } from './render-smoke-constants.js?v=2.0.0-20260814.2';
+import { reportQaStatus, serializeQaError } from './qa-status-reporter.js?v=2.0.0-20260814.2';
 
 const RENDER_SMOKE_QUERY_VALUE = 'render-smoke';
 const STATUS_ATTRIBUTE = 'renderStatus';

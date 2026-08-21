@@ -1,12 +1,12 @@
 import { dump } from 'js-yaml';
-import { logger } from '../core/logger.js';
-import { PresetVariantStore, toPresetId } from './preset-variant-store.js';
-import { createControl, createElement } from './tuning-controls.js';
+import { logger } from '../core/logger.js?v=2.0.0-20260814.2';
+import { PresetVariantStore, toPresetId } from './preset-variant-store.js?v=2.0.0-20260814.2';
+import { createControl, createElement } from './tuning-controls.js?v=2.0.0-20260814.2';
 import {
   evaluateTuningCoverage,
   tuningCoverageAutoFitTargets,
-} from './tuning-coverage-policy.js';
-import { TUNING_GROUPS, writePath } from './tuning-schema.js';
+} from './tuning-coverage-policy.js?v=2.0.0-20260814.2';
+import { TUNING_GROUPS, writePath } from './tuning-schema.js?v=2.0.0-20260814.2';
 
 /**
  * The side studio.

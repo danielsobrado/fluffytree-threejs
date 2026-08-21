@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { createTreeIrCrownGeometry } from './tree-ir-crown-geometry.js';
-import { calculateTreeIrCrownStyle } from './tree-ir-crown-style.js';
-import { setTreeIrPaletteColor } from './tree-ir-palette.js';
-import { configureTreeWindMaterial } from './tree-wind-shader.js';
+import { createTreeIrCrownGeometry } from './tree-ir-crown-geometry.js?v=2.0.0-20260814.2';
+import { calculateTreeIrCrownStyle } from './tree-ir-crown-style.js?v=2.0.0-20260814.2';
+import { setTreeIrPaletteColor } from './tree-ir-palette.js?v=2.0.0-20260814.2';
+import { configureTreeWindMaterial } from './tree-wind-shader.js?v=2.0.0-20260814.2';
 
 function createExposureResolver(volumes) {
   if (volumes.length < 2) return () => 1;

@@ -1,7 +1,7 @@
-import { validateTreeIr } from '../generation/tree-ir-validator.js';
-import { TREE_RENDER_REPRESENTATION_ROLES } from '../rendering/tree-representation-role.js';
-import { createRepresentationCacheKey, TREE_REPRESENTATION_COMPILER_VERSION } from './tree-cache-key.js';
-import { FoliagePrimitiveCompiler } from './foliage-primitive-compiler.js';
+import { validateTreeIr } from '../generation/tree-ir-validator.js?v=2.0.0-20260814.2';
+import { TREE_RENDER_REPRESENTATION_ROLES } from '../rendering/tree-representation-role.js?v=2.0.0-20260814.2';
+import { createRepresentationCacheKey, TREE_REPRESENTATION_COMPILER_VERSION } from './tree-cache-key.js?v=2.0.0-20260814.2';
+import { FoliagePrimitiveCompiler } from './foliage-primitive-compiler.js?v=2.0.0-20260814.2';
 
 function requireRole(role) {
   if (!TREE_RENDER_REPRESENTATION_ROLES.includes(role)) {

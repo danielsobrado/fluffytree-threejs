@@ -1,9 +1,9 @@
-import { CrownVolumeGenerator } from '../generation/crown-volume-generator.js';
-import { TreeGenerator } from '../generation/tree-generator.js';
+import { CrownVolumeGenerator } from '../generation/crown-volume-generator.js?v=2.0.0-20260814.2';
+import { TreeGenerator } from '../generation/tree-generator.js?v=2.0.0-20260814.2';
 import {
   analyzeCrownVolume,
   hashCrownVolume,
-} from './crown-volume-analyzer.js';
+} from './crown-volume-analyzer.js?v=2.0.0-20260814.2';
 
 const TREE_GENERATION_OPTIONS = Object.freeze({
   includeSurfaceSamples: false,

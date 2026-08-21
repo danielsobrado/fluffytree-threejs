@@ -1,9 +1,9 @@
-import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js';
+import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js?v=2.0.0-20260814.2';
 import {
   DEFAULT_LEAF_SHAPE_ID,
   getLeafShape,
   sampleLeafAlpha,
-} from './leaf-shape-library.js';
+} from './leaf-shape-library.js?v=2.0.0-20260814.2';
 
 const PROFILE_CACHE = new Map();
 const PIXEL_CACHE = new Map();

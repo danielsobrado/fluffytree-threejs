@@ -13,7 +13,7 @@ import {
   resolveTreeCollisions,
   stepMotion,
   WALK_EYE_HEIGHT,
-} from './first-person-motion.js';
+} from './first-person-motion.js?v=2.0.0-20260814.2';
 
 /**
  * The camera you stand behind rather than orbit around.

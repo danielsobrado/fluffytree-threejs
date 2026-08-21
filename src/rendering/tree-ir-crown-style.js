@@ -1,7 +1,7 @@
 import {
   treeIrStyleSigned,
   treeIrStyleUnit,
-} from './tree-ir-style-random.js';
+} from './tree-ir-style-random.js?v=2.0.0-20260814.2';
 
 export function calculateTreeIrCrownStyle(treeIr, volume, config, exposure = 1) {
   const variation = config.shapeVariation;

@@ -1,17 +1,17 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { analyzeBufferGeometryManifold } from '../qa/mesh-manifold-analyzer.js';
+import { analyzeBufferGeometryManifold } from '../qa/mesh-manifold-analyzer.js?v=2.0.0-20260814.2';
 import {
   calculateRootFlareScale,
   getRootFlareTopHeight,
-} from './root-flare-profile.js';
-import { TaperedCurveGeometryFactory } from './tapered-curve-geometry-factory.js';
-import { TREE_STRUCTURE_RENDERING_CONSTANTS } from './tree-structure-rendering-constants.js';
-import { TrunkGeometryFactory } from './trunk-geometry-factory.js';
+} from './root-flare-profile.js?v=2.0.0-20260814.2';
+import { TaperedCurveGeometryFactory } from './tapered-curve-geometry-factory.js?v=2.0.0-20260814.2';
+import { TREE_STRUCTURE_RENDERING_CONSTANTS } from './tree-structure-rendering-constants.js?v=2.0.0-20260814.2';
+import { TrunkGeometryFactory } from './trunk-geometry-factory.js?v=2.0.0-20260814.2';
 import {
   addStylizedBarkColors,
   StylizedBarkMaterialFactory,
-} from './stylized-bark-material-factory.js';
+} from './stylized-bark-material-factory.js?v=2.0.0-20260814.2';
 
 function manifoldMetadata(metrics) {
   if (!metrics) return { manifoldAnalyzed: false };

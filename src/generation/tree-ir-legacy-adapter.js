@@ -1,5 +1,5 @@
-import { TREE_IR_ROOT_STEM_ID } from './tree-ir-schema.js';
-import { validateTreeIr } from './tree-ir-validator.js';
+import { TREE_IR_ROOT_STEM_ID } from './tree-ir-schema.js?v=2.0.0-20260814.2';
+import { validateTreeIr } from './tree-ir-validator.js?v=2.0.0-20260814.2';
 
 function copyPoint(point) {
   return Object.freeze({ x: point.x, y: point.y, z: point.z });

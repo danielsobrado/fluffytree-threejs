@@ -1,11 +1,11 @@
-import { TreeGenerator } from '../generation/tree-generator.js';
+import { TreeGenerator } from '../generation/tree-generator.js?v=2.0.0-20260814.2';
 import {
   findWorstSeeds,
   summarizeMetrics,
-} from './metric-statistics.js';
-import { evaluateShapeGates } from './shape-gates.js';
-import { hashTree } from './tree-hash.js';
-import { TreeShapeAnalyzer } from './tree-shape-analyzer.js';
+} from './metric-statistics.js?v=2.0.0-20260814.2';
+import { evaluateShapeGates } from './shape-gates.js?v=2.0.0-20260814.2';
+import { hashTree } from './tree-hash.js?v=2.0.0-20260814.2';
+import { TreeShapeAnalyzer } from './tree-shape-analyzer.js?v=2.0.0-20260814.2';
 
 function createFailureTally() {
   return new Map();

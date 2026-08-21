@@ -1,6 +1,6 @@
-import { adaptTreeIrToLegacyTreeData } from '../generation/tree-ir-legacy-adapter.js';
-import { TREE_IR_SCHEMA_VERSION } from '../generation/tree-ir-schema.js';
-import { TreeMeshBuilder } from './tree-mesh-builder.js';
+import { adaptTreeIrToLegacyTreeData } from '../generation/tree-ir-legacy-adapter.js?v=2.0.0-20260814.2';
+import { TREE_IR_SCHEMA_VERSION } from '../generation/tree-ir-schema.js?v=2.0.0-20260814.2';
+import { TreeMeshBuilder } from './tree-mesh-builder.js?v=2.0.0-20260814.2';
 
 function isTreeIr(value) {
   return value?.schemaVersion === TREE_IR_SCHEMA_VERSION;
