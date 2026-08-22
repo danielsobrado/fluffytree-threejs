@@ -21,6 +21,16 @@ test('YAML config loader returns parsed configuration objects', async () => {
   assert.deepEqual(await loader.load('./config/test.yaml'), { value: 42 });
 });
 
+test('YAML config loader preserves the browser fetch receiver', async () => {
+  const fetchImpl = function () {
+    assert.equal(this, globalThis);
+    return response('value: 42\n');
+  };
+  const loader = new YamlConfigLoader({ fetchImpl });
+
+  assert.deepEqual(await loader.load('./config/test.yaml'), { value: 42 });
+});
+
 test('YAML config loader reports HTTP failures with the source URL', async () => {
   const loader = new YamlConfigLoader({
     fetchImpl: async () => response('', {

@@ -1,2 +1,6 @@
 node_modules/
 qa-results/
+.debug-live-profile/
+.debug-live-profile*
+.history/
+.debug-live-netlog.json

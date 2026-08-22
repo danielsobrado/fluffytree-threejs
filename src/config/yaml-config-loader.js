@@ -5,7 +5,7 @@ export class YamlConfigLoader {
     if (typeof fetchImpl !== 'function') {
       throw new Error('YamlConfigLoader requires a fetch implementation.');
     }
-    this.fetchImpl = fetchImpl;
+    this.fetchImpl = fetchImpl.bind(globalThis);
   }
 
   async load(url) {
