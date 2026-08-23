@@ -35,3 +35,13 @@ test('prioritized queue validates replacement priority before supersede accounti
   queue.process(1);
   assert.deepEqual(calls, ['valid']);
 });
+
+test('prioritized queue releases canceled entries when no work remains', () => {
+  const queue = new PrioritizedFrameBudgetQueue({ now: () => 0 });
+  queue.enqueue('chunk', 1, () => {});
+
+  assert.equal(queue.cancel('chunk'), true);
+  assert.equal(queue.length, 0);
+  assert.equal(queue.heap.length, 0);
+  assert.equal(queue.cancel('chunk'), false);
+});

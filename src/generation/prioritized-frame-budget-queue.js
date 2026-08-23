@@ -14,6 +14,7 @@ function higherPriority(left, right) {
 }
 
 function shouldCompactHeap(heapLength, activeCount) {
+  if (activeCount === 0) return heapLength > 0;
   const staleCount = heapLength - activeCount;
   return (
     staleCount >= HEAP_COMPACTION_MINIMUM_STALE_ENTRIES &&
@@ -118,7 +119,9 @@ export class PrioritizedFrameBudgetQueue {
   }
 
   cancel(key) {
-    return this.entries.delete(key);
+    const removed = this.entries.delete(key);
+    if (removed) this.compactHeapIfNeeded();
+    return removed;
   }
 
   takeCurrentEntry() {
