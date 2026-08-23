@@ -102,3 +102,41 @@ test('forest transitions are versioned and scheduled by projected importance', (
   assert.equal(completed.length, update.transitions.length);
   assert.equal(manager.metrics.chunks.pendingCount, 0);
 });
+
+test('forest runtime retries an unload transition after handler failure', () => {
+  const manager = new ForestRuntimeManager({ runtimePolicy, lodSettings });
+  manager.register(tree('hero', 0, -10, 12));
+  let time = 0;
+  const queue = new PrioritizedFrameBudgetQueue({ now: () => time++ });
+  const cameraNear = { x: 0, y: 2, z: 0 };
+  const cameraFar = { x: 1000, y: 2, z: 0 };
+
+  const visible = manager.update({
+    cameraPosition: cameraNear,
+    fieldOfViewDegrees: 42,
+    viewportHeight: 1080,
+  });
+  manager.scheduleTransitions(visible, queue, () => undefined);
+  queue.process(100);
+
+  const unload = manager.update({
+    cameraPosition: cameraFar,
+    fieldOfViewDegrees: 42,
+    viewportHeight: 1080,
+  });
+  manager.scheduleTransitions(unload, queue, () => {
+    throw new Error('unload failed');
+  });
+  assert.throws(() => queue.process(100), /unload failed/);
+
+  const retry = manager.update({
+    cameraPosition: cameraFar,
+    fieldOfViewDegrees: 42,
+    viewportHeight: 1080,
+  });
+  assert.ok(
+    retry.transitions.some(
+      (token) => token.desiredState === FOREST_CHUNK_STATES.UNLOADED,
+    ),
+  );
+});

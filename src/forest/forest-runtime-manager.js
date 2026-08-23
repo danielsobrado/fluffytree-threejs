@@ -120,7 +120,7 @@ export class ForestRuntimeManager {
         priorities.set(chunkKey, -1);
       }
     }
-    this.activeChunkKeys = nextActiveChunkKeys;
+    for (const chunkKey of nextActiveChunkKeys) this.activeChunkKeys.add(chunkKey);
 
     const transitions = [];
     for (const [chunkKey, state] of desired) {
@@ -132,6 +132,11 @@ export class ForestRuntimeManager {
             priority: priorities.get(chunkKey) ?? 0,
           }),
         );
+      } else if (
+        state === FOREST_CHUNK_STATES.UNLOADED &&
+        !nextActiveChunkKeys.has(chunkKey)
+      ) {
+        this.activeChunkKeys.delete(chunkKey);
       }
     }
     return Object.freeze(transitions);
@@ -183,7 +188,10 @@ export class ForestRuntimeManager {
       queue.enqueue(`forest-chunk:${token.chunkKey}`, token.priority, () => {
         if (!this.chunkTracker.isCurrent(token)) return;
         const completedState = handler(token) ?? token.desiredState;
-        this.chunkTracker.complete(token, completedState);
+        const completed = this.chunkTracker.complete(token, completedState);
+        if (completed && completedState === FOREST_CHUNK_STATES.UNLOADED) {
+          this.activeChunkKeys.delete(token.chunkKey);
+        }
       });
     }
   }
