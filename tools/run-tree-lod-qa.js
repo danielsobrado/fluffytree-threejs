@@ -5,11 +5,15 @@ import {
   analyzeTreeLodBudgets,
   evaluateTreeLodBudgets,
 } from '../src/qa/tree-lod-budget-analyzer.js';
+import { parseFoliageRepresentationPolicy } from '../src/rendering/foliage-representation-policy.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
 import { parseTreeLodQaPolicy } from './tree-lod-qa-policy.js';
 
 const treeConfig = readYamlConfigSync('config/tree-presets.yaml');
 const continuityConfig = readYamlConfigSync('config/foliage-continuity.yaml');
+const foliageRenderingPolicy = parseFoliageRepresentationPolicy(
+  readYamlConfigSync('config/foliage-rendering.yaml'),
+);
 const sceneConfig = validateSceneConfig(readYamlConfigSync('config/scene.yaml'));
 const presets = PresetLibrary.fromConfig(treeConfig, continuityConfig).presets;
 const { budgets, sweep } = parseTreeLodQaPolicy(
@@ -25,7 +29,7 @@ function measure(presetId, seed, source) {
   }
 
   const tree = generator.generate(preset, seed);
-  const metrics = analyzeTreeLodBudgets(tree);
+  const metrics = analyzeTreeLodBudgets(tree, { foliageRenderingPolicy });
   const failures = evaluateTreeLodBudgets(metrics, budgets);
   report.push({ preset: presetId, seed, source, metrics, failures });
 }

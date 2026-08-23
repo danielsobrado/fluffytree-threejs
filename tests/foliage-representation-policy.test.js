@@ -13,12 +13,10 @@ function config() {
           shellDensity: 1,
           shellInteriorDensity: 0.09,
           leafDensityMultiplier: 1,
-          leafLayerCount: 1,
         },
         near: {
           shellDensity: 0.75,
           leafDensityMultiplier: 0,
-          leafLayerCount: 1,
         },
         geometry: {
           shape: 'diamond',
@@ -39,8 +37,7 @@ function config() {
         },
         near: {
           shellDensity: 0.58,
-          leafDensityMultiplier: 1.6,
-          leafLayerCount: 1,
+          leafDensityMultiplier: 0,
         },
         geometry: {
           shape: 'oval',
@@ -64,6 +61,7 @@ test('foliage representation policy resolves shape-specific profile', () => {
   assert.equal(puff.geometry.shape, 'oval');
   assert.equal(puff.hero.leafLayerCount, 2);
   assert.equal(fallback.geometry.shape, 'diamond');
+  assert.equal(fallback.hero.leafLayerCount, undefined);
   assert.equal(fallback.near.leafDensityMultiplier, 0);
 });
 
@@ -74,5 +72,26 @@ test('foliage representation policy rejects invalid geometry ordering', () => {
   assert.throws(
     () => parseFoliageRepresentationPolicy(invalid),
     /midRatio/,
+  );
+});
+
+test('foliage representation policy rejects misspelled leaf profiles', () => {
+  const invalid = config();
+  invalid.profiles.puf = invalid.profiles.puff;
+  delete invalid.profiles.puff;
+
+  assert.throws(
+    () => parseFoliageRepresentationPolicy(invalid),
+    /known leaf shape/,
+  );
+});
+
+test('foliage representation policy validates optional layer overrides', () => {
+  const invalid = config();
+  invalid.profiles.default.hero.leafLayerCount = 0;
+
+  assert.throws(
+    () => parseFoliageRepresentationPolicy(invalid),
+    /leafLayerCount/,
   );
 });

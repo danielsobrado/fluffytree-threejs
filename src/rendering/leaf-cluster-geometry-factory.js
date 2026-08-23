@@ -105,6 +105,12 @@ function appendOval(indices, offset) {
   );
 }
 
+export function resolveLeafTriangleCountPerLeaf(geometryPolicy = null) {
+  return geometryPolicy?.shape === 'oval'
+    ? OVAL_TRIANGLES_PER_LEAF
+    : DIAMOND_TRIANGLES_PER_LEAF;
+}
+
 export class LeafClusterGeometryFactory {
   create(settings, geometryPolicy = null) {
     const positions = [];
@@ -136,8 +142,7 @@ export class LeafClusterGeometryFactory {
       leavesPerCluster: leafCount,
       shape: oval ? 'oval' : 'diamond',
       triangleCount:
-        leafCount *
-        (oval ? OVAL_TRIANGLES_PER_LEAF : DIAMOND_TRIANGLES_PER_LEAF),
+        leafCount * resolveLeafTriangleCountPerLeaf(geometryPolicy),
     };
     return geometry;
   }

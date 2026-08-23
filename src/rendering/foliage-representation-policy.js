@@ -1,3 +1,5 @@
+import { isLeafShapeId } from './leaf-shape-library.js';
+
 const LEAF_GEOMETRY_SHAPES = Object.freeze(['diamond', 'oval']);
 
 function requireObject(value, path) {
@@ -35,13 +37,16 @@ function parseRole(value, path, includeInteriorDensity) {
       12,
       `${path}.leafDensityMultiplier`,
     ),
-    leafLayerCount: requireInteger(
+  };
+
+  if (role.leafLayerCount !== undefined) {
+    parsed.leafLayerCount = requireInteger(
       role.leafLayerCount,
       1,
       4,
       `${path}.leafLayerCount`,
-    ),
-  };
+    );
+  }
 
   if (includeInteriorDensity) {
     parsed.shellInteriorDensity = requireNumber(
@@ -118,6 +123,13 @@ function parseProfile(value, path) {
   });
 }
 
+function validateProfileId(id) {
+  if (id === 'default' || isLeafShapeId(id)) return;
+  throw new Error(
+    `Foliage rendering profile '${id}' must be 'default' or a known leaf shape.`,
+  );
+}
+
 export function parseFoliageRepresentationPolicy(config) {
   const profiles = requireObject(config?.profiles, 'profiles');
   if (!profiles.default) {
@@ -127,10 +139,10 @@ export function parseFoliageRepresentationPolicy(config) {
   return Object.freeze({
     profiles: Object.freeze(
       Object.fromEntries(
-        Object.entries(profiles).map(([id, value]) => [
-          id,
-          parseProfile(value, `profiles.${id}`),
-        ]),
+        Object.entries(profiles).map(([id, value]) => {
+          validateProfileId(id);
+          return [id, parseProfile(value, `profiles.${id}`)];
+        }),
       ),
     ),
   });
