@@ -1,3 +1,6 @@
+const HEAP_COMPACTION_MINIMUM_STALE_ENTRIES = 32;
+const HEAP_COMPACTION_STALE_TO_ACTIVE_RATIO = 1;
+
 function validatePriority(priority) {
   if (!Number.isFinite(priority)) {
     throw new TypeError('Prioritized task priority must be finite.');
@@ -8,6 +11,14 @@ function validatePriority(priority) {
 function higherPriority(left, right) {
   if (left.priority !== right.priority) return left.priority > right.priority;
   return left.sequence < right.sequence;
+}
+
+function shouldCompactHeap(heapLength, activeCount) {
+  const staleCount = heapLength - activeCount;
+  return (
+    staleCount >= HEAP_COMPACTION_MINIMUM_STALE_ENTRIES &&
+    staleCount >= activeCount * HEAP_COMPACTION_STALE_TO_ACTIVE_RATIO
+  );
 }
 
 export class PrioritizedFrameBudgetQueue {
@@ -63,6 +74,19 @@ export class PrioritizedFrameBudgetQueue {
     this.bubbleUp(this.heap.length - 1);
   }
 
+  compactHeap() {
+    this.heap = [...this.entries.values()];
+    for (let index = Math.floor(this.heap.length / 2) - 1; index >= 0; index -= 1) {
+      this.bubbleDown(index);
+    }
+  }
+
+  compactHeapIfNeeded() {
+    if (shouldCompactHeap(this.heap.length, this.entries.size)) {
+      this.compactHeap();
+    }
+  }
+
   pop() {
     if (this.heap.length === 0) return null;
     const root = this.heap[0];
@@ -78,16 +102,18 @@ export class PrioritizedFrameBudgetQueue {
     if (typeof task !== 'function') {
       throw new TypeError('Prioritized task must be a function.');
     }
+    const validatedPriority = validatePriority(priority);
     if (this.entries.has(key)) this.supersededCount += 1;
     const entry = {
       key,
-      priority: validatePriority(priority),
+      priority: validatedPriority,
       task,
       sequence: this.sequence,
     };
     this.sequence += 1;
     this.entries.set(key, entry);
     this.push(entry);
+    this.compactHeapIfNeeded();
     return entry;
   }
 
