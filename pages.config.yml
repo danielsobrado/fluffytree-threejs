@@ -17,6 +17,7 @@ requiredFiles:
   - config/tree-ir-rendering.yaml
   - config/universal-showcase-layout.yaml
   - config/foliage-continuity.yaml
+  - config/foliage-rendering.yaml
   - config/shell-coverage-qa.yaml
   - config/tree-stress-qa.yaml
   - config/canopy-solidity-qa.yaml

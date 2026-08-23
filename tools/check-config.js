@@ -24,6 +24,7 @@ import { parseShellCoverageQaConfig } from '../src/qa/shell-coverage-qa-config.j
 import { parseStemManifoldQaConfig } from '../src/qa/stem-manifold-qa-config.js';
 import { parseTreeShapeQaConfig } from '../src/qa/tree-shape-qa-config.js';
 import { parseTreeStressQaPolicy } from '../src/qa/tree-stress-qa-policy.js';
+import { parseFoliageRepresentationPolicy } from '../src/rendering/foliage-representation-policy.js';
 import { validateTreeIrRenderBudgets } from '../src/rendering/tree-ir-render-budget-validator.js';
 import { parseTreeIrRenderingConfig } from '../src/rendering/tree-ir-rendering-config.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
@@ -110,6 +111,7 @@ const continuityConfig = readConfig('config/foliage-continuity.yaml');
 for (const profile of FOLIAGE_CONTINUITY_PROFILE_IDS) {
   resolveFoliageContinuityProfile(continuityConfig, profile);
 }
+parseFoliageRepresentationPolicy(readConfig('config/foliage-rendering.yaml'));
 
 const treePresetConfig = readConfig('config/tree-presets.yaml');
 const coniferPresetConfig = readConfig('config/conifer-presets.yaml');

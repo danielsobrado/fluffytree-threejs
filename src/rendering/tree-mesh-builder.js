@@ -142,13 +142,17 @@ function resolveProfileValue(profile, role, key, fallback) {
 }
 
 function createLeafBuildOptions(profile, role, name) {
-  return {
+  const roleProfile = profile?.[role];
+  const options = {
     name,
-    densityMultiplier: resolveProfileValue(profile, role, 'leafDensityMultiplier', 1),
-    layerCount: resolveProfileValue(profile, role, 'leafLayerCount', 1),
+    densityMultiplier: roleProfile?.leafDensityMultiplier ?? 1,
     geometry: profile?.geometry ?? null,
     orientation: profile?.orientation ?? null,
   };
+  if (roleProfile?.leafLayerCount !== undefined) {
+    options.layerCount = roleProfile.leafLayerCount;
+  }
+  return options;
 }
 
 export class TreeMeshBuilder {
