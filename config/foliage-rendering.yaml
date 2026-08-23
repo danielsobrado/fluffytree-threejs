@@ -4,11 +4,9 @@ profiles:
       shellDensity: 1.0
       shellInteriorDensity: 0.09
       leafDensityMultiplier: 1.0
-      leafLayerCount: 1
     near:
       shellDensity: 0.75
       leafDensityMultiplier: 0.0
-      leafLayerCount: 1
     geometry:
       shape: diamond
       lengthMultiplier: 1.0
@@ -27,8 +25,8 @@ profiles:
       leafLayerCount: 2
     near:
       shellDensity: 0.58
-      leafDensityMultiplier: 1.6
-      leafLayerCount: 1
+      # NEAR is built eagerly, so explicit leaves stay HERO-only.
+      leafDensityMultiplier: 0.0
     geometry:
       shape: oval
       lengthMultiplier: 1.02
