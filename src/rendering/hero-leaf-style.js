@@ -4,6 +4,8 @@ const HERO_SELECTION_SALT = 0x9e3779b1;
 const HERO_STRETCH_X_SALT = 0x85ebca6b;
 const HERO_STRETCH_Z_SALT = 0xc2b2ae35;
 const HERO_COLOR_SALT = 0x27d4eb2d;
+const HERO_TILT_X_SALT = 0x165667b1;
+const HERO_TILT_Z_SALT = 0xd3a2646c;
 const HERO_LAYER_ID_STRIDE = 6151;
 const HERO_MINIMUM_EXPOSURE_MULTIPLIER = 0.55;
 const HERO_EXPOSURE_RANGE = 0.9;
@@ -58,6 +60,17 @@ export function calculateHeroClusterStretch(seed, sampleId, layer) {
       HERO_MINIMUM_CLUSTER_STRETCH +
       hashUnit(seed, elementId, HERO_STRETCH_Z_SALT) *
         HERO_CLUSTER_STRETCH_RANGE,
+  });
+}
+
+export function calculateHeroClusterTilt(seed, sampleId, layer, maximumRadians = 0) {
+  const amplitude = Number.isFinite(Number(maximumRadians))
+    ? Math.max(0, Number(maximumRadians))
+    : 0;
+  const elementId = sampleId + layer * HERO_LAYER_ID_STRIDE;
+  return Object.freeze({
+    x: (hashUnit(seed, elementId, HERO_TILT_X_SALT) * 2 - 1) * amplitude,
+    z: (hashUnit(seed, elementId, HERO_TILT_Z_SALT) * 2 - 1) * amplitude,
   });
 }
 

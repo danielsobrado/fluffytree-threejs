@@ -16,6 +16,8 @@ import {
 import { PresetLibrary } from './domain/preset-library.js';
 import { parseShellCoverageQaConfig } from './qa/shell-coverage-qa-config.js';
 import { parseTreeStressQaPolicy } from './qa/tree-stress-qa-policy.js';
+import { parseFoliageRepresentationPolicy } from './rendering/foliage-representation-policy.js';
+import { TreeMeshBuilder } from './rendering/tree-mesh-builder.js';
 import { showFatalError } from './ui/demo-overlay.js';
 import { createSceneMenu } from './ui/scene-menu.js';
 import { createTuningPanel } from './ui/tuning-panel.js';
@@ -25,6 +27,7 @@ const CONFIG_URLS = Object.freeze({
   scene: './config/scene.yaml',
   trees: './config/tree-presets.yaml',
   foliageContinuity: './config/foliage-continuity.yaml',
+  foliageRendering: './config/foliage-rendering.yaml',
   shellCoverageQa: './config/shell-coverage-qa.yaml',
   treeStressQa: './config/tree-stress-qa.yaml',
   stemManifoldQa: './config/stem-manifold-qa.yaml',
@@ -64,6 +67,7 @@ async function bootstrap() {
       rawSceneConfig,
       treeConfig,
       continuityConfig,
+      rawFoliageRenderingConfig,
       rawCoverageConfig,
       rawStressConfig,
     ] = await Promise.all([
@@ -71,10 +75,14 @@ async function bootstrap() {
       loader.load(CONFIG_URLS.scene),
       loader.load(CONFIG_URLS.trees),
       loader.load(CONFIG_URLS.foliageContinuity),
+      loader.load(CONFIG_URLS.foliageRendering),
       loader.load(CONFIG_URLS.shellCoverageQa),
       loader.load(CONFIG_URLS.treeStressQa),
     ]);
     const sceneConfig = validateSceneConfig(rawSceneConfig);
+    const foliageRenderingPolicy = parseFoliageRepresentationPolicy(
+      rawFoliageRenderingConfig,
+    );
     const coverageConfig = parseShellCoverageQaConfig(rawCoverageConfig);
     const stressPolicy = parseTreeStressQaPolicy(rawStressConfig);
     const releaseVersion = formatReleaseVersion(releaseConfig);
@@ -83,6 +91,7 @@ async function bootstrap() {
     const library = PresetLibrary.fromConfig(treeConfig, continuityConfig);
     demo = new TreeDemo({
       canopySolidityProbe: new IsolatedCanopySolidityProbe(),
+      treeMeshBuilder: new TreeMeshBuilder({ foliageRenderingPolicy }),
     });
     demo.start(
       container,

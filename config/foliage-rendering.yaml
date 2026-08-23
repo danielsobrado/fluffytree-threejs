@@ -1,0 +1,40 @@
+profiles:
+  default:
+    hero:
+      shellDensity: 1.0
+      shellInteriorDensity: 0.09
+      leafDensityMultiplier: 1.0
+      leafLayerCount: 1
+    near:
+      shellDensity: 0.75
+      leafDensityMultiplier: 0.0
+      leafLayerCount: 1
+    geometry:
+      shape: diamond
+      lengthMultiplier: 1.0
+      widthMultiplier: 1.0
+      shoulderRatio: 0.44
+      midRatio: 0.72
+      shoulderWidthRatio: 0.72
+    orientation:
+      tiltRadians: 0.0
+
+  puff:
+    hero:
+      shellDensity: 0.34
+      shellInteriorDensity: 0.02
+      leafDensityMultiplier: 5.0
+      leafLayerCount: 2
+    near:
+      shellDensity: 0.58
+      leafDensityMultiplier: 1.6
+      leafLayerCount: 1
+    geometry:
+      shape: oval
+      lengthMultiplier: 1.02
+      widthMultiplier: 1.18
+      shoulderRatio: 0.30
+      midRatio: 0.64
+      shoulderWidthRatio: 0.72
+    orientation:
+      tiltRadians: 0.24

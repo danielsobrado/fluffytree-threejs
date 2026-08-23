@@ -3,6 +3,7 @@ import { BranchMeshBuilder } from './branch-mesh-builder.js';
 import { CrownShadowProxyBuilder } from './crown-shadow-proxy-builder.js';
 import { FoliageCoreBuilder } from './foliage-core-builder.js';
 import { FOLIAGE_RENDERING_CONSTANTS } from './foliage-rendering-constants.js';
+import { resolveFoliageRepresentationProfile } from './foliage-representation-policy.js';
 import { FoliageShellBuilder } from './foliage-shell-builder.js';
 import { FoliageTextureSetFactory } from './foliage-texture-set-factory.js';
 import { LeafClusterBuilder } from './leaf-cluster-builder.js';
@@ -136,6 +137,20 @@ function validateMinimumLod(minimumLod) {
   }
 }
 
+function resolveProfileValue(profile, role, key, fallback) {
+  return profile?.[role]?.[key] ?? fallback;
+}
+
+function createLeafBuildOptions(profile, role, name) {
+  return {
+    name,
+    densityMultiplier: resolveProfileValue(profile, role, 'leafDensityMultiplier', 1),
+    layerCount: resolveProfileValue(profile, role, 'leafLayerCount', 1),
+    geometry: profile?.geometry ?? null,
+    orientation: profile?.orientation ?? null,
+  };
+}
+
 export class TreeMeshBuilder {
   constructor({
     branchMeshBuilder = new BranchMeshBuilder(),
@@ -145,6 +160,7 @@ export class TreeMeshBuilder {
     textureSetFactory = new FoliageTextureSetFactory(),
     shadowProxyBuilder = new CrownShadowProxyBuilder(),
     impostorBuilder = new TreeImpostorBuilder(),
+    foliageRenderingPolicy = null,
   } = {}) {
     this.branchMeshBuilder = branchMeshBuilder;
     this.foliageCoreBuilder = foliageCoreBuilder;
@@ -153,6 +169,7 @@ export class TreeMeshBuilder {
     this.textureSetFactory = textureSetFactory;
     this.shadowProxyBuilder = shadowProxyBuilder;
     this.impostorBuilder = impostorBuilder;
+    this.foliageRenderingPolicy = foliageRenderingPolicy;
   }
 
   build(
@@ -174,6 +191,10 @@ export class TreeMeshBuilder {
     );
     const impostorIndex = treeRepresentationIndex(
       TREE_REPRESENTATION_ROLES.IMPOSTOR,
+    );
+    const foliageProfile = resolveFoliageRepresentationProfile(
+      this.foliageRenderingPolicy,
+      treeData.palette.leafShape,
     );
     const root = new THREE.Group();
     root.name = `tree-${treeData.presetId}`;
@@ -208,8 +229,7 @@ export class TreeMeshBuilder {
       );
       root.add(heroLevel, nearLevel, aggregateLevel, impostorLevel);
 
-      populateLevel(
-        nearLevel,
+      const nearFactories =
         minimumLod <= nearIndex
           ? [
               () =>
@@ -233,14 +253,35 @@ export class TreeMeshBuilder {
               () =>
                 this.foliageShellBuilder.build(treeData, {
                   ...foliageResources,
-                  density: FOLIAGE_RENDERING_CONSTANTS.mediumShellDensity,
+                  density: resolveProfileValue(
+                    foliageProfile,
+                    'near',
+                    'shellDensity',
+                    FOLIAGE_RENDERING_CONSTANTS.mediumShellDensity,
+                  ),
                   planesPerCluster: 1,
                   scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier,
                   name: 'foliage-shell-lod1',
                 }),
             ]
-          : [],
+          : [];
+      const nearLeafDensity = resolveProfileValue(
+        foliageProfile,
+        'near',
+        'leafDensityMultiplier',
+        0,
       );
+      if (minimumLod <= nearIndex && nearLeafDensity > 0) {
+        nearFactories.push(() =>
+          this.leafClusterBuilder.build(
+            treeData,
+            foliageResources,
+            createLeafBuildOptions(foliageProfile, 'near', 'near-leaf-shell'),
+          ),
+        );
+      }
+      populateLevel(nearLevel, nearFactories);
+
       populateLevel(
         aggregateLevel,
         minimumLod <= aggregateIndex
@@ -326,15 +367,30 @@ export class TreeMeshBuilder {
             () =>
               this.foliageShellBuilder.build(treeData, {
                 ...foliageResources,
-                density: 1,
+                density: resolveProfileValue(
+                  foliageProfile,
+                  'hero',
+                  'shellDensity',
+                  1,
+                ),
                 planesPerCluster: treeData.palette.shell.planesPerCluster,
                 scaleMultiplier: FOLIAGE_RENDERING_CONSTANTS.shellCardScaleMultiplier,
-                interiorDensity: FOLIAGE_RENDERING_CONSTANTS.heroInteriorDensity,
+                interiorDensity: resolveProfileValue(
+                  foliageProfile,
+                  'hero',
+                  'shellInteriorDensity',
+                  FOLIAGE_RENDERING_CONSTANTS.heroInteriorDensity,
+                ),
                 interiorInsetRatio: 0.3,
                 interiorScaleRatio: 1.08,
                 name: 'foliage-shell-lod0',
               }),
-            () => this.leafClusterBuilder.build(treeData, foliageResources),
+            () =>
+              this.leafClusterBuilder.build(
+                treeData,
+                foliageResources,
+                createLeafBuildOptions(foliageProfile, 'hero', 'hero-leaf-shell'),
+              ),
           ],
           sharedFoliageResources,
         );

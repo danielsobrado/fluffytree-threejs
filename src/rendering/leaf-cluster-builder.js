@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CrownVolumeField } from '../generation/crown-volume-field.js';
 import {
   calculateHeroClusterStretch,
+  calculateHeroClusterTilt,
   calculateHeroLeafColorMix,
   calculateHeroLeafPaletteCoordinate,
   selectHeroLeafSamples,
@@ -23,17 +24,40 @@ import { samplePaletteColor } from './palette-color-sampler.js';
 import { configureTreeWindMaterial } from './tree-wind-shader.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
+const X_AXIS = new THREE.Vector3(1, 0, 0);
+const Z_AXIS = new THREE.Vector3(0, 0, 1);
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
-function createEmptyLeafShell(settings) {
+function clamp01(value) {
+  return Math.min(1, Math.max(0, value));
+}
+
+function resolveSettings(settings, options) {
+  const layerCount = options.layerCount ?? settings.layerCount;
+  if (!Number.isInteger(layerCount) || layerCount < 1 || layerCount > 4) {
+    throw new RangeError('Leaf cluster layerCount must be an integer within [1, 4].');
+  }
+  return Object.freeze({ ...settings, layerCount });
+}
+
+function resolveDensity(settings, options) {
+  const multiplier = Number(options.densityMultiplier ?? 1);
+  if (!Number.isFinite(multiplier) || multiplier < 0) {
+    throw new RangeError('Leaf cluster densityMultiplier must be a finite non-negative number.');
+  }
+  return clamp01(settings.density * multiplier);
+}
+
+function createEmptyLeafShell(settings, options = {}, density = settings.density) {
   const empty = new THREE.Group();
-  empty.name = 'hero-leaf-shell';
+  empty.name = options.name ?? 'hero-leaf-shell';
   empty.userData.heroLeaves = {
     clusterCount: 0,
     surfaceClusterCount: 0,
     sourceSampleCount: 0,
     layerCount: settings.layerCount,
     leafCount: 0,
+    density,
     innerInsetRatio: getInnerInsetRatio(settings),
     outerOffsetRatio: getOuterOffsetRatio(settings),
     tangentialJitterRatio: getTangentialJitterRatio(settings),
@@ -88,17 +112,20 @@ export class LeafClusterBuilder {
     this.materialFactory = materialFactory;
   }
 
-  build(treeData, resources = null) {
-    const settings = treeData.palette.heroLeaves;
-    if (!settings.enabled || settings.density <= 0 || treeData.shell.length === 0) {
-      return createEmptyLeafShell(settings);
+  build(treeData, resources = null, options = {}) {
+    const settings = resolveSettings(treeData.palette.heroLeaves, options);
+    const density = resolveDensity(settings, options);
+    if (!settings.enabled || density <= 0 || treeData.shell.length === 0) {
+      return createEmptyLeafShell(settings, options, density);
     }
 
-    const selected = selectHeroLeafSamples(treeData, settings.density);
-    if (selected.length === 0) return createEmptyLeafShell(settings);
+    const selected = selectHeroLeafSamples(treeData, density);
+    if (selected.length === 0) return createEmptyLeafShell(settings, options, density);
 
     const surfaceRecords = createSurfaceRecords(selected, settings.layerCount);
-    if (surfaceRecords.length === 0) return createEmptyLeafShell(settings);
+    if (surfaceRecords.length === 0) {
+      return createEmptyLeafShell(settings, options, density);
+    }
 
     const field = new CrownVolumeField(treeData);
     const records = surfaceRecords;
@@ -107,7 +134,7 @@ export class LeafClusterBuilder {
     let material = null;
 
     try {
-      geometry = this.geometryFactory.create(settings);
+      geometry = this.geometryFactory.create(settings, options.geometry ?? null);
       if (stylized) {
         addFoliageInstanceAttributes(geometry, records, {
           getColorMix: (record) => resolveStylizedColorMix(treeData, settings, record),
@@ -128,6 +155,8 @@ export class LeafClusterBuilder {
       const matrix = new THREE.Matrix4();
       const alignment = new THREE.Quaternion();
       const spin = new THREE.Quaternion();
+      const tiltX = new THREE.Quaternion();
+      const tiltZ = new THREE.Quaternion();
       const scale = new THREE.Vector3();
       const instanceColor = stylized ? null : new THREE.Color();
       const placement = {
@@ -137,6 +166,7 @@ export class LeafClusterBuilder {
       const position = new THREE.Vector3();
       const tangent = new THREE.Vector3();
       const bitangent = new THREE.Vector3();
+      const maximumTilt = Number(options.orientation?.tiltRadians ?? 0);
 
       records.forEach((record, index) => {
         resolvePlacement(record, field, placement);
@@ -158,6 +188,21 @@ export class LeafClusterBuilder {
           record.sample.rotation + record.layer * GOLDEN_ANGLE,
         );
         alignment.multiply(spin);
+        const tilt = calculateHeroClusterTilt(
+          treeData.seed,
+          record.sample.id,
+          record.layer,
+          maximumTilt,
+        );
+        if (tilt.x !== 0) {
+          tiltX.setFromAxisAngle(X_AXIS, tilt.x);
+          alignment.multiply(tiltX);
+        }
+        if (tilt.z !== 0) {
+          tiltZ.setFromAxisAngle(Z_AXIS, tilt.z);
+          alignment.multiply(tiltZ);
+        }
+
         const stretch = calculateHeroClusterStretch(
           treeData.seed,
           record.sample.id,
@@ -186,7 +231,7 @@ export class LeafClusterBuilder {
       mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-      mesh.name = 'hero-leaf-shell';
+      mesh.name = options.name ?? 'hero-leaf-shell';
       mesh.castShadow = false;
       mesh.receiveShadow = true;
       mesh.computeBoundingBox();
@@ -198,6 +243,7 @@ export class LeafClusterBuilder {
         sourceSampleCount: selected.length,
         layerCount: settings.layerCount,
         leafCount: records.length * settings.leavesPerCluster,
+        density,
         stylized,
         innerInsetRatio: getInnerInsetRatio(settings),
         outerOffsetRatio: getOuterOffsetRatio(settings),
