@@ -55,7 +55,11 @@ function findRoleIndex(levels, role) {
 }
 
 function resolveUpdateStride(settings) {
-  return Math.max(1, Math.trunc(settings.updateStride ?? 1));
+  const stride = settings.updateStride ?? 1;
+  if (!Number.isSafeInteger(stride) || stride < 1) {
+    throw new RangeError('LOD updateStride must be a positive integer.');
+  }
+  return stride;
 }
 
 export class TreeLodController {
