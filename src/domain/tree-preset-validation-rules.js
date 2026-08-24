@@ -65,6 +65,13 @@ export const OPTIONAL_NUMBER_PATHS = Object.freeze([
   'trunk.sweep',
   'trunk.taperPower',
   'trunk.nebari',
+  'foliage.undersideStrength',
+  'foliage.rimStrength',
+  'foliage.rimPower',
+  'foliage.translucencyStrength',
+  'foliage.surfaceBreakup',
+  'foliage.snowStrength',
+  'foliage.snowSharpness',
 ]);
 
 export const POSITIVE_NUMBER_PATHS = Object.freeze([
