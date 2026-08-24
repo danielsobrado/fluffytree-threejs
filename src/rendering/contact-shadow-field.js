@@ -127,5 +127,7 @@ export class ContactShadowField {
     this.dispose();
     this.material?.dispose();
     this.texture?.dispose();
+    this.material = null;
+    this.texture = null;
   }
 }
