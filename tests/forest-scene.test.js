@@ -74,6 +74,30 @@ test('forest variants are bounded per species while instance transforms stay uni
   assert.ok(new Set(layout.map((entry) => entry.rotationY)).size > maximumPerSpecies);
 });
 
+test('forest instance scale spread comes from the variant policy', () => {
+  const { layout } = createForestSceneConfig(createSourceConfig(), {
+    presets: PRESETS,
+    variantPolicy: {
+      maximumPerSpecies: 3,
+      scaleRange: [0.91, 0.91],
+    },
+  });
+
+  assert.ok(layout.length > 0);
+  assert.ok(layout.every((entry) => entry.scale === 0.91));
+  assert.throws(
+    () =>
+      createForestSceneConfig(createSourceConfig(), {
+        presets: PRESETS,
+        variantPolicy: {
+          maximumPerSpecies: 3,
+          scaleRange: [1.1, 0.9],
+        },
+      }),
+    /scaleRange/,
+  );
+});
+
 test('the clearing stays clear apart from the bushes standing in it', () => {
   const size = resolveForestSize(DEFAULT_FOREST_SIZE);
   const { layout } = createForestSceneConfig(createSourceConfig(), { presets: PRESETS });
