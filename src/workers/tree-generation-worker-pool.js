@@ -24,19 +24,39 @@ function queueKey(key) {
   return `tree-generation:${key}`;
 }
 
+function requireWorkerPolicy(policy) {
+  if (!policy || !Number.isSafeInteger(policy.maximumWorkers)) {
+    throw new TypeError('TreeGenerationWorkerPool requires a worker policy.');
+  }
+  if (policy.maximumWorkers < 1) {
+    throw new RangeError('Tree generation maximumWorkers must be a positive integer.');
+  }
+  if (
+    policy.terminateOnCancel !== undefined &&
+    typeof policy.terminateOnCancel !== 'boolean'
+  ) {
+    throw new TypeError('Tree generation terminateOnCancel must be boolean.');
+  }
+  return policy;
+}
+
+function requirePriority(priority) {
+  if (!Number.isFinite(priority)) {
+    throw new TypeError('Tree generation job priority must be finite.');
+  }
+  return priority;
+}
+
 export class TreeGenerationWorkerPool {
   constructor({
     policy,
     workerFactory = createTreeGenerationWorker,
     queue = new PrioritizedFrameBudgetQueue(),
   }) {
-    if (!policy || !Number.isSafeInteger(policy.maximumWorkers)) {
-      throw new TypeError('TreeGenerationWorkerPool requires a worker policy.');
-    }
+    this.policy = requireWorkerPolicy(policy);
     if (typeof workerFactory !== 'function') {
       throw new TypeError('Tree generation workerFactory must be a function.');
     }
-    this.policy = policy;
     this.workerFactory = workerFactory;
     this.queue = queue;
     this.revisions = new Map();
@@ -45,22 +65,42 @@ export class TreeGenerationWorkerPool {
     this.cancelledCount = 0;
     this.failedCount = 0;
     this.destroyed = false;
-    this.slots = Array.from(
-      { length: policy.maximumWorkers },
-      (_unused, index) => this.createSlot(index),
-    );
+    this.slots = [];
+
+    try {
+      for (let index = 0; index < this.policy.maximumWorkers; index += 1) {
+        this.slots.push(this.createSlot(index));
+      }
+    } catch (error) {
+      for (const slot of this.slots) slot.worker?.terminate?.();
+      this.slots.length = 0;
+      throw error;
+    }
   }
 
   createSlot(index) {
-    const slot = { index, worker: this.workerFactory(), job: null };
-    this.attachWorker(slot);
-    return slot;
+    const worker = this.workerFactory();
+    const slot = { index, worker, job: null };
+
+    try {
+      this.attachWorker(slot);
+      return slot;
+    } catch (error) {
+      worker?.terminate?.();
+      throw error;
+    }
   }
 
   attachWorker(slot) {
     const worker = slot.worker;
-    if (!worker || typeof worker.postMessage !== 'function') {
-      throw new TypeError('Tree generation worker must provide postMessage().');
+    if (
+      !worker ||
+      typeof worker.postMessage !== 'function' ||
+      typeof worker.addEventListener !== 'function'
+    ) {
+      throw new TypeError(
+        'Tree generation worker must provide postMessage() and addEventListener().',
+      );
     }
     worker.addEventListener('message', (event) => {
       if (slot.worker === worker) this.handleWorkerMessage(slot, event);
@@ -71,10 +111,20 @@ export class TreeGenerationWorkerPool {
   }
 
   replaceWorker(slot) {
-    slot.worker.terminate?.();
-    slot.worker = this.workerFactory();
+    const previousWorker = slot.worker;
+    slot.worker = null;
     slot.job = null;
-    this.attachWorker(slot);
+    previousWorker?.terminate?.();
+
+    const worker = this.workerFactory();
+    slot.worker = worker;
+    try {
+      this.attachWorker(slot);
+    } catch (error) {
+      worker?.terminate?.();
+      slot.worker = null;
+      throw error;
+    }
   }
 
   submit({ key, priority = 0, preset, seed, options = {} }) {
@@ -83,6 +133,13 @@ export class TreeGenerationWorkerPool {
     }
     if (typeof key !== 'string' || key === '') {
       return Promise.reject(new TypeError('Tree generation job key must be non-empty.'));
+    }
+
+    let validatedPriority;
+    try {
+      validatedPriority = requirePriority(priority);
+    } catch (error) {
+      return Promise.reject(error);
     }
 
     const revision = (this.revisions.get(key) ?? 0) + 1;
@@ -106,7 +163,7 @@ export class TreeGenerationWorkerPool {
     });
     const job = {
       key,
-      priority,
+      priority: validatedPriority,
       request,
       promise,
       resolve: resolvePromise,
@@ -116,14 +173,18 @@ export class TreeGenerationWorkerPool {
       settled: false,
     };
     this.jobsByKey.set(key, job);
-    this.queue.enqueue(queueKey(key), priority, () => this.dispatchJob(job));
+    this.queue.enqueue(queueKey(key), validatedPriority, () =>
+      this.dispatchJob(job),
+    );
     this.pump();
     return promise;
   }
 
   dispatchJob(job) {
     if (job.settled || this.jobsByKey.get(job.key) !== job) return;
-    const slot = this.slots.find((candidate) => candidate.job === null);
+    const slot = this.slots.find(
+      (candidate) => candidate.worker && candidate.job === null,
+    );
     if (!slot) {
       this.queue.enqueue(queueKey(job.key), job.priority, () =>
         this.dispatchJob(job),
@@ -133,13 +194,26 @@ export class TreeGenerationWorkerPool {
     job.state = 'in-flight';
     job.slot = slot;
     slot.job = job;
-    slot.worker.postMessage({
-      type: TREE_GENERATION_WORKER_MESSAGES.GENERATE,
-      request: job.request,
-    });
+
+    try {
+      slot.worker.postMessage({
+        type: TREE_GENERATION_WORKER_MESSAGES.GENERATE,
+        request: job.request,
+      });
+    } catch (error) {
+      this.failedCount += 1;
+      this.settleJob(job, () => job.reject(error), false);
+      try {
+        if (!this.destroyed) this.replaceWorker(slot);
+      } catch {
+        this.destroy();
+        return;
+      }
+      this.pump();
+    }
   }
 
-  settleJob(job, callback) {
+  settleJob(job, callback, shouldPump = true) {
     if (job.settled) return false;
     job.settled = true;
     if (this.jobsByKey.get(job.key) === job) this.jobsByKey.delete(job.key);
@@ -147,7 +221,7 @@ export class TreeGenerationWorkerPool {
     if (slot?.job === job) slot.job = null;
     job.slot = null;
     callback();
-    this.pump();
+    if (shouldPump) this.pump();
     return true;
   }
 
@@ -187,12 +261,23 @@ export class TreeGenerationWorkerPool {
 
   handleWorkerFailure(slot, event) {
     const job = slot.job;
-    if (!this.destroyed) this.replaceWorker(slot);
+    const error = new Error(event?.message ?? 'Tree generation worker crashed.');
+
     if (job && !job.settled) {
       this.failedCount += 1;
-      const error = new Error(event?.message ?? 'Tree generation worker crashed.');
-      this.settleJob(job, () => job.reject(error));
-      return;
+      this.settleJob(job, () => job.reject(error), false);
+    } else if (job) {
+      slot.job = null;
+      job.slot = null;
+    }
+
+    if (!this.destroyed) {
+      try {
+        this.replaceWorker(slot);
+      } catch {
+        this.destroy();
+        return;
+      }
     }
     this.pump();
   }
@@ -219,19 +304,27 @@ export class TreeGenerationWorkerPool {
     }
 
     if (this.policy.terminateOnCancel) {
-      this.replaceWorker(slot);
-      job.slot = null;
       this.rejectCancelledJob(job, reason);
+      job.slot = null;
+      try {
+        this.replaceWorker(slot);
+      } catch {
+        this.destroy();
+        return true;
+      }
       if (shouldPump) this.pump();
       return true;
     }
 
     job.state = 'cancelling';
-    slot.worker.postMessage({
-      type: TREE_GENERATION_WORKER_MESSAGES.CANCEL,
-      requestId: job.request.requestId,
-    });
-    this.rejectCancelledJob(job, reason);
+    try {
+      slot.worker.postMessage({
+        type: TREE_GENERATION_WORKER_MESSAGES.CANCEL,
+        requestId: job.request.requestId,
+      });
+    } finally {
+      this.rejectCancelledJob(job, reason);
+    }
     return true;
   }
 
@@ -244,7 +337,7 @@ export class TreeGenerationWorkerPool {
     if (this.destroyed) return;
     while (
       this.queue.length > 0 &&
-      this.slots.some((slot) => slot.job === null)
+      this.slots.some((slot) => slot.worker && slot.job === null)
     ) {
       const before = this.queue.length;
       this.queue.process(0);
@@ -268,7 +361,7 @@ export class TreeGenerationWorkerPool {
     }
     this.jobsByKey.clear();
     this.queue.clear();
-    for (const slot of this.slots) slot.worker.terminate?.();
+    for (const slot of this.slots) slot.worker?.terminate?.();
     this.slots.length = 0;
   }
 
