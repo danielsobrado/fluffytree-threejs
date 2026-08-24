@@ -213,12 +213,9 @@ const LEAF_SHAPES = Object.freeze({
     softness: Object.freeze([0.74, 1.04]),
   }),
 
-  // Not a leaf spray but a cluster of foliage seen from far enough away that
-  // individual leaves have stopped being the subject. The card reads as a
-  // rounded mass with a scalloped rim, which is the storybook canopy the glade
-  // presets are built from. Wide softness feathers the edge, and with
-  // alpha-to-coverage that feathering is what removes the cut-out look at the
-  // silhouette rather than a wider alpha test would.
+  // The opaque middle keeps the crown solid while the narrow outer ring reads
+  // as individual almond-shaped leaves. Both are baked into the same alpha
+  // texture, so the extra silhouette detail costs no triangles or draw calls.
   puff: Object.freeze({
     label: 'Puff (storybook canopy)',
     blades: Object.freeze([
@@ -229,6 +226,13 @@ const LEAF_SHAPES = Object.freeze({
         radiusX: 0.155,
         radiusY: 0.175,
         phase: 0.32,
+      }),
+      ...ring({
+        count: 11,
+        radius: 0.305,
+        radiusX: 0.058,
+        radiusY: 0.165,
+        phase: 0.17,
       }),
     ]),
     stem: null,
