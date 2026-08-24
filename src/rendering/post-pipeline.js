@@ -28,14 +28,12 @@ import { resolveDepthOfFieldSettings } from './depth-of-field-math.js';
  * The renderer's own `toneMapping` is what `OutputPass` reads to decide which
  * curve to apply, so it is left exactly as the scene factory set it.
  *
- * The bloom runs at half resolution. It is a blur, so the resolution it is
- * computed at is not the resolution it is seen at.
+ * UnrealBloomPass performs its own half-resolution downsampling internally.
  */
 
 const BLOOM_THRESHOLD = 0.82;
 const BLOOM_STRENGTH = 0.28;
 const BLOOM_RADIUS = 0.55;
-const BLOOM_RESOLUTION_SCALE = 0.5;
 
 const GRADE_SHADER = {
   uniforms: {
@@ -82,17 +80,10 @@ const GRADE_SHADER = {
  * the buffer the scene was last drawn into. Cloning the target would hand the
  * two framebuffers the same texture to attach.
  */
-function attachDepthTexture(target, width, height) {
+export function attachDepthTexture(target) {
   target.depthTexture?.dispose();
-  target.depthTexture = new THREE.DepthTexture(width, height);
-}
-
-function resizeDepthTexture(target, width, height) {
-  if (!target.depthTexture) return;
-
-  target.depthTexture.image.width = width;
-  target.depthTexture.image.height = height;
-  target.depthTexture.needsUpdate = true;
+  target.depthTexture = new THREE.DepthTexture(target.width, target.height);
+  return target.depthTexture;
 }
 
 export function createPostPipeline({
@@ -117,29 +108,22 @@ export function createPostPipeline({
   composer.setSize(width, height);
 
   if (focusSettings.enabled) {
-    attachDepthTexture(composer.renderTarget1, width, height);
-    attachDepthTexture(composer.renderTarget2, width, height);
+    attachDepthTexture(composer.renderTarget1);
+    attachDepthTexture(composer.renderTarget2);
   }
 
   const bloom = new UnrealBloomPass(
-    new THREE.Vector2(
-      width * BLOOM_RESOLUTION_SCALE,
-      height * BLOOM_RESOLUTION_SCALE,
-    ),
+    new THREE.Vector2(width, height),
     BLOOM_STRENGTH,
     BLOOM_RADIUS,
     BLOOM_THRESHOLD,
   );
-
   const depthOfFieldPass = focusSettings.enabled
     ? new DepthOfFieldPass(camera, focusSettings)
     : null;
 
   composer.addPass(new RenderPass(scene, camera));
-  if (depthOfFieldPass) {
-    depthOfFieldPass.setSize(width, height);
-    composer.addPass(depthOfFieldPass);
-  }
+  if (depthOfFieldPass) composer.addPass(depthOfFieldPass);
   composer.addPass(bloom);
   // Applies the tone mapping the renderer no longer does, then the grade sits
   // after it so the vignette is applied in display space.
@@ -158,16 +142,9 @@ export function createPostPipeline({
       depthOfFieldPass?.setFocusDistance(distance);
     },
     setSize(nextWidth, nextHeight) {
+      // EffectComposer sizes its render targets and every pass at the active
+      // pixel ratio. WebGLRenderTarget also resizes attached depth textures.
       composer.setSize(nextWidth, nextHeight);
-      bloom.setSize(
-        nextWidth * BLOOM_RESOLUTION_SCALE,
-        nextHeight * BLOOM_RESOLUTION_SCALE,
-      );
-      if (depthOfFieldPass) {
-        resizeDepthTexture(composer.renderTarget1, nextWidth, nextHeight);
-        resizeDepthTexture(composer.renderTarget2, nextWidth, nextHeight);
-        depthOfFieldPass.setSize(nextWidth, nextHeight);
-      }
     },
     dispose() {
       depthOfFieldPass?.dispose();
@@ -175,7 +152,6 @@ export function createPostPipeline({
       outputPass.dispose();
       gradePass.dispose();
       composer.dispose();
-      target.dispose();
     },
   };
 }
