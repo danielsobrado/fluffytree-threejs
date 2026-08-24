@@ -256,7 +256,15 @@ export class TreeGenerationWorkerPool {
     if (message.type === TREE_GENERATION_WORKER_MESSAGES.ERROR) {
       this.failedCount += 1;
       this.settleJob(job, () => job.reject(restoreWorkerError(message.error)));
+      return;
     }
+
+    this.failedCount += 1;
+    this.settleJob(job, () =>
+      job.reject(
+        new Error(`Unexpected tree generation worker message '${message.type}'.`),
+      ),
+    );
   }
 
   handleWorkerFailure(slot, event) {
@@ -322,9 +330,20 @@ export class TreeGenerationWorkerPool {
         type: TREE_GENERATION_WORKER_MESSAGES.CANCEL,
         requestId: job.request.requestId,
       });
-    } finally {
+    } catch {
       this.rejectCancelledJob(job, reason);
+      job.slot = null;
+      try {
+        if (!this.destroyed) this.replaceWorker(slot);
+      } catch {
+        this.destroy();
+        return true;
+      }
+      if (shouldPump) this.pump();
+      return true;
     }
+
+    this.rejectCancelledJob(job, reason);
     return true;
   }
 
