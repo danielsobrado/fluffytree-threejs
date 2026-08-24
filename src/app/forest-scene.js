@@ -36,6 +36,7 @@ const CLEARING_BUSH_COUNT = 7;
 const FAR_MINIMUM_LOD = 2;
 const SHADOW_EXTENT = 44;
 const FOREST_VARIANT_SEED_NAMESPACE = 'forest-tree-variant';
+const DEFAULT_SCALE_RANGE = Object.freeze([0.84, 1.2]);
 
 export const DEFAULT_FOREST_SIZE = 'glade';
 export const FOREST_SEED = 20260805;
@@ -149,6 +150,21 @@ function requireVariantCount(variantPolicy) {
   return maximum;
 }
 
+function resolveScaleRange(variantPolicy) {
+  const range = variantPolicy?.scaleRange ?? DEFAULT_SCALE_RANGE;
+  if (
+    !Array.isArray(range) ||
+    range.length !== 2 ||
+    !Number.isFinite(range[0]) ||
+    !Number.isFinite(range[1]) ||
+    range[0] <= 0 ||
+    range[1] < range[0]
+  ) {
+    throw new RangeError('Forest variant scaleRange must be a positive [minimum, maximum] pair.');
+  }
+  return range;
+}
+
 function createVariantSeed(presetId, sceneSeed, variantIndex) {
   const hash = hashCanonicalValue([
     FOREST_VARIANT_SEED_NAMESPACE,
@@ -159,18 +175,42 @@ function createVariantSeed(presetId, sceneSeed, variantIndex) {
   return Number.parseInt(hash.slice(0, 8), 16) || 1;
 }
 
-function createEntry(preset, x, z, size, random, variantPolicy, sceneSeed) {
+function createVariantSeedResolver(sceneSeed) {
+  const seedsByPreset = new Map();
+
+  return (presetId, variantIndex) => {
+    let seeds = seedsByPreset.get(presetId);
+    if (!seeds) {
+      seeds = new Map();
+      seedsByPreset.set(presetId, seeds);
+    }
+    if (!seeds.has(variantIndex)) {
+      seeds.set(variantIndex, createVariantSeed(presetId, sceneSeed, variantIndex));
+    }
+    return seeds.get(variantIndex);
+  };
+}
+
+function createEntry(
+  preset,
+  x,
+  z,
+  size,
+  random,
+  maximumVariants,
+  scaleRange,
+  resolveVariantSeed,
+) {
   // Measured from the rounded position, so where a tree stands and how far out
   // it counts as standing can never disagree.
   const position = [round(x), 0, round(z)];
   const distance = Math.hypot(position[0], position[2]);
-  const maximumVariants = requireVariantCount(variantPolicy);
   const variantIndex =
     maximumVariants === null ? null : random.integer(0, maximumVariants - 1);
   const treeSeed =
     variantIndex === null
       ? random.integer(1, 2000000000)
-      : createVariantSeed(preset.id, sceneSeed, variantIndex);
+      : resolveVariantSeed(preset.id, variantIndex);
 
   return {
     preset: preset.id,
@@ -180,7 +220,7 @@ function createEntry(preset, x, z, size, random, variantPolicy, sceneSeed) {
     rotationY: round(random.range(0, Math.PI * 2), 4),
     // Variant geometry is deliberately shared. Rotation and scale hide repeated
     // silhouettes without paying to regenerate a unique tree for every cell.
-    scale: round(random.range(0.84, 1.2)),
+    scale: round(random.range(scaleRange[0], scaleRange[1])),
     minimumLod: distance > size.heroRadius ? FAR_MINIMUM_LOD : 0,
     distance,
   };
@@ -196,6 +236,9 @@ export function createForestLayout(
   const entries = [];
   const cells = Math.ceil((size.radius * 2) / size.spacing);
   const origin = -((cells - 1) * size.spacing) / 2;
+  const maximumVariants = requireVariantCount(variantPolicy);
+  const scaleRange = resolveScaleRange(variantPolicy);
+  const resolveVariantSeed = createVariantSeedResolver(seed);
 
   for (let row = 0; row < cells; row += 1) {
     for (let column = 0; column < cells; column += 1) {
@@ -214,8 +257,9 @@ export function createForestLayout(
           z,
           size,
           random,
-          variantPolicy,
-          seed,
+          maximumVariants,
+          scaleRange,
+          resolveVariantSeed,
         ),
       );
     }
@@ -231,8 +275,9 @@ export function createForestLayout(
         Math.sin(angle) * distance,
         size,
         random,
-        variantPolicy,
-        seed,
+        maximumVariants,
+        scaleRange,
+        resolveVariantSeed,
       ),
     );
   }
