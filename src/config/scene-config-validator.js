@@ -133,6 +133,12 @@ function validateLod(config) {
   requireFinite(lod, 'fadeBand', 'lod', { minimum: 0, maximum: 1 });
   requirePositive(lod, 'shadowPixels', 'lod');
   requirePositive(lod, 'generationBudgetMs', 'lod');
+  if (lod.updateStride !== undefined) {
+    const updateStride = requirePositive(lod, 'updateStride', 'lod');
+    if (!Number.isSafeInteger(updateStride)) {
+      throw new Error("Scene configuration 'lod.updateStride' must be a positive integer.");
+    }
+  }
 }
 
 function validateLighting(config) {
