@@ -21,7 +21,7 @@ profiles:
     hero:
       shellDensity: 0.34
       shellInteriorDensity: 0.02
-      leafDensityMultiplier: 5.0
+      leafDensityMultiplier: 4.0
       leafLayerCount: 2
     near:
       shellDensity: 0.58
