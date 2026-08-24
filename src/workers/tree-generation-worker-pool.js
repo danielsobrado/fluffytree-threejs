@@ -232,10 +232,33 @@ export class TreeGenerationWorkerPool {
     this.pump();
   }
 
+  failWorkerProtocol(slot, job, message) {
+    const receivedRequestId = message?.requestId ?? 'missing';
+    const error = new Error(
+      `Tree generation worker response requestId '${receivedRequestId}' did not match '${job.request.requestId}'.`,
+    );
+    this.failedCount += 1;
+    this.settleJob(job, () => job.reject(error), false);
+
+    if (!this.destroyed) {
+      try {
+        this.replaceWorker(slot);
+      } catch {
+        this.destroy();
+        return;
+      }
+    }
+    this.pump();
+  }
+
   handleWorkerMessage(slot, event) {
     const job = slot.job;
     const message = event?.data;
-    if (!job || !message || message.requestId !== job.request.requestId) return;
+    if (!job) return;
+    if (!message || message.requestId !== job.request.requestId) {
+      this.failWorkerProtocol(slot, job, message);
+      return;
+    }
 
     if (job.settled) {
       this.releaseCancelledSlot(slot, job);
