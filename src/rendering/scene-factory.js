@@ -66,8 +66,13 @@ function createGroundGeometry(config) {
   );
   const geometry = new THREE.RingGeometry(0, radius, GROUND_SEGMENTS, rings);
 
-  paintGroundPools(geometry, config);
-  return geometry;
+  try {
+    paintGroundPools(geometry, config);
+    return geometry;
+  } catch (error) {
+    geometry.dispose();
+    throw error;
+  }
 }
 
 /**
@@ -186,8 +191,10 @@ export function applySceneSettings(context, config) {
 
   const ground = scene.getObjectByName('ground');
   if (ground) {
-    ground.geometry.dispose();
-    ground.geometry = createGroundGeometry(config);
+    const nextGeometry = createGroundGeometry(config);
+    const previousGeometry = ground.geometry;
+    ground.geometry = nextGeometry;
+    previousGeometry?.dispose();
   }
 
   camera.fov = config.camera.fieldOfView;
