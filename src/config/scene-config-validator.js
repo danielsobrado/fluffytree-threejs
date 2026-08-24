@@ -1,4 +1,5 @@
 import { SCENE_RUNTIME_CONSTANTS } from './scene-runtime-constants.js';
+import { validateSceneRenderingOptions } from './scene-rendering-config-validator.js';
 
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 const MAXIMUM_SEED = 0xffffffff;
@@ -197,6 +198,7 @@ export function validateSceneConfig(config) {
   validateRenderer(config);
   validateLod(config);
   validateLighting(config);
+  validateSceneRenderingOptions(config);
   validateLayout(config);
   return config;
 }
