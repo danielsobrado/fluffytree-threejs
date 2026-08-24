@@ -66,6 +66,22 @@ test('full tree data replaces the compact entry for the same variant', () => {
   assert.equal(cache.metrics.size, 1);
 });
 
+test('upgrading a compact variant does not evict another cached variant', () => {
+  const generator = createGenerator();
+  const cache = new CachedTreeGenerator({ generator, maximumEntries: 2 });
+  const preset = { id: 'oak' };
+
+  const other = cache.generate(preset, 41, { includeSurfaceSamples: true });
+  cache.generate(preset, 42, { includeSurfaceSamples: false });
+  cache.generate(preset, 42, { includeSurfaceSamples: true });
+  const otherAgain = cache.generate(preset, 41, { includeSurfaceSamples: true });
+
+  assert.equal(otherAgain, other);
+  assert.equal(generator.calls.length, 3);
+  assert.equal(cache.metrics.size, 2);
+  assert.equal(cache.metrics.evictions, 0);
+});
+
 test('preset object identity prevents stale data crossing preset revisions', () => {
   const generator = createGenerator();
   const cache = new CachedTreeGenerator({ generator, maximumEntries: 4 });
