@@ -93,6 +93,20 @@ test('every leaf shape carries enough alpha to read as foliage rather than a com
   }
 });
 
+test('puff canopies carry pointed leaflets beyond the rounded crown core', () => {
+  const shape = getLeafShape('puff');
+  const angle = 0.17;
+  const radius = 0.45;
+  const alpha = sampleLeafAlpha(
+    Math.cos(angle) * radius,
+    Math.sin(angle) * radius,
+    shape,
+  );
+
+  assert.ok(alpha > ALPHA_TEST);
+  assert.ok(measureCoverage('puff') > 0.4);
+});
+
 test('every blade stays inside the card it is rendered on', () => {
   for (const id of LEAF_SHAPE_IDS) {
     const shape = getLeafShape(id);
