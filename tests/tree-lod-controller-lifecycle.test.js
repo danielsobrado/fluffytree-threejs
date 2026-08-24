@@ -134,3 +134,13 @@ test('staggered LOD updates settle after one full sweep and restart on change', 
   controller.update(camera, 720);
   assert.equal(reads.count, 4);
 });
+
+test('LOD update stride rejects values that could disable the sweep', () => {
+  for (const updateStride of [0, -1, 1.5, Number.NaN, '2']) {
+    assert.throws(
+      () => new TreeLodController({ ...SETTINGS, updateStride }),
+      /updateStride.*positive integer/,
+      String(updateStride),
+    );
+  }
+});
