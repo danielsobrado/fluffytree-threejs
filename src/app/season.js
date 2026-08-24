@@ -201,17 +201,87 @@ export function applySeasonToPreset(preset, id) {
   return turn(preset, season.foliage);
 }
 
-/** The presets, turned for the season, except those that opted out. */
-export function applySeasonToPresets(presets, id) {
-  const season = DEFINITIONS[resolveSeason(id)];
-  if (!season.foliage) return presets;
-
-  const seasonal = new Map();
-  for (const [presetId, preset] of presets) {
-    seasonal.set(presetId, applySeasonToPreset(preset, id));
+class SeasonalPresetMap extends Map {
+  constructor(source, seasonId) {
+    super();
+    this.source = source;
+    this.seasonId = seasonId;
+    this.sourcePresets = new Map();
+    this.sync();
   }
 
-  return seasonal;
+  refresh(presetId) {
+    const sourcePreset = this.source.get(presetId);
+    if (!sourcePreset) {
+      this.sourcePresets.delete(presetId);
+      super.delete(presetId);
+      return undefined;
+    }
+
+    if (this.sourcePresets.get(presetId) !== sourcePreset) {
+      super.set(
+        presetId,
+        applySeasonToPreset(sourcePreset, this.seasonId),
+      );
+      this.sourcePresets.set(presetId, sourcePreset);
+    }
+    return super.get(presetId);
+  }
+
+  sync() {
+    for (const presetId of this.sourcePresets.keys()) {
+      if (!this.source.has(presetId)) {
+        this.sourcePresets.delete(presetId);
+        super.delete(presetId);
+      }
+    }
+    for (const presetId of this.source.keys()) this.refresh(presetId);
+  }
+
+  get(presetId) {
+    return this.refresh(presetId);
+  }
+
+  has(presetId) {
+    this.refresh(presetId);
+    return super.has(presetId);
+  }
+
+  keys() {
+    this.sync();
+    return super.keys();
+  }
+
+  values() {
+    this.sync();
+    return super.values();
+  }
+
+  entries() {
+    this.sync();
+    return super.entries();
+  }
+
+  forEach(callback, thisArg) {
+    this.sync();
+    return super.forEach(callback, thisArg);
+  }
+
+  get size() {
+    this.sync();
+    return super.size;
+  }
+
+  [Symbol.iterator]() {
+    return this.entries();
+  }
+}
+
+/** The presets, turned for the season, except those that opted out. */
+export function applySeasonToPresets(presets, id) {
+  const seasonId = resolveSeason(id);
+  if (!DEFINITIONS[seasonId].foliage) return presets;
+  return new SeasonalPresetMap(presets, seasonId);
 }
 
 function turn(preset, foliage) {
