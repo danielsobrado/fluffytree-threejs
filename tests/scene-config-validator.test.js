@@ -36,6 +36,53 @@ test('scene validation rejects invalid optional LOD update strides', () => {
   }
 });
 
+test('scene validation rejects invalid optional rendering settings', () => {
+  const cases = [
+    {
+      mutate: (config) => {
+        config.scene.contactShadow.strength = 2;
+      },
+      pattern: /scene\.contactShadow\.strength.*<= 1/,
+    },
+    {
+      mutate: (config) => {
+        config.scene.lightPools.cellSize = Number.NaN;
+      },
+      pattern: /scene\.lightPools\.cellSize.*finite number/,
+    },
+    {
+      mutate: (config) => {
+        config.scene.meadow.count = '3600';
+      },
+      pattern: /scene\.meadow\.count.*finite number/,
+    },
+    {
+      mutate: (config) => {
+        config.scene.meadow.scale = [0.6, 0.3];
+      },
+      pattern: /scene\.meadow\.scale.*ascending/,
+    },
+    {
+      mutate: (config) => {
+        config.renderer.depthOfField.nearFalloff = 0;
+      },
+      pattern: /renderer\.depthOfField\.nearFalloff.*> 0/,
+    },
+    {
+      mutate: (config) => {
+        config.lighting.followFocus = 'yes';
+      },
+      pattern: /lighting\.followFocus.*boolean/,
+    },
+  ];
+
+  for (const { mutate, pattern } of cases) {
+    const config = loadSceneConfig();
+    mutate(config);
+    assert.throws(() => validateSceneConfig(config), pattern);
+  }
+});
+
 test('scene validation rejects non-finite layout coordinates', () => {
   const config = loadSceneConfig();
   config.layout[0].position[1] = Number.POSITIVE_INFINITY;
