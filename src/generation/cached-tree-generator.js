@@ -117,7 +117,6 @@ export class CachedTreeGenerator {
 
     this.misses += 1;
     const generated = this.generator.generate(preset, seed, options);
-    this.set(key, generated);
 
     if (normalizedOptions.includeSurfaceSamples === true) {
       const compactKey = this.cacheKey(preset, seed, {
@@ -127,6 +126,7 @@ export class CachedTreeGenerator {
       this.entries.delete(compactKey);
     }
 
+    this.set(key, generated);
     return generated;
   }
 
