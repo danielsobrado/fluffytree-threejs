@@ -51,3 +51,20 @@ test('object disposer preserves explicitly shared resources during partial rollb
   assert.equal(geometry.disposed, 1);
   assert.equal(material.disposed, 1);
 });
+
+test('object disposer leaves shared sprite geometry owned by three.js', () => {
+  const geometry = resource();
+  const material = resource();
+  material.userData = {};
+  const root = rootWith({
+    isSprite: true,
+    geometry,
+    material,
+    userData: {},
+  });
+
+  disposeObject(root);
+
+  assert.equal(geometry.disposed, 0);
+  assert.equal(material.disposed, 1);
+});
