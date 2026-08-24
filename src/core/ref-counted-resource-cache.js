@@ -25,6 +25,23 @@ export class RefCountedResourceCache {
     this.activeLeases = 0;
   }
 
+  disposeEntry(entry) {
+    if (entry.disposed) return false;
+    entry.disposed = true;
+    this.dispose(entry.value);
+    this.disposals += 1;
+    return true;
+  }
+
+  evictEntry(entry, { disposeActive = false } = {}) {
+    if (this.entries.get(entry.key) === entry) {
+      this.entries.delete(entry.key);
+      entry.cached = false;
+      this.evictions += 1;
+    }
+    if (entry.refCount === 0 || disposeActive) this.disposeEntry(entry);
+  }
+
   createLease(entry) {
     entry.refCount += 1;
     entry.lastAccess = ++this.clock;
@@ -39,7 +56,11 @@ export class RefCountedResourceCache {
         released = true;
         entry.refCount -= 1;
         this.activeLeases -= 1;
-        this.trim();
+        if (!entry.cached && entry.refCount === 0) {
+          this.disposeEntry(entry);
+        } else {
+          this.trim();
+        }
         return true;
       },
     });
@@ -62,18 +83,13 @@ export class RefCountedResourceCache {
       value,
       refCount: 0,
       lastAccess: ++this.clock,
+      cached: true,
+      disposed: false,
     };
     this.entries.set(key, entry);
     const lease = this.createLease(entry);
     this.trim();
     return lease;
-  }
-
-  evictEntry(entry) {
-    this.entries.delete(entry.key);
-    this.dispose(entry.value);
-    this.evictions += 1;
-    this.disposals += 1;
   }
 
   trim() {
@@ -95,8 +111,7 @@ export class RefCountedResourceCache {
 
   clear({ force = false } = {}) {
     for (const entry of [...this.entries.values()]) {
-      if (!force && entry.refCount !== 0) continue;
-      this.evictEntry(entry);
+      this.evictEntry(entry, { disposeActive: force });
     }
   }
 
