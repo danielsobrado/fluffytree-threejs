@@ -137,6 +137,7 @@ export class ForestRuntimeManager {
         !nextActiveChunkKeys.has(chunkKey)
       ) {
         this.activeChunkKeys.delete(chunkKey);
+        this.chunkTracker.remove(chunkKey);
       }
     }
     return Object.freeze(transitions);
@@ -191,6 +192,7 @@ export class ForestRuntimeManager {
         const completed = this.chunkTracker.complete(token, completedState);
         if (completed && completedState === FOREST_CHUNK_STATES.UNLOADED) {
           this.activeChunkKeys.delete(token.chunkKey);
+          this.chunkTracker.remove(token.chunkKey);
         }
       });
     }
