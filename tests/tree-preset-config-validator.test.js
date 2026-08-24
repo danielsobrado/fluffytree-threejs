@@ -58,6 +58,28 @@ test('tree preset validation rejects coercible nested tuning values', () => {
   );
 });
 
+test('tree preset validation rejects coercible optional foliage tuning values', () => {
+  for (const [key, value] of [
+    ['undersideStrength', '0.35'],
+    ['rimStrength', '0.5'],
+    ['rimPower', '2'],
+    ['translucencyStrength', '0.25'],
+    ['surfaceBreakup', '0.4'],
+    ['snowStrength', '0.6'],
+    ['snowSharpness', '3'],
+  ]) {
+    const config = mutateRoundOrchard((preset) => {
+      preset.foliage[key] = value;
+    });
+
+    assert.throws(
+      () => PresetLibrary.fromConfig(config),
+      new RegExp(`roundOrchard\\.foliage\\.${key}.*finite number`),
+      key,
+    );
+  }
+});
+
 test('tree preset validation rejects non-finite pair values', () => {
   const config = mutateRoundOrchard((preset) => {
     preset.crown.lobeScale = [0.74, Number.POSITIVE_INFINITY];
