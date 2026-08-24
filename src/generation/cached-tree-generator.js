@@ -70,7 +70,9 @@ export class CachedTreeGenerator {
   }
 
   cacheKey(preset, seed, options) {
-    return `${this.presetKey(preset)}:${normalizeSeed(seed)}:${hashCanonicalValue(options)}`;
+    const normalizedSeed = normalizeSeed(seed);
+    const optionHash = hashCanonicalValue(options);
+    return `${this.presetKey(preset)}:${normalizedSeed}:${optionHash}`;
   }
 
   get(key) {
