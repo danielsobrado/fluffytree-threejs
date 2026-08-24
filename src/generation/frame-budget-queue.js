@@ -1,5 +1,15 @@
+function requireBudget(value) {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new RangeError('Frame budget must be non-negative.');
+  }
+  return value;
+}
+
 export class FrameBudgetQueue {
   constructor({ now = () => performance.now() } = {}) {
+    if (typeof now !== 'function') {
+      throw new TypeError('FrameBudgetQueue now must be a function.');
+    }
     this.now = now;
     this.tasks = [];
     this.head = 0;
@@ -9,6 +19,9 @@ export class FrameBudgetQueue {
   }
 
   enqueue(key, task) {
+    if (typeof task !== 'function') {
+      throw new TypeError('Frame budget task must be a function.');
+    }
     if (this.keys.has(key)) return false;
     this.keys.add(key);
     this.tasks.push({ key, task });
@@ -40,6 +53,7 @@ export class FrameBudgetQueue {
   }
 
   process(budgetMilliseconds) {
+    const budget = requireBudget(budgetMilliseconds);
     if (this.head >= this.tasks.length) {
       this.lastProcessDuration = 0;
       this.compact();
@@ -66,7 +80,7 @@ export class FrameBudgetQueue {
         }
 
         processed += 1;
-        if (this.now() - started >= budgetMilliseconds) break;
+        if (this.now() - started >= budget) break;
       }
 
       return processed;
