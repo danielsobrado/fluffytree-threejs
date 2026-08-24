@@ -1,3 +1,4 @@
+import { hashCanonicalValue } from '../core/canonical-value-hash.js';
 import { SeededRandom } from '../generation/seeded-random.js';
 
 /**
@@ -34,6 +35,7 @@ const CLEARING_BUSH_COUNT = 7;
 // large forest and they are only ever seen as cores or impostors.
 const FAR_MINIMUM_LOD = 2;
 const SHADOW_EXTENT = 44;
+const FOREST_VARIANT_SEED_NAMESPACE = 'forest-tree-variant';
 
 export const DEFAULT_FOREST_SIZE = 'glade';
 export const FOREST_SEED = 20260805;
@@ -138,26 +140,58 @@ function round(value, decimals = 3) {
   return Number(value.toFixed(decimals));
 }
 
-function createEntry(preset, x, z, size, random) {
+function requireVariantCount(variantPolicy) {
+  if (!variantPolicy) return null;
+  const maximum = Number(variantPolicy.maximumPerSpecies);
+  if (!Number.isSafeInteger(maximum) || maximum < 1) {
+    throw new RangeError('Forest variant maximumPerSpecies must be a positive integer.');
+  }
+  return maximum;
+}
+
+function createVariantSeed(presetId, sceneSeed, variantIndex) {
+  const hash = hashCanonicalValue([
+    FOREST_VARIANT_SEED_NAMESPACE,
+    presetId,
+    sceneSeed,
+    variantIndex,
+  ]);
+  return Number.parseInt(hash.slice(0, 8), 16) || 1;
+}
+
+function createEntry(preset, x, z, size, random, variantPolicy, sceneSeed) {
   // Measured from the rounded position, so where a tree stands and how far out
   // it counts as standing can never disagree.
   const position = [round(x), 0, round(z)];
   const distance = Math.hypot(position[0], position[2]);
+  const maximumVariants = requireVariantCount(variantPolicy);
+  const variantIndex =
+    maximumVariants === null ? null : random.integer(0, maximumVariants - 1);
+  const treeSeed =
+    variantIndex === null
+      ? random.integer(1, 2000000000)
+      : createVariantSeed(preset.id, sceneSeed, variantIndex);
 
   return {
     preset: preset.id,
-    seed: random.integer(1, 2000000000),
+    seed: treeSeed,
+    ...(variantIndex === null ? {} : { variantIndex }),
     position,
     rotationY: round(random.range(0, Math.PI * 2), 4),
-    // Seeds vary the shape but not the height, so the size spread is what stops
-    // a stand of one preset from reading as a row of copies.
+    // Variant geometry is deliberately shared. Rotation and scale hide repeated
+    // silhouettes without paying to regenerate a unique tree for every cell.
     scale: round(random.range(0.84, 1.2)),
     minimumLod: distance > size.heroRadius ? FAR_MINIMUM_LOD : 0,
     distance,
   };
 }
 
-export function createForestLayout(size, presets, random) {
+export function createForestLayout(
+  size,
+  presets,
+  random,
+  { variantPolicy = null, seed = FOREST_SEED } = {},
+) {
   const bands = classifyPresets(presets);
   const entries = [];
   const cells = Math.ceil((size.radius * 2) / size.spacing);
@@ -173,7 +207,17 @@ export function createForestLayout(size, presets, random) {
       if (distance > size.radius) continue;
       if (random.next() > densityAt(distance, size) * size.fill) continue;
 
-      entries.push(createEntry(pick(chooseBand(bands, random), random), x, z, size, random));
+      entries.push(
+        createEntry(
+          pick(chooseBand(bands, random), random),
+          x,
+          z,
+          size,
+          random,
+          variantPolicy,
+          seed,
+        ),
+      );
     }
   }
 
@@ -187,6 +231,8 @@ export function createForestLayout(size, presets, random) {
         Math.sin(angle) * distance,
         size,
         random,
+        variantPolicy,
+        seed,
       ),
     );
   }
@@ -207,10 +253,18 @@ export function createForestLayout(size, presets, random) {
  */
 export function createForestSceneConfig(
   config,
-  { size = DEFAULT_FOREST_SIZE, presets = [], seed = FOREST_SEED } = {},
+  {
+    size = DEFAULT_FOREST_SIZE,
+    presets = [],
+    seed = FOREST_SEED,
+    variantPolicy = config?.forestVariantPolicy ?? null,
+  } = {},
 ) {
   const settings = resolveForestSize(size);
-  const layout = createForestLayout(settings, presets, new SeededRandom(seed));
+  const layout = createForestLayout(settings, presets, new SeededRandom(seed), {
+    variantPolicy,
+    seed,
+  });
   const groundSize = settings.radius * 2 + 60;
 
   return {
@@ -252,6 +306,7 @@ export function createForestSceneConfig(
       radius: settings.radius,
       clearingRadius: settings.clearingRadius,
       treeCount: layout.length,
+      variantCountPerSpecies: variantPolicy?.maximumPerSpecies ?? null,
       // Kept inside the ground disc, so a walk cannot step off the world.
       walkRadius: groundSize * 0.5 - 4,
     }),
