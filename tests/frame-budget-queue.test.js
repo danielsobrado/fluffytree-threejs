@@ -98,3 +98,15 @@ test('pending generation tasks can be cancelled by key', () => {
   assert.equal(queue.process(1), 3);
   assert.deepEqual(completed, ['a', 'c', 'b2']);
 });
+
+test('generation queue rejects invalid dependencies and budgets before processing', () => {
+  assert.throws(() => new FrameBudgetQueue({ now: null }), /now must be a function/);
+
+  const queue = new FrameBudgetQueue({ now: () => 0 });
+  assert.throws(() => queue.enqueue('bad', null), /task must be a function/);
+  queue.enqueue('safe', () => {});
+
+  assert.throws(() => queue.process(Number.NaN), /budget must be non-negative/);
+  assert.throws(() => queue.process(-1), /budget must be non-negative/);
+  assert.equal(queue.length, 1);
+});
