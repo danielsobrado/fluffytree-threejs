@@ -29,17 +29,23 @@ export class BoundedLruCache {
     return this.touch(key, this.entries.get(key));
   }
 
+  set(key, value) {
+    this.touch(key, value);
+    this.trim();
+    return value;
+  }
+
   getOrCreate(key, factory) {
     if (typeof factory !== 'function') {
       throw new TypeError('Cache factory must be a function.');
     }
-    const existing = this.get(key);
-    if (existing !== undefined) return existing;
+    if (this.entries.has(key)) {
+      this.hits += 1;
+      return this.touch(key, this.entries.get(key));
+    }
 
-    const value = factory();
-    this.entries.set(key, value);
-    this.trim();
-    return value;
+    this.misses += 1;
+    return this.set(key, factory());
   }
 
   trim() {
