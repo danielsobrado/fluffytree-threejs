@@ -32,7 +32,7 @@ export class WorkerTreeGenerationService {
         options: generationOptions,
       })
       .then((treeIr) => {
-        this.cache.getOrCreate(key, () => treeIr);
+        this.cache.set(key, treeIr);
         return treeIr;
       })
       .finally(() => {
