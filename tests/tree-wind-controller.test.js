@@ -90,6 +90,25 @@ test('wind controller registers a shared material state only once per tree', () 
   assert.equal(sharedState.treeHeight, TREE_HEIGHT);
 });
 
+test('shared geometry seeds still get independent wind phases by position', () => {
+  const firstState = { time: 0, phase: 0, strength: 0, treeHeight: 1 };
+  const secondState = { time: 0, phase: 0, strength: 0, treeHeight: 1 };
+  const first = createTreeWithVisitor((visitor) => {
+    visitor({ material: { userData: { windState: firstState } }, userData: {} });
+  });
+  const second = createTreeWithVisitor((visitor) => {
+    visitor({ material: { userData: { windState: secondState } }, userData: {} });
+  });
+  first.position = { x: 4.25, z: -2.5 };
+  second.position = { x: -7.75, z: 5.5 };
+  const controller = new TreeWindController();
+
+  controller.register(first, 29);
+  controller.register(second, 29);
+
+  assert.notEqual(firstState.phase, secondState.phase);
+});
+
 test('shared wind states survive until every owning tree unregisters', () => {
   const sharedState = { time: 0, phase: 0, strength: 0, treeHeight: 1 };
   const visitor = (callback) =>
