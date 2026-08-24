@@ -96,6 +96,32 @@ test('scene validation rejects seeds that would truncate or wrap', () => {
   }
 });
 
+test('scene validation rejects invalid optional instance scale', () => {
+  for (const scale of [0, -0.5, Number.NaN, '1.2']) {
+    const config = loadSceneConfig();
+    config.layout[0].scale = scale;
+
+    assert.throws(
+      () => validateSceneConfig(config),
+      /layout\[0\]\.scale.*(?:finite number|> 0)/,
+      String(scale),
+    );
+  }
+});
+
+test('scene validation bounds optional minimum LOD to runtime levels', () => {
+  for (const minimumLod of [-1, 1.5, 4]) {
+    const config = loadSceneConfig();
+    config.layout[0].minimumLod = minimumLod;
+
+    assert.throws(
+      () => validateSceneConfig(config),
+      /layout\[0\]\.minimumLod.*(?:>= 0|<= 3|integer)/,
+      String(minimumLod),
+    );
+  }
+});
+
 test('scene validation rejects malformed colors', () => {
   const config = loadSceneConfig();
   config.lighting.sunColor = 'sunny';
