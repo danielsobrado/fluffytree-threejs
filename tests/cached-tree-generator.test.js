@@ -41,11 +41,29 @@ test('full tree data can satisfy a compact forest request', () => {
   const generator = createGenerator();
   const cache = new CachedTreeGenerator({ generator, maximumEntries: 4 });
   const preset = { id: 'oak' };
-  const full = cache.generate(preset, 23, { includeSurfaceSamples: true });
+  const full = cache.generate(preset, 23, {});
   const compact = cache.generate(preset, 23, { includeSurfaceSamples: false });
 
   assert.equal(compact, full);
   assert.equal(generator.calls.length, 1);
+});
+
+test('full tree data replaces the compact entry for the same variant', () => {
+  const generator = createGenerator();
+  const cache = new CachedTreeGenerator({ generator, maximumEntries: 4 });
+  const preset = { id: 'oak' };
+
+  const compact = cache.generate(preset, 27, { includeSurfaceSamples: false });
+  const full = cache.generate(preset, 27, { includeSurfaceSamples: true });
+  const compactAfterUpgrade = cache.generate(preset, 27, {
+    includeSurfaceSamples: false,
+  });
+
+  assert.notEqual(full, compact);
+  assert.equal(full.includeSurfaceSamples, true);
+  assert.equal(compactAfterUpgrade, full);
+  assert.equal(generator.calls.length, 2);
+  assert.equal(cache.metrics.size, 1);
 });
 
 test('preset object identity prevents stale data crossing preset revisions', () => {
@@ -91,7 +109,7 @@ test('cache rejects seeds the wrapped generator would reject', () => {
   assert.equal(generator.calls.length, 0);
 });
 
-test('cache capacity covers both forest surface-sample modes', () => {
-  assert.equal(calculateTreeGenerationCacheCapacity(12, 8), 192);
+test('cache capacity holds one generated entry per forest variant', () => {
+  assert.equal(calculateTreeGenerationCacheCapacity(12, 8), 96);
   assert.throws(() => calculateTreeGenerationCacheCapacity(0, 8), /positive integer/);
 });
