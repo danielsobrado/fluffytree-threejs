@@ -195,6 +195,12 @@ export function applySeasonToScene(config, id) {
   };
 }
 
+export function applySeasonToPreset(preset, id) {
+  const season = DEFINITIONS[resolveSeason(id)];
+  if (!season.foliage || preset.foliage.seasonal === false) return preset;
+  return turn(preset, season.foliage);
+}
+
 /** The presets, turned for the season, except those that opted out. */
 export function applySeasonToPresets(presets, id) {
   const season = DEFINITIONS[resolveSeason(id)];
@@ -202,10 +208,7 @@ export function applySeasonToPresets(presets, id) {
 
   const seasonal = new Map();
   for (const [presetId, preset] of presets) {
-    seasonal.set(
-      presetId,
-      preset.foliage.seasonal === false ? preset : turn(preset, season.foliage),
-    );
+    seasonal.set(presetId, applySeasonToPreset(preset, id));
   }
 
   return seasonal;
