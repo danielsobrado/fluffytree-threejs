@@ -24,6 +24,9 @@ function shouldCompactHeap(heapLength, activeCount) {
 
 export class PrioritizedFrameBudgetQueue {
   constructor({ now = () => performance.now() } = {}) {
+    if (typeof now !== 'function') {
+      throw new TypeError('Prioritized queue now must be a function.');
+    }
     this.now = now;
     this.heap = [];
     this.entries = new Map();
@@ -140,6 +143,11 @@ export class PrioritizedFrameBudgetQueue {
     if (!Number.isFinite(budgetMilliseconds) || budgetMilliseconds < 0) {
       throw new RangeError('Prioritized queue budget must be non-negative.');
     }
+    if (this.entries.size === 0) {
+      this.lastProcessDuration = 0;
+      return 0;
+    }
+
     const started = this.now();
     let processed = 0;
 
