@@ -1,7 +1,6 @@
 import { hashCanonicalValue } from '../core/canonical-value-hash.js';
 
 const MAXIMUM_SEED = 0xffffffff;
-const SURFACE_SAMPLE_VARIANT_COUNT = 2;
 
 function requirePositiveInteger(value, label) {
   if (!Number.isSafeInteger(value) || value < 1) {
@@ -24,6 +23,14 @@ function normalizeSeed(seed) {
   return seed >>> 0;
 }
 
+function normalizeOptions(options) {
+  if (!options || typeof options !== 'object' || Array.isArray(options)) {
+    throw new TypeError('Tree generation cache options must be an object.');
+  }
+  if (options.includeSurfaceSamples !== undefined) return options;
+  return { ...options, includeSurfaceSamples: true };
+}
+
 export function calculateTreeGenerationCacheCapacity(
   speciesCount,
   maximumVariantsPerSpecies,
@@ -33,8 +40,7 @@ export function calculateTreeGenerationCacheCapacity(
     requirePositiveInteger(
       maximumVariantsPerSpecies,
       'Tree generation cache variants per species',
-    ) *
-    SURFACE_SAMPLE_VARIANT_COUNT
+    )
   );
 }
 
@@ -95,13 +101,14 @@ export class CachedTreeGenerator {
   }
 
   generate(preset, seed, options = {}) {
-    const key = this.cacheKey(preset, seed, options);
+    const normalizedOptions = normalizeOptions(options);
+    const key = this.cacheKey(preset, seed, normalizedOptions);
     const cached = this.get(key);
     if (cached) return cached;
 
-    if (options.includeSurfaceSamples === false) {
+    if (normalizedOptions.includeSurfaceSamples === false) {
       const fullKey = this.cacheKey(preset, seed, {
-        ...options,
+        ...normalizedOptions,
         includeSurfaceSamples: true,
       });
       const full = this.get(fullKey);
@@ -111,6 +118,15 @@ export class CachedTreeGenerator {
     this.misses += 1;
     const generated = this.generator.generate(preset, seed, options);
     this.set(key, generated);
+
+    if (normalizedOptions.includeSurfaceSamples === true) {
+      const compactKey = this.cacheKey(preset, seed, {
+        ...normalizedOptions,
+        includeSurfaceSamples: false,
+      });
+      this.entries.delete(compactKey);
+    }
+
     return generated;
   }
 
