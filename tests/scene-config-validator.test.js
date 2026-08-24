@@ -23,6 +23,19 @@ test('scene validation rejects unordered LOD thresholds', () => {
   );
 });
 
+test('scene validation rejects invalid optional LOD update strides', () => {
+  for (const updateStride of [0, -1, 1.5, Number.NaN, '3']) {
+    const config = loadSceneConfig();
+    config.lod.updateStride = updateStride;
+
+    assert.throws(
+      () => validateSceneConfig(config),
+      /lod\.updateStride.*(?:finite number|> 0|positive integer)/,
+      String(updateStride),
+    );
+  }
+});
+
 test('scene validation rejects non-finite layout coordinates', () => {
   const config = loadSceneConfig();
   config.layout[0].position[1] = Number.POSITIVE_INFINITY;
