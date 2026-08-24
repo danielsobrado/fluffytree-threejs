@@ -39,7 +39,12 @@ function findFirstVisibleLevel(weights) {
 }
 
 function representationRole(level, index) {
-  return level.userData?.lod?.role ?? treeRepresentationRoleAt(index);
+  return level?.userData?.lod?.role ?? treeRepresentationRoleAt(index);
+}
+
+function resolveActiveRole(levels, index) {
+  if (index >= levels.length) return TREE_REPRESENTATION_ROLES.CULLED;
+  return representationRole(levels[index], index);
 }
 
 function findRoleIndex(levels, role) {
@@ -336,8 +341,7 @@ export class TreeLodController {
         this.applyLevelFade(entry, lodState, index, weights[index], invert);
       }
 
-      const activeLevel = lodState.levels[entry.stableLevel];
-      const activeRole = representationRole(activeLevel, entry.stableLevel);
+      const activeRole = resolveActiveRole(lodState.levels, entry.stableLevel);
       const castsShadow = shouldRenderTreeShadowProxy(
         activeRole,
         projectedPixels,
