@@ -79,6 +79,18 @@ test('the cache evicts least-recently-used entries at its configured bound', () 
   assert.equal(cache.metrics.evictions, 2);
 });
 
+test('cache rejects seeds the wrapped generator would reject', () => {
+  const generator = createGenerator();
+  const cache = new CachedTreeGenerator({ generator, maximumEntries: 4 });
+  const preset = { id: 'oak' };
+
+  for (const seed of [-1, 0x100000000, Number.NaN, '7']) {
+    assert.throws(() => cache.generate(preset, seed), /seed/i);
+  }
+
+  assert.equal(generator.calls.length, 0);
+});
+
 test('cache capacity covers both forest surface-sample modes', () => {
   assert.equal(calculateTreeGenerationCacheCapacity(12, 8), 192);
   assert.throws(() => calculateTreeGenerationCacheCapacity(0, 8), /positive integer/);
