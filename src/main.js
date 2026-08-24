@@ -14,6 +14,12 @@ import {
   StemManifoldProbe,
 } from './diagnostics/stem-manifold-probe.js';
 import { PresetLibrary } from './domain/preset-library.js';
+import { parseForestVariantPolicy } from './forest/forest-variant-policy.js';
+import {
+  CachedTreeGenerator,
+  calculateTreeGenerationCacheCapacity,
+} from './generation/cached-tree-generator.js';
+import { TreeGenerator } from './generation/tree-generator.js';
 import { parseShellCoverageQaConfig } from './qa/shell-coverage-qa-config.js';
 import { parseTreeStressQaPolicy } from './qa/tree-stress-qa-policy.js';
 import { parseFoliageRepresentationPolicy } from './rendering/foliage-representation-policy.js';
@@ -28,6 +34,7 @@ const CONFIG_URLS = Object.freeze({
   trees: './config/tree-presets.yaml',
   foliageContinuity: './config/foliage-continuity.yaml',
   foliageRendering: './config/foliage-rendering.yaml',
+  forestVariants: './config/forest-variant-policy.yaml',
   shellCoverageQa: './config/shell-coverage-qa.yaml',
   treeStressQa: './config/tree-stress-qa.yaml',
   stemManifoldQa: './config/stem-manifold-qa.yaml',
@@ -68,6 +75,7 @@ async function bootstrap() {
       treeConfig,
       continuityConfig,
       rawFoliageRenderingConfig,
+      rawForestVariantConfig,
       rawCoverageConfig,
       rawStressConfig,
     ] = await Promise.all([
@@ -76,21 +84,35 @@ async function bootstrap() {
       loader.load(CONFIG_URLS.trees),
       loader.load(CONFIG_URLS.foliageContinuity),
       loader.load(CONFIG_URLS.foliageRendering),
+      loader.load(CONFIG_URLS.forestVariants),
       loader.load(CONFIG_URLS.shellCoverageQa),
       loader.load(CONFIG_URLS.treeStressQa),
     ]);
-    const sceneConfig = validateSceneConfig(rawSceneConfig);
+    const validatedSceneConfig = validateSceneConfig(rawSceneConfig);
     const foliageRenderingPolicy = parseFoliageRepresentationPolicy(
       rawFoliageRenderingConfig,
     );
+    const forestVariantPolicy = parseForestVariantPolicy(rawForestVariantConfig);
     const coverageConfig = parseShellCoverageQaConfig(rawCoverageConfig);
     const stressPolicy = parseTreeStressQaPolicy(rawStressConfig);
     const releaseVersion = formatReleaseVersion(releaseConfig);
     const overlayTitle = formatOverlayTitle(releaseConfig);
     applyDocumentTitle(releaseConfig);
     const library = PresetLibrary.fromConfig(treeConfig, continuityConfig);
+    const sceneConfig = Object.freeze({
+      ...validatedSceneConfig,
+      forestVariantPolicy,
+    });
+    const generationCacheCapacity = calculateTreeGenerationCacheCapacity(
+      library.presets.size,
+      forestVariantPolicy.maximumPerSpecies,
+    );
     demo = new TreeDemo({
       canopySolidityProbe: new IsolatedCanopySolidityProbe(),
+      treeGenerator: new CachedTreeGenerator({
+        generator: new TreeGenerator(),
+        maximumEntries: generationCacheCapacity,
+      }),
       treeMeshBuilder: new TreeMeshBuilder({ foliageRenderingPolicy }),
     });
     demo.start(
