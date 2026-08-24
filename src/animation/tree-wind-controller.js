@@ -1,6 +1,7 @@
 import { expandTreeWindBounds } from './tree-wind-bounds.js';
 import { TREE_WIND_PROFILE } from './tree-wind-profile.js';
 
+const MAXIMUM_SEED = 0xffffffff;
 const WIND_POSITION_QUANTIZATION = 64;
 const WIND_POSITION_X_SALT = 0x9e3779b1;
 const WIND_POSITION_Z_SALT = 0x85ebca77;
@@ -21,6 +22,18 @@ function requirePositiveFinite(value, name) {
   return number;
 }
 
+function requireSeed(value) {
+  if (
+    typeof value !== 'number' ||
+    !Number.isSafeInteger(value) ||
+    value < 0 ||
+    value > MAXIMUM_SEED
+  ) {
+    throw new RangeError('Tree wind seed must be an unsigned 32-bit integer.');
+  }
+  return value >>> 0;
+}
+
 function mixUint32(value) {
   let mixed = value >>> 0;
   mixed ^= mixed >>> 16;
@@ -31,8 +44,7 @@ function mixUint32(value) {
   return mixed >>> 0;
 }
 
-function phaseSeedForTree(tree, seed) {
-  const normalizedSeed = Number(seed) >>> 0;
+function phaseSeedForTree(tree, normalizedSeed) {
   const x = Number(tree.position?.x);
   const z = Number(tree.position?.z);
   if (!Number.isFinite(x) || !Number.isFinite(z)) return normalizedSeed;
@@ -139,7 +151,8 @@ export class TreeWindController {
       tree.userData?.tree?.height,
       'Tree wind height',
     );
-    const phaseSeed = phaseSeedForTree(tree, seed);
+    const normalizedSeed = requireSeed(seed);
+    const phaseSeed = phaseSeedForTree(tree, normalizedSeed);
     const phase =
       ((phaseSeed % TREE_WIND_PROFILE.seedModulo) /
         TREE_WIND_PROFILE.seedModulo) *
@@ -169,7 +182,7 @@ export class TreeWindController {
     });
 
     this.reconcileTreeStates(tree, nextStates);
-    this.wrapDeferredHero(tree, seed);
+    this.wrapDeferredHero(tree, normalizedSeed);
     return true;
   }
 
