@@ -26,6 +26,9 @@ function createGradientTexture(strength) {
   canvas.height = TEXTURE_RESOLUTION;
 
   const context = canvas.getContext('2d');
+  if (!context) {
+    throw new Error('Unable to create the contact shadow texture canvas.');
+  }
   const centre = TEXTURE_RESOLUTION * 0.5;
   const gradient = context.createRadialGradient(
     centre,
