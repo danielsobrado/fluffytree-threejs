@@ -45,3 +45,24 @@ test('prioritized queue releases canceled entries when no work remains', () => {
   assert.equal(queue.heap.length, 0);
   assert.equal(queue.cancel('chunk'), false);
 });
+
+test('idle prioritized queue does not sample the frame clock', () => {
+  let clockReads = 0;
+  const queue = new PrioritizedFrameBudgetQueue({
+    now: () => {
+      clockReads += 1;
+      return 0;
+    },
+  });
+
+  assert.equal(queue.process(8), 0);
+  assert.equal(queue.lastProcessDuration, 0);
+  assert.equal(clockReads, 0);
+});
+
+test('prioritized queue validates its frame clock dependency', () => {
+  assert.throws(
+    () => new PrioritizedFrameBudgetQueue({ now: null }),
+    /now must be a function/,
+  );
+});
