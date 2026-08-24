@@ -125,6 +125,28 @@ test('unexpected matching worker messages reject instead of wedging the slot', a
   pool.destroy();
 });
 
+test('mismatched worker responses reject and replace the compromised worker', async () => {
+  const { pool, workers } = createPool();
+  const result = pool.submit({ key: 'mismatch', preset: PRESET, seed: 40 });
+  const worker = workers[0];
+
+  worker.emit('message', {
+    data: {
+      type: 'tree-generation:result',
+      requestId: 'another-job:99',
+      treeIr: {},
+    },
+  });
+
+  await assert.rejects(result, /response requestId.*did not match/);
+  assert.equal(pool.metrics.activeJobCount, 0);
+  assert.equal(pool.metrics.busyWorkerCount, 0);
+  assert.equal(pool.metrics.failedCount, 1);
+  assert.equal(worker.terminated, true);
+  assert.equal(workers.length, 2);
+  pool.destroy();
+});
+
 test('failed cancellation messages replace the worker and free the slot', async () => {
   const cancelError = new Error('cancel failed');
   const { pool, workers } = createPool({
