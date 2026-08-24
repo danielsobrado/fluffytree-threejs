@@ -47,6 +47,7 @@ function createTuftTexture() {
   canvas.height = TEXTURE_RESOLUTION;
 
   const context = canvas.getContext('2d');
+  if (!context) throw new Error('Unable to create the meadow texture canvas.');
   context.clearRect(0, 0, TEXTURE_RESOLUTION, TEXTURE_RESOLUTION);
   context.fillStyle = '#ffffff';
 
@@ -133,10 +134,11 @@ export class MeadowCarpet {
     const quaternion = new THREE.Quaternion();
     const position = new THREE.Vector3();
     const scale = new THREE.Vector3();
+    const upAxis = new THREE.Vector3(0, 1, 0);
     const colour = new THREE.Color();
 
     for (const [index, instance] of instances.entries()) {
-      quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), instance.rotationY);
+      quaternion.setFromAxisAngle(upAxis, instance.rotationY);
       position.set(instance.x, 0, instance.z);
       scale.setScalar(instance.scale);
       matrix.compose(position, quaternion, scale);
