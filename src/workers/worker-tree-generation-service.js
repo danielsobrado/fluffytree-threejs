@@ -9,9 +9,14 @@ export class WorkerTreeGenerationService {
     this.workerPool = workerPool;
     this.cache = new BoundedLruCache({ maximumEntries: maximumCacheEntries });
     this.inflight = new Map();
+    this.destroyed = false;
   }
 
   generate(preset, seed, { generationOptions = {}, priority = 0 } = {}) {
+    if (this.destroyed) {
+      return Promise.reject(new Error('Worker tree generation service is destroyed.'));
+    }
+
     const key = createTreeIrCacheKey({
       preset,
       seed,
@@ -32,6 +37,9 @@ export class WorkerTreeGenerationService {
         options: generationOptions,
       })
       .then((treeIr) => {
+        if (this.destroyed) {
+          throw new Error('Worker tree generation service was destroyed before completion.');
+        }
         this.cache.set(key, treeIr);
         return treeIr;
       })
@@ -44,6 +52,8 @@ export class WorkerTreeGenerationService {
   }
 
   destroy() {
+    if (this.destroyed) return;
+    this.destroyed = true;
     this.inflight.clear();
     this.cache.clear();
     this.workerPool.destroy?.();
