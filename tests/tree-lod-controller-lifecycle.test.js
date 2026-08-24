@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import * as THREE from 'three';
 import { TreeLodController } from '../src/rendering/tree-lod-controller.js';
-import { TREE_RENDER_REPRESENTATION_ROLES } from '../src/rendering/tree-representation-role.js';
+import {
+  TREE_RENDER_REPRESENTATION_ROLES,
+  TREE_REPRESENTATION_ROLES,
+} from '../src/rendering/tree-representation-role.js';
 
 const SETTINGS = Object.freeze({
   nearPixels: 300,
@@ -77,6 +80,26 @@ test('LOD clear cancels deferred hero work for every registered tree', () => {
 
   assert.equal(controller.entries.length, 0);
   assert.deepEqual(cancelled, [`${first.uuid}:hero`, `${second.uuid}:hero`]);
+});
+
+test('culled trees keep an explicit non-rendering role without indexing past levels', () => {
+  const controller = new TreeLodController(SETTINGS);
+  const tree = createTree({ heroReady: true });
+  controller.register(tree);
+
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 5000);
+  camera.position.set(0, 0, 1000);
+  camera.updateMatrixWorld(true);
+
+  assert.doesNotThrow(() => controller.update(camera, 720));
+  assert.equal(tree.userData.lod.currentLevel, 4);
+  assert.equal(tree.userData.lod.currentRole, TREE_REPRESENTATION_ROLES.CULLED);
+  assert.equal(tree.userData.lod.shadowProxy.visible, false);
+  assert.deepEqual(controller.summarize(), {
+    levels: [0, 0, 0, 0],
+    culled: 1,
+    total: 1,
+  });
 });
 
 test('staggered LOD updates settle after one full sweep and restart on change', () => {
