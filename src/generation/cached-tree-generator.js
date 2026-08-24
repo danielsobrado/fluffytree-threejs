@@ -1,5 +1,6 @@
 import { hashCanonicalValue } from '../core/canonical-value-hash.js';
 
+const MAXIMUM_SEED = 0xffffffff;
 const SURFACE_SAMPLE_VARIANT_COUNT = 2;
 
 function requirePositiveInteger(value, label) {
@@ -7,6 +8,20 @@ function requirePositiveInteger(value, label) {
     throw new RangeError(`${label} must be a positive integer.`);
   }
   return value;
+}
+
+function normalizeSeed(seed) {
+  if (
+    typeof seed !== 'number' ||
+    !Number.isSafeInteger(seed) ||
+    seed < 0 ||
+    seed > MAXIMUM_SEED
+  ) {
+    throw new RangeError(
+      `Tree generation cache seed must be an unsigned 32-bit integer; received '${seed}'.`,
+    );
+  }
+  return seed >>> 0;
 }
 
 export function calculateTreeGenerationCacheCapacity(
@@ -55,7 +70,7 @@ export class CachedTreeGenerator {
   }
 
   cacheKey(preset, seed, options) {
-    return `${this.presetKey(preset)}:${Number(seed) >>> 0}:${hashCanonicalValue(options)}`;
+    return `${this.presetKey(preset)}:${normalizeSeed(seed)}:${hashCanonicalValue(options)}`;
   }
 
   get(key) {
