@@ -189,15 +189,20 @@ test('wind controller expands instanced foliage bounds once for GPU sway', () =>
   );
 });
 
-test('wind controller rejects invalid runtime settings and tree heights', () => {
+test('wind controller rejects invalid runtime settings, heights, and seeds', () => {
   assert.throws(() => new TreeWindController({ strength: -0.1 }), /strength/);
   assert.throws(() => new TreeWindController({ speed: Number.NaN }), /speed/);
   assert.throws(() => new TreeWindController().update(-1), /elapsed time/);
 
   const controller = new TreeWindController();
-  const tree = createTree();
-  tree.userData.tree.height = 0;
-  assert.throws(() => controller.register(tree, 1), /height/);
+  const invalidHeightTree = createTree();
+  invalidHeightTree.userData.tree.height = 0;
+  assert.throws(() => controller.register(invalidHeightTree, 1), /height/);
+
+  const validTree = createTree();
+  for (const seed of [-1, 0x100000000, Number.NaN, '7']) {
+    assert.throws(() => controller.register(validTree, seed), /seed/);
+  }
 });
 
 test('wind query flags freeze the canopy at its generated pose', () => {
