@@ -55,3 +55,42 @@ test('ref-counted resource cache exposes cache hits and disposes on force clear'
   cache.clear({ force: true });
   assert.deepEqual(disposed, ['value']);
 });
+
+test('clearing retires leased resources and rebuilds the same cache key', () => {
+  const disposed = [];
+  const cache = new RefCountedResourceCache({
+    maximumEntries: 2,
+    dispose: (value) => disposed.push(value.id),
+  });
+  const first = cache.acquire('same', () => ({ id: 'first' }));
+
+  cache.clear();
+
+  assert.equal(cache.metrics.entries, 0);
+  assert.deepEqual(disposed, []);
+  const second = cache.acquire('same', () => ({ id: 'second' }));
+  assert.notEqual(first.value, second.value);
+  assert.equal(cache.metrics.entries, 1);
+
+  assert.equal(first.release(), true);
+  assert.deepEqual(disposed, ['first']);
+  assert.equal(second.release(), true);
+  cache.clear();
+  assert.deepEqual(disposed, ['first', 'second']);
+});
+
+test('force clearing an active lease disposes it only once', () => {
+  const disposed = [];
+  const cache = new RefCountedResourceCache({
+    maximumEntries: 1,
+    dispose: (value) => disposed.push(value.id),
+  });
+  const lease = cache.acquire('active', () => ({ id: 'active' }));
+
+  cache.clear({ force: true });
+  assert.deepEqual(disposed, ['active']);
+  assert.equal(cache.metrics.entries, 0);
+
+  lease.release();
+  assert.deepEqual(disposed, ['active']);
+});
