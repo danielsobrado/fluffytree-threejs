@@ -1,6 +1,10 @@
 import { expandTreeWindBounds } from './tree-wind-bounds.js';
 import { TREE_WIND_PROFILE } from './tree-wind-profile.js';
 
+const WIND_POSITION_QUANTIZATION = 64;
+const WIND_POSITION_X_SALT = 0x9e3779b1;
+const WIND_POSITION_Z_SALT = 0x85ebca77;
+
 function requireNonNegativeFinite(value, name) {
   const number = Number(value);
   if (!Number.isFinite(number) || number < 0) {
@@ -15,6 +19,33 @@ function requirePositiveFinite(value, name) {
     throw new RangeError(`${name} must be finite and positive.`);
   }
   return number;
+}
+
+function mixUint32(value) {
+  let mixed = value >>> 0;
+  mixed ^= mixed >>> 16;
+  mixed = Math.imul(mixed, 0x7feb352d) >>> 0;
+  mixed ^= mixed >>> 15;
+  mixed = Math.imul(mixed, 0x846ca68b) >>> 0;
+  mixed ^= mixed >>> 16;
+  return mixed >>> 0;
+}
+
+function phaseSeedForTree(tree, seed) {
+  const normalizedSeed = Number(seed) >>> 0;
+  const x = Number(tree.position?.x);
+  const z = Number(tree.position?.z);
+  if (!Number.isFinite(x) || !Number.isFinite(z)) return normalizedSeed;
+
+  const quantizedX = Math.round(x * WIND_POSITION_QUANTIZATION);
+  const quantizedZ = Math.round(z * WIND_POSITION_QUANTIZATION);
+  if (quantizedX === 0 && quantizedZ === 0) return normalizedSeed;
+
+  return mixUint32(
+    normalizedSeed ^
+      Math.imul(quantizedX, WIND_POSITION_X_SALT) ^
+      Math.imul(quantizedZ, WIND_POSITION_Z_SALT),
+  );
 }
 
 /**
@@ -108,9 +139,9 @@ export class TreeWindController {
       tree.userData?.tree?.height,
       'Tree wind height',
     );
-    const normalizedSeed = Number(seed) >>> 0;
+    const phaseSeed = phaseSeedForTree(tree, seed);
     const phase =
-      ((normalizedSeed % TREE_WIND_PROFILE.seedModulo) /
+      ((phaseSeed % TREE_WIND_PROFILE.seedModulo) /
         TREE_WIND_PROFILE.seedModulo) *
       Math.PI * 2;
     const nextStates = new Set();
