@@ -168,6 +168,16 @@ function validateLayout(config) {
     }
     requireVector(entry, 'position', path);
     if (entry.rotationY !== undefined) requireFinite(entry, 'rotationY', path);
+    if (entry.scale !== undefined) requirePositive(entry, 'scale', path);
+    if (entry.minimumLod !== undefined) {
+      const minimumLod = requireFinite(entry, 'minimumLod', path, {
+        minimum: 0,
+        maximum: SCENE_RUNTIME_CONSTANTS.maximumLodLevel,
+      });
+      if (!Number.isInteger(minimumLod)) {
+        throw new Error(`Scene configuration '${path}.minimumLod' must be an integer.`);
+      }
+    }
   });
 }
 
