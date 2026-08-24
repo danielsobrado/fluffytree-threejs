@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   SEASONS,
   SUMMER_SEASON,
+  applySeasonToPreset,
   applySeasonToPresets,
   applySeasonToScene,
   requestedSeason,
@@ -130,4 +131,35 @@ test('a preset that is itself a season is left alone by one', () => {
     const turned = applySeasonToPresets(presets, id).get('frost');
     assert.deepEqual(turned, presets.get('frost'), `${id} overruled the opt-out`);
   }
+});
+
+test('seasonal preset maps refresh edited presets without churning unchanged ones', () => {
+  const source = new Map(presets);
+  const seasonal = applySeasonToPresets(source, 'autumn');
+  const originalTurned = seasonal.get('orchard');
+  const originalFrost = seasonal.get('frost');
+
+  assert.equal(seasonal.get('orchard'), originalTurned);
+
+  const edited = preset('orchard', [
+    '#25382a',
+    '#4f7046',
+    '#87a968',
+    '#c5d99a',
+  ]);
+  source.set('orchard', edited);
+
+  const refreshed = seasonal.get('orchard');
+  assert.notEqual(refreshed, originalTurned);
+  assert.deepEqual(refreshed, applySeasonToPreset(edited, 'autumn'));
+  assert.equal(seasonal.get('orchard'), refreshed);
+  assert.equal(seasonal.get('frost'), originalFrost);
+
+  source.set('newTree', preset('newTree', ['#314631', '#769064']));
+  assert.equal(seasonal.size, 3);
+  assert.ok(seasonal.has('newTree'));
+
+  source.delete('frost');
+  assert.equal(seasonal.has('frost'), false);
+  assert.equal(seasonal.size, 2);
 });
