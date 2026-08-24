@@ -8,6 +8,7 @@ const PRESET = Object.freeze({ id: 'test-tree' });
 class FakeWorker {
   constructor({ postError = null } = {}) {
     this.listeners = new Map();
+    this.messages = [];
     this.postError = postError;
     this.terminated = false;
   }
@@ -18,12 +19,21 @@ class FakeWorker {
     this.listeners.set(type, listeners);
   }
 
-  postMessage() {
-    if (this.postError) throw this.postError;
+  postMessage(message) {
+    this.messages.push(message);
+    const error =
+      typeof this.postError === 'function'
+        ? this.postError(message)
+        : this.postError;
+    if (error) throw error;
   }
 
   terminate() {
     this.terminated = true;
+  }
+
+  emit(type, event) {
+    for (const listener of this.listeners.get(type) ?? []) listener(event);
   }
 }
 
@@ -95,6 +105,47 @@ test('synchronous worker dispatch failures reject without wedging the slot', asy
   assert.equal(pool.metrics.failedCount, 1);
   assert.equal(workers[0].terminated, true);
   assert.equal(workers.length, 2);
+  pool.destroy();
+});
+
+test('unexpected matching worker messages reject instead of wedging the slot', async () => {
+  const { pool, workers } = createPool();
+  const result = pool.submit({ key: 'unexpected', preset: PRESET, seed: 4 });
+  const worker = workers[0];
+  const requestId = worker.messages[0].request.requestId;
+
+  worker.emit('message', {
+    data: { type: 'tree-generation:unexpected', requestId },
+  });
+
+  await assert.rejects(result, /Unexpected tree generation worker message/);
+  assert.equal(pool.metrics.activeJobCount, 0);
+  assert.equal(pool.metrics.busyWorkerCount, 0);
+  assert.equal(pool.metrics.failedCount, 1);
+  pool.destroy();
+});
+
+test('failed cancellation messages replace the worker and free the slot', async () => {
+  const cancelError = new Error('cancel failed');
+  const { pool, workers } = createPool({
+    policy: { maximumWorkers: 1, terminateOnCancel: false },
+    workerOptions: (index) =>
+      index === 0
+        ? {
+            postError: (message) =>
+              message.type === 'tree-generation:cancel' ? cancelError : null,
+          }
+        : {},
+  });
+  const active = pool.submit({ key: 'cancel-me', preset: PRESET, seed: 5 });
+  const cancelled = assert.rejects(active, /cancelled/);
+
+  assert.equal(pool.cancel('cancel-me'), true);
+  await cancelled;
+  assert.equal(workers[0].terminated, true);
+  assert.equal(workers.length, 2);
+  assert.equal(pool.metrics.activeJobCount, 0);
+  assert.equal(pool.metrics.busyWorkerCount, 0);
   pool.destroy();
 });
 
