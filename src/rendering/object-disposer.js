@@ -19,6 +19,12 @@ function disposeMaterial(material, disposedResources, preservedResources) {
   disposeResource(material, disposedResources, preservedResources);
 }
 
+function disposeGeometry(object, disposedResources, preservedResources) {
+  // Three.js sprites share one internal geometry across all Sprite instances.
+  if (object.isSprite) return;
+  disposeResource(object.geometry, disposedResources, preservedResources);
+}
+
 export function disposeObject(root, { preserveResources = [] } = {}) {
   const disposedResources = new Set();
   const preservedResources = new Set(preserveResources);
@@ -28,7 +34,7 @@ export function disposeObject(root, { preserveResources = [] } = {}) {
       disposeResource(resource, disposedResources, preservedResources);
     }
 
-    disposeResource(object.geometry, disposedResources, preservedResources);
+    disposeGeometry(object, disposedResources, preservedResources);
 
     if (Array.isArray(object.material)) {
       object.material.forEach((material) =>
