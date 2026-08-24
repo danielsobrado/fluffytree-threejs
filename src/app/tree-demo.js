@@ -47,6 +47,7 @@ import {
 } from './season.js';
 import { TreeBillboardBatchManager } from '../rendering/tree-billboard-batch-manager.js';
 import { TreeLodController } from '../rendering/tree-lod-controller.js';
+import { resolveTreeWorldScale } from '../rendering/tree-projection-math.js';
 import { measureViewport } from '../rendering/viewport-size.js';
 import { createDemoOverlay, showFatalError } from '../ui/demo-overlay.js';
 
@@ -273,10 +274,7 @@ export class TreeDemo {
       });
       tree.position.fromArray(entry.position);
       tree.rotation.y = rotationY;
-      if (scale !== 1) {
-        tree.scale.setScalar(scale);
-        tree.userData.tree.height *= scale;
-      }
+      if (scale !== 1) tree.scale.setScalar(scale);
       tree.updateMatrixWorld(true);
       tree.userData.lod.billboardBatchManager = billboardBatchManager;
       tree.userData.dressing = {
@@ -297,7 +295,6 @@ export class TreeDemo {
   dressTree(root) {
     const dressing = root.userData.dressing;
     if (!dressing) return;
-
     this.contactShadows?.add(dressing);
     this.treeColliders.push({
       x: root.position.x,
@@ -563,7 +560,9 @@ export class TreeDemo {
 
     if (!root) return;
 
-    const height = root.userData.tree.height;
+    const height =
+      root.userData.tree.height *
+      resolveTreeWorldScale(root.getWorldScale(new THREE.Vector3()));
     const { camera, controls } = this.context;
     controls.target.set(root.position.x, height * 0.52, root.position.z);
     camera.position.set(
@@ -578,8 +577,10 @@ export class TreeDemo {
   async runCanopySolidityProbe() {
     if (!this.canopySolidityProbe.enabled) return;
 
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-    if (this.destroyed || !this.context) return;
+    do {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      if (this.destroyed || !this.context) return;
+    } while (this.generationQueue.length > 0);
 
     await this.canopySolidityProbe.run({
       renderer: this.context.renderer,
@@ -610,9 +611,9 @@ export class TreeDemo {
 
     if (event.key.toLowerCase() === 'r' && !event.repeat) {
       try {
-        this.reseed();
+        this.reseedScene();
       } catch (error) {
-        logger.error('Failed to generate a new tree seed.', error);
+        logger.error('Failed to reseed the tree scene.', error);
       }
     }
   }
