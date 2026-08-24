@@ -52,6 +52,28 @@ test('a different seed lays the same size of forest out differently', () => {
   assert.notDeepEqual(first.layout, second.layout);
 });
 
+test('forest variants are bounded per species while instance transforms stay unique', () => {
+  const maximumPerSpecies = 3;
+  const { layout, forest } = createForestSceneConfig(createSourceConfig(), {
+    presets: PRESETS,
+    seed: 41,
+    variantPolicy: { maximumPerSpecies },
+  });
+  const seedsByPreset = new Map();
+
+  for (const entry of layout) {
+    if (!seedsByPreset.has(entry.preset)) seedsByPreset.set(entry.preset, new Set());
+    seedsByPreset.get(entry.preset).add(entry.seed);
+    assert.ok(entry.variantIndex >= 0 && entry.variantIndex < maximumPerSpecies);
+  }
+
+  assert.equal(forest.variantCountPerSpecies, maximumPerSpecies);
+  assert.ok(
+    [...seedsByPreset.values()].every((seeds) => seeds.size <= maximumPerSpecies),
+  );
+  assert.ok(new Set(layout.map((entry) => entry.rotationY)).size > maximumPerSpecies);
+});
+
 test('the clearing stays clear apart from the bushes standing in it', () => {
   const size = resolveForestSize(DEFAULT_FOREST_SIZE);
   const { layout } = createForestSceneConfig(createSourceConfig(), { presets: PRESETS });
