@@ -5,18 +5,27 @@ function copyPoint(point) {
   return Object.freeze({ x: point.x, y: point.y, z: point.z });
 }
 
+function reusePoint(point) {
+  return Object.freeze(point);
+}
+
 function copyPath(path) {
   return Object.freeze(path.map(copyPoint));
+}
+
+function reusePath(path) {
+  for (const point of path) reusePoint(point);
+  return Object.freeze(path);
 }
 
 function legacyBranchId(stem) {
   return stem.metadata.legacy?.id;
 }
 
-function createTrunk(rootStem) {
+function createTrunk(rootStem, reuseIrData) {
   const legacy = rootStem.metadata.legacy ?? {};
   return Object.freeze({
-    points: copyPath(rootStem.path),
+    points: reuseIrData ? reusePath(rootStem.path) : copyPath(rootStem.path),
     startRadius: rootStem.startRadius,
     endRadius: rootStem.endRadius,
     flare: legacy.flare,
@@ -26,7 +35,7 @@ function createTrunk(rootStem) {
   });
 }
 
-function createBranches(ir) {
+function createBranches(ir, reuseIrData) {
   return Object.freeze(
     ir.stems
       .filter((stem) => stem.id !== TREE_IR_ROOT_STEM_ID)
@@ -41,7 +50,7 @@ function createBranches(ir) {
           macroClumpId: legacy.macroClumpId,
           targetLobeId: legacy.targetLobeId,
           exposed: legacy.exposed,
-          points: copyPath(stem.path),
+          points: reuseIrData ? reusePath(stem.path) : copyPath(stem.path),
           startRadius: stem.startRadius,
           endRadius: stem.endRadius,
         });
@@ -49,7 +58,8 @@ function createBranches(ir) {
   );
 }
 
-function createLobes(ir, branchByStemId) {
+function createLobes(ir, branchByStemId, reuseIrData) {
+  const point = reuseIrData ? reusePoint : copyPoint;
   return Object.freeze(
     [...ir.crownVolumes]
       .sort((left, right) => left.metadata.legacyId - right.metadata.legacyId)
@@ -57,9 +67,9 @@ function createLobes(ir, branchByStemId) {
         Object.freeze({
           id: volume.metadata.legacyId,
           macroClumpId: volume.macroClumpId,
-          position: copyPoint(volume.center),
-          scale: copyPoint(volume.scale),
-          rotation: copyPoint(volume.rotation),
+          position: point(volume.center),
+          scale: point(volume.scale),
+          rotation: point(volume.rotation),
           colorMix: volume.colorMix,
           branchId: branchByStemId.get(volume.sourceStemId)?.id ?? null,
         }),
@@ -67,34 +77,38 @@ function createLobes(ir, branchByStemId) {
   );
 }
 
-function createShell(ir) {
+function createShell(ir, reuseIrData) {
   return Object.freeze(
     [...ir.foliageSites]
       .sort((left, right) => left.metadata.render.id - right.metadata.render.id)
-      .map((site) => Object.freeze({ ...site.metadata.render })),
+      .map((site) =>
+        reuseIrData
+          ? Object.freeze(site.metadata.render)
+          : Object.freeze({ ...site.metadata.render }),
+      ),
   );
 }
 
-function adaptValidatedTreeIr(ir) {
+function adaptValidatedTreeIr(ir, { reuseIrData = false } = {}) {
   const legacy = ir.metadata.legacy;
   if (!legacy) {
     throw new Error(`Tree IR '${ir.presetId}' has no legacy renderer metadata.`);
   }
 
   const rootStem = ir.stems.find((stem) => stem.id === ir.root.stemId);
-  const trunk = createTrunk(rootStem);
-  const branches = createBranches(ir);
+  const trunk = createTrunk(rootStem, reuseIrData);
+  const branches = createBranches(ir, reuseIrData);
   const branchByStemId = new Map(
     ir.stems
       .filter((stem) => Number.isSafeInteger(legacyBranchId(stem)))
       .map((stem) => [stem.id, stem.metadata.legacy]),
   );
-  const lobes = createLobes(ir, branchByStemId);
+  const lobes = createLobes(ir, branchByStemId, reuseIrData);
   const lobeExposure = [];
   for (const volume of ir.crownVolumes) {
     lobeExposure[volume.metadata.legacyId] = volume.exposure;
   }
-  const shell = createShell(ir);
+  const shell = createShell(ir, reuseIrData);
   const tree = {
     presetId: ir.presetId,
     generationModel: ir.generationModel,
@@ -126,7 +140,7 @@ function adaptValidatedTreeIr(ir) {
 }
 
 export function adaptValidatedTreeIrToLegacyTreeData(ir) {
-  return adaptValidatedTreeIr(ir);
+  return adaptValidatedTreeIr(ir, { reuseIrData: true });
 }
 
 export function adaptTreeIrToLegacyTreeData(ir) {
