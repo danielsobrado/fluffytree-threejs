@@ -2,6 +2,10 @@ import { createFoliageCoverageCertificationIndex } from './foliage-coverage-cert
 import { analyzeFoliageCoveragePatch } from './foliage-coverage-patch-analysis.js';
 import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
 import {
+  buildExposureNeighborhoods,
+  calculateExposureLipschitz,
+} from './lobe-exposure.js';
+import {
   createIcosahedronDirectionTriangles,
   subdivideDirectionTriangle,
 } from './surface-direction-triangulation.js';
@@ -93,7 +97,7 @@ function retainPatchHoles(holes, seenDirections, lobe, patch, depth, maximumCoun
   return maximumCoverageRatio;
 }
 
-function inspectLobe(index, lobe, lobes, options) {
+function inspectLobe(index, lobe, lobes, options, exposureContext) {
   const stack = createIcosahedronDirectionTriangles()
     .reverse()
     .map((triangle) => ({ triangle, depth: 0 }));
@@ -116,6 +120,7 @@ function inspectLobe(index, lobe, lobes, options) {
       lobes,
       triangle,
       options,
+      exposureContext,
     );
     if (patch.status === 'hidden') continue;
 
@@ -173,7 +178,7 @@ function inspectLobe(index, lobe, lobes, options) {
       continue;
     }
 
-    const children = subdivideDirectionTriangle(triangle);
+    const children = patch.children ?? subdivideDirectionTriangle(triangle);
     for (let childIndex = children.length - 1; childIndex >= 0; childIndex -= 1) {
       stack.push({ triangle: children[childIndex], depth: depth + 1 });
     }
@@ -189,6 +194,14 @@ function inspectLobe(index, lobe, lobes, options) {
   };
 }
 
+function createExposureContext(lobe, neighborhoods) {
+  const lobes = neighborhoods.get(lobe.id) ?? [];
+  return Object.freeze({
+    lobes,
+    lipschitz: calculateExposureLipschitz(lobes, lobe.id),
+  });
+}
+
 export function inspectAdaptiveFoliageCoverage(selected, lobes, options) {
   if (!Array.isArray(selected) || !Array.isArray(lobes)) {
     throw new TypeError('Adaptive foliage coverage requires arrays.');
@@ -196,6 +209,7 @@ export function inspectAdaptiveFoliageCoverage(selected, lobes, options) {
   validateOptions(options);
 
   const index = createFoliageCoverageCertificationIndex(selected);
+  const exposureNeighborhoods = buildExposureNeighborhoods(lobes);
   const holes = [];
   let trianglesVisited = 0;
   let certifiedTriangleCount = 0;
@@ -204,7 +218,13 @@ export function inspectAdaptiveFoliageCoverage(selected, lobes, options) {
   let maximumCoverageRatio = 0;
 
   for (const lobe of lobes) {
-    const result = inspectLobe(index, lobe, lobes, options);
+    const result = inspectLobe(
+      index,
+      lobe,
+      lobes,
+      options,
+      createExposureContext(lobe, exposureNeighborhoods),
+    );
     holes.push(...result.holes);
     trianglesVisited += result.trianglesVisited;
     certifiedTriangleCount += result.certifiedTriangleCount;
