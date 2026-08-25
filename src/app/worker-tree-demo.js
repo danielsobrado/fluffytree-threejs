@@ -126,6 +126,7 @@ export class WorkerTreeDemo extends TreeDemo {
     return {
       ...sample,
       pending: sample.pending + this.pendingWorkerBuilds,
+      workerGeneration: this.workerTreeGenerationService?.metrics?.worker ?? null,
     };
   }
 
