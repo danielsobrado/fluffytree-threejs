@@ -44,6 +44,16 @@ export class SpatialHashGrid {
     else byZ.set(z, [entry]);
   }
 
+  visitCell(x, y, z, visitor) {
+    const cell = this.cells.get(x)?.get(y)?.get(z);
+    if (!cell) return null;
+
+    for (const entry of cell) {
+      if (visitor(entry)) return entry;
+    }
+    return null;
+  }
+
   /**
    * Visits every entry within `rings` cells of the position. Returns the first
    * entry for which the visitor is truthy, or null.
@@ -54,20 +64,38 @@ export class SpatialHashGrid {
     const centerZ = this.cellIndex(position.z);
 
     for (let x = centerX - rings; x <= centerX + rings; x += 1) {
-      const byY = this.cells.get(x);
-      if (!byY) continue;
-
       for (let y = centerY - rings; y <= centerY + rings; y += 1) {
-        const byZ = byY.get(y);
-        if (!byZ) continue;
-
         for (let z = centerZ - rings; z <= centerZ + rings; z += 1) {
-          const cell = byZ.get(z);
-          if (!cell) continue;
+          const found = this.visitCell(x, y, z, visitor);
+          if (found) return found;
+        }
+      }
+    }
 
-          for (const entry of cell) {
-            if (visitor(entry)) return entry;
-          }
+    return null;
+  }
+
+  /**
+   * Visits only the outer cell shell at exactly `rings` from the query cell.
+   * This lets expanding searches avoid revisiting all smaller neighbourhoods.
+   */
+  forEachShell(position, rings, visitor) {
+    if (!Number.isSafeInteger(rings) || rings < 1) {
+      throw new RangeError('Spatial hash shell rings must be a positive integer.');
+    }
+
+    const centerX = this.cellIndex(position.x);
+    const centerY = this.cellIndex(position.y);
+    const centerZ = this.cellIndex(position.z);
+
+    for (let x = centerX - rings; x <= centerX + rings; x += 1) {
+      const xBoundary = Math.abs(x - centerX) === rings;
+      for (let y = centerY - rings; y <= centerY + rings; y += 1) {
+        const xyBoundary = xBoundary || Math.abs(y - centerY) === rings;
+        for (let z = centerZ - rings; z <= centerZ + rings; z += 1) {
+          if (!xyBoundary && Math.abs(z - centerZ) !== rings) continue;
+          const found = this.visitCell(x, y, z, visitor);
+          if (found) return found;
         }
       }
     }
