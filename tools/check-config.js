@@ -27,6 +27,7 @@ import { parseTreeStressQaPolicy } from '../src/qa/tree-stress-qa-policy.js';
 import { parseFoliageRepresentationPolicy } from '../src/rendering/foliage-representation-policy.js';
 import { validateTreeIrRenderBudgets } from '../src/rendering/tree-ir-render-budget-validator.js';
 import { parseTreeIrRenderingConfig } from '../src/rendering/tree-ir-rendering-config.js';
+import { parseTreeGenerationRuntimePolicy } from '../src/workers/tree-generation-runtime-policy.js';
 import { readYamlConfigSync } from './node-yaml-config.js';
 import { parsePagesConfig } from './pages-config.js';
 import { assertReleaseSourceConsistency } from './release-source-check.js';
@@ -148,6 +149,7 @@ for (const qualityProfile of Object.values(qualityProfiles)) {
 }
 parseForestVariantPolicy(readConfig('config/forest-variant-policy.yaml'));
 parseForestRuntimePolicy(readConfig('config/forest-runtime-policy.yaml'));
+parseTreeGenerationRuntimePolicy(readConfig('config/tree-generation-runtime.yaml'));
 parseTreeAnimationPolicy(readConfig('config/tree-animation-policy.yaml'));
 parseNativeTreeQaConfig(readConfig('config/native-tree-qa.yaml'));
 const showcaseLayout = parseTreeShowcaseLayout(
