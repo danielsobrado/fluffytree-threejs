@@ -160,8 +160,13 @@ function hasResponse(response) {
   return Object.values(response).some((value) => value > 0);
 }
 
-export function applyTreeEnvironment(treeIr, responseInput, environmentInput) {
-  validateTreeIr(treeIr);
+export function applyTreeEnvironment(
+  treeIr,
+  responseInput,
+  environmentInput,
+  { inputValidated = false } = {},
+) {
+  if (!inputValidated) validateTreeIr(treeIr);
   const response = parseTreeEnvironmentResponse(responseInput ?? {});
   if (environmentInput === undefined || environmentInput === null || !hasResponse(response)) {
     return treeIr;
