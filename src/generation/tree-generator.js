@@ -3,7 +3,7 @@ import {
   DEFAULT_TREE_GENERATION_MODEL,
   resolveTreeGenerationModelId,
 } from './tree-generation-model.js';
-import { adaptTreeIrToLegacyTreeData } from './tree-ir-legacy-adapter.js';
+import { adaptValidatedTreeIrToLegacyTreeData } from './tree-ir-legacy-adapter.js';
 import { validateTreeIr } from './tree-ir-validator.js';
 import { applyTreeEnvironment } from './tree-environment-processor.js';
 import { PALM_TREE_MODEL_ID } from './palm-tree-constants.js';
@@ -102,16 +102,17 @@ export class TreeGenerator {
         `Tree generation model '${modelId}' returned IR for '${generatedIr.generationModel}'.`,
       );
     }
-    const ir = applyTreeEnvironment(
+    return applyTreeEnvironment(
       generatedIr,
       preset?.environmentResponse,
       options.environment,
+      { inputValidated: true },
     );
-    validateTreeIr(ir);
-    return ir;
   }
 
   generate(preset, seed, options = {}) {
-    return adaptTreeIrToLegacyTreeData(this.generateIr(preset, seed, options));
+    return adaptValidatedTreeIrToLegacyTreeData(
+      this.generateIr(preset, seed, options),
+    );
   }
 }
