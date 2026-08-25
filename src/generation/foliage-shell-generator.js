@@ -9,7 +9,10 @@ import {
   createFoliageShellCandidate,
 } from './foliage-shell-candidate-factory.js';
 import { selectDeterministicFoliageMaxCover } from './foliage-max-cover-selector.js';
-import { prepareExposureLobes } from './lobe-exposure.js';
+import {
+  buildExposureNeighborhoods,
+  prepareExposureLobes,
+} from './lobe-exposure.js';
 
 function compareCandidates(left, right) {
   return (
@@ -101,19 +104,21 @@ export class FoliageShellGenerator {
     });
     const coveragePolicy = resolveFoliageCoveragePolicy(alphaProfile, continuity);
     const lobes = prepareExposureLobes(sourceLobes);
+    const exposureNeighborhoods = buildExposureNeighborhoods(lobes);
     const crownCenter = calculateFoliageCrownCenter(lobes);
     const bestByLobe = new Map();
     const exposed = [];
 
     for (const lobe of lobes) {
       const phase = random.range(0, FOLIAGE_SHELL_CONSTANTS.tau);
+      const exposureLobes = exposureNeighborhoods.get(lobe.id) ?? [];
       let best = null;
 
       for (let index = 0; index < settings.candidatesPerLobe; index += 1) {
         const candidate = createFoliageShellCandidate(
           lobe,
           createFibonacciDirection(index, settings.candidatesPerLobe, phase),
-          lobes,
+          exposureLobes,
           crownCenter,
           settings,
           maximumCardWidthSpread,
