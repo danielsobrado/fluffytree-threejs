@@ -70,6 +70,32 @@ export class WorkerTreeDemo extends TreeDemo {
     });
   }
 
+  installGeneratedTree(
+    treeIr,
+    preset,
+    entry,
+    index,
+    revision,
+    seed,
+    generationOptions,
+    minimumLod,
+  ) {
+    if (!this.isCurrentWorkerBuild(revision)) return;
+
+    const treeData = this.treeIrAdapter(treeIr);
+    this.treeGenerator.prime(preset, seed, generationOptions, treeData);
+    if (!this.isCurrentWorkerBuild(revision)) return;
+
+    const built = this.buildTreeEntry(entry, this.billboardBatchManager);
+    this.context.scene.add(built.root);
+    this.treeRoots.push(built.root);
+    if (minimumLod === 0) this.treeDataByPreset.set(entry.preset, built.treeData);
+    this.lodController.register(built.root);
+    this.windController.register(built.root, built.treeData.seed);
+    this.dressTree(built.root);
+    this.context.renderer.shadowMap.needsUpdate = true;
+  }
+
   async generateQueuedTree(entry, index, treeCount, revision, seedOffset) {
     try {
       const preset = this.presetMap.get(entry.preset);
@@ -89,22 +115,18 @@ export class WorkerTreeDemo extends TreeDemo {
 
       if (!this.isCurrentWorkerBuild(revision)) return;
 
-      const treeData = this.treeIrAdapter(treeIr);
-      this.treeGenerator.prime(preset, seed, generationOptions, treeData);
-      if (!this.isCurrentWorkerBuild(revision)) return;
-
-      this.generationQueue.enqueue(`tree:${revision}:${index}`, () => {
-        if (!this.isCurrentWorkerBuild(revision)) return;
-
-        const built = this.buildTreeEntry(entry, this.billboardBatchManager);
-        this.context.scene.add(built.root);
-        this.treeRoots.push(built.root);
-        if (minimumLod === 0) this.treeDataByPreset.set(entry.preset, built.treeData);
-        this.lodController.register(built.root);
-        this.windController.register(built.root, built.treeData.seed);
-        this.dressTree(built.root);
-        this.context.renderer.shadowMap.needsUpdate = true;
-      });
+      this.generationQueue.enqueue(`tree:${revision}:${index}`, () =>
+        this.installGeneratedTree(
+          treeIr,
+          preset,
+          entry,
+          index,
+          revision,
+          seed,
+          generationOptions,
+          minimumLod,
+        ),
+      );
     } catch (error) {
       if (!this.isCurrentWorkerBuild(revision) || isCancellation(error)) return;
 
