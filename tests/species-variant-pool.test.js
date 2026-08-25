@@ -9,7 +9,7 @@ const policy = parseForestVariantPolicy(
   readYamlConfigSync(new URL('../config/forest-variant-policy.yaml', import.meta.url)),
 );
 
-function createPool(variantCount = 8) {
+function createPool(variantCount = 8, baseSeed = 7919) {
   return new SpeciesVariantPool({
     preset: { id: 'oak' },
     compilationService: {
@@ -19,7 +19,7 @@ function createPool(variantCount = 8) {
     },
     policy,
     variantCount,
-    baseSeed: 7919,
+    baseSeed,
   });
 }
 
@@ -89,5 +89,104 @@ test('forest batch planner groups shared variants and isolates unique heroes', (
   assert.equal(
     result.batches.find((batch) => batch.instancingEligible).instanceIds.length,
     2,
+  );
+});
+
+test('forest batch planner separates the same variant index when geometry seeds differ', () => {
+  const first = createPool(4, 101).resolveInstance('same-tree');
+  const second = createPool(4, 202).resolveInstance('same-tree');
+
+  assert.equal(first.variantIndex, second.variantIndex);
+  assert.notEqual(first.seed, second.seed);
+
+  const result = new ForestInstanceBatchPlanner().plan([
+    { assignment: first, role: 'aggregate' },
+    { assignment: second, role: 'aggregate' },
+  ]);
+
+  assert.equal(result.metrics.batchCount, 2);
+  assert.equal(result.metrics.instancedBatchCount, 2);
+  assert.deepEqual(
+    result.batches.map((batch) => batch.seed).sort((left, right) => left - right),
+    [first.seed, second.seed].sort((left, right) => left - right),
+  );
+});
+
+test('forest batch planner keeps unique heroes with different seeds isolated', () => {
+  const first = createPool(4, 303).resolveInstance('same-hero', { hero: true });
+  const second = createPool(4, 404).resolveInstance('same-hero', { hero: true });
+
+  assert.notEqual(first.seed, second.seed);
+
+  const result = new ForestInstanceBatchPlanner().plan([
+    { assignment: first, role: 'hero' },
+    { assignment: second, role: 'hero' },
+  ]);
+
+  assert.equal(result.metrics.batchCount, 2);
+  assert.equal(result.metrics.uniqueBatchCount, 2);
+});
+
+test('forest batch planner keys cannot collide through identifier separators', () => {
+  const result = new ForestInstanceBatchPlanner().plan([
+    {
+      assignment: {
+        presetId: 'oak:hero',
+        instanceId: 'tree',
+        shared: false,
+        variantIndex: null,
+        seed: 17,
+      },
+      role: 'hero',
+    },
+    {
+      assignment: {
+        presetId: 'oak',
+        instanceId: 'hero:tree',
+        shared: false,
+        variantIndex: null,
+        seed: 17,
+      },
+      role: 'hero',
+    },
+  ]);
+
+  assert.equal(result.metrics.batchCount, 2);
+});
+
+test('forest batch planner rejects malformed assignment identity', () => {
+  const planner = new ForestInstanceBatchPlanner();
+
+  assert.throws(
+    () =>
+      planner.plan([
+        {
+          assignment: {
+            presetId: 'oak',
+            instanceId: 'tree',
+            shared: true,
+            variantIndex: null,
+            seed: 1,
+          },
+          role: 'aggregate',
+        },
+      ]),
+    /variant index/,
+  );
+  assert.throws(
+    () =>
+      planner.plan([
+        {
+          assignment: {
+            presetId: 'oak',
+            instanceId: 'tree',
+            shared: false,
+            variantIndex: null,
+            seed: Number.NaN,
+          },
+          role: 'hero',
+        },
+      ]),
+    /unsigned 32-bit integer/,
   );
 });
