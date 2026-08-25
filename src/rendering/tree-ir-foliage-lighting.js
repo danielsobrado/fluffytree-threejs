@@ -34,8 +34,8 @@ export function configureTreeIrFoliageLighting(
   const lighting = Object.freeze({ softLight, rimLight, backLight });
 
   material.userData.foliageLighting = lighting;
-  material.onBeforeCompile = (shader) => {
-    previousCompile?.(shader);
+  material.onBeforeCompile = (shader, renderer) => {
+    previousCompile?.call(material, shader, renderer);
     Object.assign(shader.uniforms, {
       uTreeFoliageSoftLight: { value: softLight },
       uTreeFoliageRimLight: { value: rimLight },
