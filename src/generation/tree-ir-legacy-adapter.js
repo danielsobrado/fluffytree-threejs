@@ -75,8 +75,7 @@ function createShell(ir) {
   );
 }
 
-export function adaptTreeIrToLegacyTreeData(ir) {
-  validateTreeIr(ir);
+function adaptValidatedTreeIr(ir) {
   const legacy = ir.metadata.legacy;
   if (!legacy) {
     throw new Error(`Tree IR '${ir.presetId}' has no legacy renderer metadata.`);
@@ -124,4 +123,13 @@ export function adaptTreeIrToLegacyTreeData(ir) {
     tree.lodCostSummaries = legacy.lodCostSummaries;
   }
   return Object.freeze(tree);
+}
+
+export function adaptValidatedTreeIrToLegacyTreeData(ir) {
+  return adaptValidatedTreeIr(ir);
+}
+
+export function adaptTreeIrToLegacyTreeData(ir) {
+  validateTreeIr(ir);
+  return adaptValidatedTreeIr(ir);
 }
