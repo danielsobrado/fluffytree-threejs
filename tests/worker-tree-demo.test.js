@@ -14,9 +14,13 @@ function createDeferred() {
 
 function createDemo(workerTreeGenerationService) {
   const primeCalls = [];
+  const adapterCalls = [];
   const demo = new WorkerTreeDemo({
     workerTreeGenerationService,
-    treeIrAdapter: (treeData) => treeData,
+    treeIrAdapter(treeData) {
+      adapterCalls.push(treeData);
+      return treeData;
+    },
     sceneFactory: {},
     treeGenerator: {
       prime(preset, seed, options, treeData) {
@@ -67,10 +71,10 @@ function createDemo(workerTreeGenerationService) {
   };
   demo.dressTree = () => {};
 
-  return { demo, primeCalls, added };
+  return { demo, primeCalls, adapterCalls, added };
 }
 
-test('queued scenes generate Tree IR off-thread before scheduling mesh work', async () => {
+test('queued scenes keep worker result adaptation inside frame-scheduled work', async () => {
   const deferred = createDeferred();
   const requests = [];
   const service = {
@@ -83,7 +87,7 @@ test('queued scenes generate Tree IR off-thread before scheduling mesh work', as
     },
     destroy() {},
   };
-  const { demo, primeCalls, added } = createDemo(service);
+  const { demo, primeCalls, adapterCalls, added } = createDemo(service);
   let buildCalls = 0;
   demo.buildTreeEntry = () => {
     buildCalls += 1;
@@ -102,18 +106,23 @@ test('queued scenes generate Tree IR off-thread before scheduling mesh work', as
   });
   assert.equal(demo.pendingWorkerBuilds, 1);
   assert.equal(demo.generationQueue.length, 0);
+  assert.equal(adapterCalls.length, 0);
+  assert.equal(primeCalls.length, 0);
   assert.equal(buildCalls, 0);
 
   deferred.resolve({ presetId: 'oak', seed: 17 });
   await new Promise((resolve) => setImmediate(resolve));
 
-  assert.equal(primeCalls.length, 1);
   assert.equal(demo.pendingWorkerBuilds, 0);
   assert.equal(demo.generationQueue.length, 1);
+  assert.equal(adapterCalls.length, 0);
+  assert.equal(primeCalls.length, 0);
   assert.equal(buildCalls, 0);
 
   demo.generationQueue.process(8);
 
+  assert.equal(adapterCalls.length, 1);
+  assert.equal(primeCalls.length, 1);
   assert.equal(buildCalls, 1);
   assert.equal(added.length, 1);
   assert.equal(demo.treeRoots.length, 1);
@@ -131,7 +140,7 @@ test('stale worker results cannot repopulate a replaced scene', async () => {
     },
     destroy() {},
   };
-  const { demo, primeCalls } = createDemo(service);
+  const { demo, primeCalls, adapterCalls } = createDemo(service);
 
   demo.rebuildQueuedTrees();
   demo.workerBuildRevision += 1;
@@ -139,6 +148,7 @@ test('stale worker results cannot repopulate a replaced scene', async () => {
   deferred.resolve({ presetId: 'oak', seed: 17 });
   await new Promise((resolve) => setImmediate(resolve));
 
+  assert.equal(adapterCalls.length, 0);
   assert.equal(primeCalls.length, 0);
   assert.equal(demo.generationQueue.length, 0);
   demo.destroyed = true;
