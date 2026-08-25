@@ -28,6 +28,43 @@ test('worker generation cache records one miss for one generated tree', async ()
   service.destroy();
 });
 
+test('worker generation service cancels every stale in-flight request', async () => {
+  const jobs = new Map();
+  const cancelled = [];
+  const workerPool = {
+    metrics: Object.freeze({ workerCount: 1 }),
+    submit({ key }) {
+      return new Promise((resolve, reject) => {
+        jobs.set(key, { resolve, reject });
+      });
+    },
+    cancel(key) {
+      const job = jobs.get(key);
+      if (!job) return false;
+      jobs.delete(key);
+      cancelled.push(key);
+      const error = new Error('cancelled');
+      error.name = 'AbortError';
+      job.reject(error);
+      return true;
+    },
+    destroy() {},
+  };
+  const service = new WorkerTreeGenerationService({
+    workerPool,
+    maximumCacheEntries: 2,
+  });
+  const first = service.generate(PRESET, 21);
+  const second = service.generate(PRESET, 22);
+
+  assert.equal(service.cancelAll(), 2);
+  await assert.rejects(first, (error) => error.name === 'AbortError');
+  await assert.rejects(second, (error) => error.name === 'AbortError');
+  assert.equal(cancelled.length, 2);
+  assert.equal(service.metrics.cache.entries, 0);
+  service.destroy();
+});
+
 test('worker generation service does not repopulate caches after shutdown', async () => {
   let resolveGeneration;
   let destroys = 0;
