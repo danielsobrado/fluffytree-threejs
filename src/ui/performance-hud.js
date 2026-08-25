@@ -18,6 +18,16 @@ function formatCount(value) {
   return String(Math.round(value));
 }
 
+function formatQueuedWork(sample) {
+  if (sample.pending <= 0) return 'idle';
+
+  const worker = sample.workerGeneration;
+  const workerActivity = worker
+    ? ` · ${worker.busyWorkerCount}/${worker.workerCount} workers`
+    : '';
+  return `${sample.pending} builds${workerActivity}`;
+}
+
 export class PerformanceHud {
   constructor() {
     this.element = createElement('section', 'perf-hud');
@@ -68,8 +78,7 @@ export class PerformanceHud {
         : `${total} live`;
     // The queue carries the near levels being prewarmed for trees that are
     // already standing, which is what a walk towards them costs.
-    this.rows.get('queued').textContent =
-      sample.pending > 0 ? `${sample.pending} builds` : 'idle';
+    this.rows.get('queued').textContent = formatQueuedWork(sample);
     this.rows.get('memory').textContent =
       `${sample.geometries} geometries · ${sample.textures} textures`;
 
