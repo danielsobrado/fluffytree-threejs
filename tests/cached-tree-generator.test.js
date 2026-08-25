@@ -52,6 +52,21 @@ test('worker generated tree data primes the cache without synchronous generation
   assert.equal(cache.metrics.misses, 0);
 });
 
+test('cache presence lookup is side-effect free and honors full-to-compact reuse', () => {
+  const generator = createGenerator();
+  const cache = new CachedTreeGenerator({ generator, maximumEntries: 4 });
+  const preset = { id: 'oak' };
+
+  assert.equal(cache.hasCached(preset, 21, { includeSurfaceSamples: true }), false);
+  cache.generate(preset, 21, { includeSurfaceSamples: true });
+  const metrics = cache.metrics;
+
+  assert.equal(cache.hasCached(preset, 21, { includeSurfaceSamples: true }), true);
+  assert.equal(cache.hasCached(preset, 21, { includeSurfaceSamples: false }), true);
+  assert.equal(cache.metrics.hits, metrics.hits);
+  assert.equal(cache.metrics.misses, metrics.misses);
+});
+
 test('full tree data can satisfy a compact forest request', () => {
   const generator = createGenerator();
   const cache = new CachedTreeGenerator({ generator, maximumEntries: 4 });
