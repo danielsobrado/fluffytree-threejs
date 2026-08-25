@@ -9,22 +9,29 @@ function clamp01(value) {
   return Math.min(1, Math.max(0, value));
 }
 
-function createExposureTransform(lobe) {
+function createSurfaceTransform(lobe) {
   const rotation = lobe.rotation ?? { x: 0, y: 0, z: 0 };
-  const inverseX = -rotation.x;
-  const inverseY = -rotation.y;
-  const inverseZ = -rotation.z;
+  return Object.freeze({
+    cosX: Math.cos(rotation.x),
+    sinX: Math.sin(rotation.x),
+    cosY: Math.cos(rotation.y),
+    sinY: Math.sin(rotation.y),
+    cosZ: Math.cos(rotation.z),
+    sinZ: Math.sin(rotation.z),
+  });
+}
 
+function createExposureTransform(lobe, surfaceTransform) {
   return Object.freeze({
     inverseScaleX: 1 / lobe.scale.x,
     inverseScaleY: 1 / lobe.scale.y,
     inverseScaleZ: 1 / lobe.scale.z,
-    cosX: Math.cos(inverseX),
-    sinX: Math.sin(inverseX),
-    cosY: Math.cos(inverseY),
-    sinY: Math.sin(inverseY),
-    cosZ: Math.cos(inverseZ),
-    sinZ: Math.sin(inverseZ),
+    cosX: surfaceTransform.cosX,
+    sinX: -surfaceTransform.sinX,
+    cosY: surfaceTransform.cosY,
+    sinY: -surfaceTransform.sinY,
+    cosZ: surfaceTransform.cosZ,
+    sinZ: -surfaceTransform.sinZ,
   });
 }
 
@@ -50,13 +57,17 @@ function preparedNormalizedDistance(point, lobe) {
 }
 
 export function prepareExposureLobes(sourceLobes) {
-  return sourceLobes.map((lobe) => ({
-    ...lobe,
-    boundingRadius:
-      lobe.boundingRadius ?? Math.max(lobe.scale.x, lobe.scale.y, lobe.scale.z),
-    minimumRadius: Math.min(lobe.scale.x, lobe.scale.y, lobe.scale.z),
-    exposureTransform: createExposureTransform(lobe),
-  }));
+  return sourceLobes.map((lobe) => {
+    const surfaceTransform = createSurfaceTransform(lobe);
+    return {
+      ...lobe,
+      boundingRadius:
+        lobe.boundingRadius ?? Math.max(lobe.scale.x, lobe.scale.y, lobe.scale.z),
+      minimumRadius: Math.min(lobe.scale.x, lobe.scale.y, lobe.scale.z),
+      surfaceTransform,
+      exposureTransform: createExposureTransform(lobe, surfaceTransform),
+    };
+  });
 }
 
 /**
