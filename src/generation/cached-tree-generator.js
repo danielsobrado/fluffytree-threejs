@@ -100,6 +100,19 @@ export class CachedTreeGenerator {
     }
   }
 
+  hasCached(preset, seed, options = {}) {
+    const normalizedOptions = normalizeOptions(options);
+    const key = this.cacheKey(preset, seed, normalizedOptions);
+    if (this.entries.has(key)) return true;
+
+    if (normalizedOptions.includeSurfaceSamples !== false) return false;
+    const fullKey = this.cacheKey(preset, seed, {
+      ...normalizedOptions,
+      includeSurfaceSamples: true,
+    });
+    return this.entries.has(fullKey);
+  }
+
   prime(preset, seed, options = {}, value) {
     const normalizedOptions = normalizeOptions(options);
     const key = this.cacheKey(preset, seed, normalizedOptions);
