@@ -51,6 +51,16 @@ export class WorkerTreeGenerationService {
     return promise;
   }
 
+  cancelAll() {
+    if (this.destroyed || typeof this.workerPool.cancel !== 'function') return 0;
+
+    let cancelled = 0;
+    for (const key of this.inflight.keys()) {
+      if (this.workerPool.cancel(key)) cancelled += 1;
+    }
+    return cancelled;
+  }
+
   destroy() {
     if (this.destroyed) return;
     this.destroyed = true;
