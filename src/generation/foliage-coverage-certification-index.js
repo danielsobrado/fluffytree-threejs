@@ -19,18 +19,19 @@ function normalDot(left, right) {
   return left.x * right.x + left.y * right.y + left.z * right.z;
 }
 
-function collectNearbyRecords(index, position, radius) {
-  if (index.records.length === 0) return [];
+function visitNearbyRecords(index, position, radius, visitor) {
+  if (index.records.length === 0) return;
 
   const rings = Math.max(1, Math.ceil(radius / index.grid.cellSize) + 1);
-  if (rings > MAXIMUM_GRID_QUERY_RINGS) return index.records;
+  if (rings > MAXIMUM_GRID_QUERY_RINGS) {
+    for (const record of index.records) visitor(record);
+    return;
+  }
 
-  const records = [];
   index.grid.forEachNear(position, rings, (record) => {
-    records.push(record);
+    visitor(record);
     return false;
   });
-  return records;
 }
 
 function clusterCoverageUpperBound(
@@ -44,17 +45,30 @@ function clusterCoverageUpperBound(
     return Number.POSITIVE_INFINITY;
   }
 
-  const minimumDot = Math.min(
-    ...samples.normals.map((normal) => normalDot(normal, record.cluster.normal)),
-  );
+  let minimumDot;
+  let maximumSampleDistance;
+  if (samples.normals.length === 1 && samples.positions.length === 1) {
+    minimumDot = normalDot(samples.normals[0], record.cluster.normal);
+    maximumSampleDistance = distance(samples.positions[0], record.cluster.position);
+  } else {
+    minimumDot = Number.POSITIVE_INFINITY;
+    for (const normal of samples.normals) {
+      minimumDot = Math.min(minimumDot, normalDot(normal, record.cluster.normal));
+    }
+    maximumSampleDistance = 0;
+    for (const position of samples.positions) {
+      maximumSampleDistance = Math.max(
+        maximumSampleDistance,
+        distance(position, record.cluster.position),
+      );
+    }
+  }
+
   const normalDotLowerBound = Math.max(-1, minimumDot - normalUncertainty);
   if (normalDotLowerBound < minimumCoverageNormalDot) {
     return Number.POSITIVE_INFINITY;
   }
 
-  const maximumSampleDistance = Math.max(
-    ...samples.positions.map((position) => distance(position, record.cluster.position)),
-  );
   return (
     (maximumSampleDistance + worldUncertainty) /
     record.guaranteedCoverageRadius
@@ -122,10 +136,9 @@ export function findTriangleCoverageUpperBound(
   const center = samples.positions.at(-1);
   const queryRadius =
     index.maximumGuaranteedCoverageRadius * targetRatio + worldUncertainty;
-  const nearby = collectNearbyRecords(index, center, queryRadius);
   let best = Number.POSITIVE_INFINITY;
 
-  for (const record of nearby) {
+  visitNearbyRecords(index, center, queryRadius, (record) => {
     best = Math.min(
       best,
       clusterCoverageUpperBound(
@@ -136,7 +149,7 @@ export function findTriangleCoverageUpperBound(
         minimumCoverageNormalDot,
       ),
     );
-  }
+  });
 
   return best;
 }
@@ -150,10 +163,9 @@ export function findSampleCoverageRatio(
   if (index.records.length === 0) return Number.POSITIVE_INFINITY;
 
   const queryRadius = index.maximumCoverageRadius * targetRatio;
-  const nearby = collectNearbyRecords(index, position, queryRadius);
   let best = Number.POSITIVE_INFINITY;
 
-  for (const record of nearby) {
+  visitNearbyRecords(index, position, queryRadius, (record) => {
     best = Math.min(
       best,
       sampleCoverageRatio(
@@ -163,7 +175,7 @@ export function findSampleCoverageRatio(
         minimumCoverageNormalDot,
       ),
     );
-  }
+  });
 
   return best;
 }
