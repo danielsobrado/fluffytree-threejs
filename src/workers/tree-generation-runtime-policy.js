@@ -39,6 +39,10 @@ export function parseTreeGenerationRuntimePolicy(config) {
       source.terminateOnCancel,
       'treeGenerationRuntime.workers.terminateOnCancel',
     ),
+    maximumCachedResults: requirePositiveInteger(
+      source.maximumCachedResults,
+      'treeGenerationRuntime.workers.maximumCachedResults',
+    ),
   });
 }
 
