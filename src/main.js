@@ -20,6 +20,7 @@ import {
   calculateTreeGenerationCacheCapacity,
 } from './generation/cached-tree-generator.js';
 import { TreeGenerator } from './generation/tree-generator.js';
+import { adaptValidatedTreeIrToLegacyTreeData } from './generation/tree-ir-legacy-adapter.js';
 import { parseShellCoverageQaConfig } from './qa/shell-coverage-qa-config.js';
 import { parseTreeStressQaPolicy } from './qa/tree-stress-qa-policy.js';
 import { parseFoliageRepresentationPolicy } from './rendering/foliage-representation-policy.js';
@@ -147,6 +148,7 @@ async function bootstrap() {
     );
     demo = new WorkerTreeDemo({
       workerTreeGenerationService,
+      treeIrAdapter: adaptValidatedTreeIrToLegacyTreeData,
       canopySolidityProbe: new IsolatedCanopySolidityProbe(),
       treeGenerator: new CachedTreeGenerator({
         generator: new TreeGenerator(),
