@@ -1,0 +1,5 @@
+workers:
+  enabled: true
+  maximumWorkers: 2
+  reserveLogicalCores: 1
+  terminateOnCancel: true
