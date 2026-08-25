@@ -34,28 +34,27 @@ export class FoliageCoverageIndex {
   nearestRatio(candidate) {
     if (this.selected.length === 0) return Number.POSITIVE_INFINITY;
 
+    const position = coverageTargetPosition(candidate);
+    const maximumRings = FOLIAGE_SHELL_CONSTANTS.maximumCoverageSearchRings;
     let nearest = Number.POSITIVE_INFINITY;
-    const visited = new Set();
-
-    for (
-      let rings = 1;
-      rings <= FOLIAGE_SHELL_CONSTANTS.maximumCoverageSearchRings;
-      rings += 1
-    ) {
-      this.grid.forEachNear(
-        coverageTargetPosition(candidate),
-        rings,
-        (selected) => {
-          if (visited.has(selected)) return false;
-          visited.add(selected);
-          nearest = Math.min(
-            nearest,
-            foliageCardCoverageRatio(candidate, selected),
-          );
-          return false;
-        },
+    const measure = (selected) => {
+      nearest = Math.min(
+        nearest,
+        foliageCardCoverageRatio(candidate, selected),
       );
+      return false;
+    };
 
+    this.grid.forEachNear(position, 1, measure);
+    if (
+      Number.isFinite(nearest) &&
+      nearest * this.maximumCoverageRadius <= this.grid.cellSize
+    ) {
+      return nearest;
+    }
+
+    for (let rings = 2; rings <= maximumRings; rings += 1) {
+      this.grid.forEachShell(position, rings, measure);
       const unscannedDistance = rings * this.grid.cellSize;
       if (
         Number.isFinite(nearest) &&
@@ -65,12 +64,21 @@ export class FoliageCoverageIndex {
       }
     }
 
+    const centerX = this.grid.cellIndex(position.x);
+    const centerY = this.grid.cellIndex(position.y);
+    const centerZ = this.grid.cellIndex(position.z);
     for (const selected of this.selected) {
-      if (visited.has(selected)) continue;
-      nearest = Math.min(
-        nearest,
-        foliageCardCoverageRatio(candidate, selected),
-      );
+      const x = this.grid.cellIndex(selected.position.x);
+      const y = this.grid.cellIndex(selected.position.y);
+      const z = this.grid.cellIndex(selected.position.z);
+      if (
+        Math.abs(x - centerX) <= maximumRings &&
+        Math.abs(y - centerY) <= maximumRings &&
+        Math.abs(z - centerZ) <= maximumRings
+      ) {
+        continue;
+      }
+      measure(selected);
     }
 
     return nearest;
