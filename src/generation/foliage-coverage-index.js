@@ -26,6 +26,11 @@ export class FoliageCoverageIndex {
     if (!(instance.coverageRadius > 0)) {
       throw new RangeError('Selected foliage requires a positive coverage radius.');
     }
+    if (instance.coverageRadius > this.maximumCoverageRadius) {
+      throw new RangeError(
+        'Selected foliage coverage radius exceeds the index maximum.',
+      );
+    }
 
     this.selected.push(instance);
     this.grid.insert(instance.position, instance);
