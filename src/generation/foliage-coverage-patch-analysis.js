@@ -47,11 +47,16 @@ function createTriangleSamples(lobe, triangle) {
     children,
     directions,
     positions: directions.map((direction) => pointOnLobeSurface(lobe, direction)),
-    normals: directions.map((direction) => lobeSurfaceNormal(lobe, direction)),
     directionRadius: Math.max(
       ...children.map((child) => directionTriangleDiameter(child)),
     ),
   };
+}
+
+function populateNormals(samples, lobe) {
+  samples.normals = samples.directions.map((direction) =>
+    lobeSurfaceNormal(lobe, direction),
+  );
 }
 
 function findCoverageUpperBound(
@@ -156,6 +161,7 @@ export function analyzeFoliageCoveragePatch(
     return Object.freeze({ status: 'hidden' });
   }
 
+  populateNormals(samples, lobe);
   const coverage = findCoverageUpperBound(
     index,
     lobe,
