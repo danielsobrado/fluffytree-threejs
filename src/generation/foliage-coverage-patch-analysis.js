@@ -44,6 +44,7 @@ function createTriangleSamples(lobe, triangle) {
   ];
 
   return {
+    children,
     directions,
     positions: directions.map((direction) => pointOnLobeSurface(lobe, direction)),
     normals: directions.map((direction) => lobeSurfaceNormal(lobe, direction)),
@@ -121,17 +122,29 @@ function findWitnessedHoles(index, samples, sampleExposures, options) {
   return holes;
 }
 
+function resolveExposureContext(lobe, lobes, context) {
+  const exposureLobes = context?.lobes ?? lobes;
+  const exposureLipschitz =
+    context?.lipschitz ?? calculateExposureLipschitz(exposureLobes, lobe.id);
+  return { exposureLobes, exposureLipschitz };
+}
+
 export function analyzeFoliageCoveragePatch(
   index,
   lobe,
   lobes,
   triangle,
   options,
+  exposureContext = null,
 ) {
   const samples = createTriangleSamples(lobe, triangle);
-  const exposureLipschitz = calculateExposureLipschitz(lobes, lobe.id);
+  const { exposureLobes, exposureLipschitz } = resolveExposureContext(
+    lobe,
+    lobes,
+    exposureContext,
+  );
   const sampleExposures = samples.positions.map((position) =>
-    calculateLobeExposure(position, lobes, lobe.id),
+    calculateLobeExposure(position, exposureLobes, lobe.id),
   );
   const worldUncertainty = maximumScale(lobe) * samples.directionRadius;
   const exposureUpperBound = Math.min(
@@ -177,6 +190,7 @@ export function analyzeFoliageCoveragePatch(
   return Object.freeze({
     status: 'unresolved',
     directionDiameter: directionTriangleDiameter(triangle),
+    children: Object.freeze(samples.children),
     fallback:
       fallbackIndex < 0
         ? null
