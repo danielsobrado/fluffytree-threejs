@@ -27,10 +27,15 @@ test('native foliage lighting injects before the opaque fragment', () => {
 
 test('native foliage lighting composes with existing material compilation', () => {
   let previousCompileCalled = false;
+  let previousCompileThis = null;
+  let previousCompileRenderer = null;
+  const renderer = { id: 'renderer' };
   const material = {
     userData: {},
-    onBeforeCompile(shader) {
+    onBeforeCompile(shader, receivedRenderer) {
       previousCompileCalled = true;
+      previousCompileThis = this;
+      previousCompileRenderer = receivedRenderer;
       shader.vertexShader += '\n// previous';
     },
     customProgramCacheKey: () => 'base-material',
@@ -47,9 +52,11 @@ test('native foliage lighting composes with existing material compilation', () =
     vertexShader: 'void main() {}',
     fragmentShader: FRAGMENT_SHADER,
   };
-  material.onBeforeCompile(shader);
+  material.onBeforeCompile(shader, renderer);
 
   assert.equal(previousCompileCalled, true);
+  assert.equal(previousCompileThis, material);
+  assert.equal(previousCompileRenderer, renderer);
   assert.equal(shader.uniforms.uTreeFoliageSoftLight.value, 0.018);
   assert.equal(shader.uniforms.uTreeFoliageRimLight.value, 0.045);
   assert.equal(shader.uniforms.uTreeFoliageBackLight.value, 0.03);
