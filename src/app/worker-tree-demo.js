@@ -13,7 +13,11 @@ function isCancellation(error) {
 }
 
 export class WorkerTreeDemo extends TreeDemo {
-  constructor({ workerTreeGenerationService = null, ...options } = {}) {
+  constructor({
+    workerTreeGenerationService = null,
+    treeIrAdapter = adaptTreeIrToLegacyTreeData,
+    ...options
+  } = {}) {
     super(options);
     if (
       workerTreeGenerationService &&
@@ -24,8 +28,12 @@ export class WorkerTreeDemo extends TreeDemo {
     if (workerTreeGenerationService && typeof this.treeGenerator.prime !== 'function') {
       throw new TypeError('WorkerTreeDemo requires a primeable tree generator cache.');
     }
+    if (typeof treeIrAdapter !== 'function') {
+      throw new TypeError('WorkerTreeDemo requires a Tree IR adapter.');
+    }
 
     this.workerTreeGenerationService = workerTreeGenerationService;
+    this.treeIrAdapter = treeIrAdapter;
     this.workerBuildRevision = 0;
     this.pendingWorkerBuilds = 0;
     this.workerServiceDestroyed = false;
@@ -81,7 +89,7 @@ export class WorkerTreeDemo extends TreeDemo {
 
       if (!this.isCurrentWorkerBuild(revision)) return;
 
-      const treeData = adaptTreeIrToLegacyTreeData(treeIr);
+      const treeData = this.treeIrAdapter(treeIr);
       this.treeGenerator.prime(preset, seed, generationOptions, treeData);
       if (!this.isCurrentWorkerBuild(revision)) return;
 
