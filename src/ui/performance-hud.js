@@ -76,8 +76,6 @@ export class PerformanceHud {
       sample.built < sample.total
         ? `${sample.built} of ${sample.total} growing`
         : `${total} live`;
-    // The queue carries the near levels being prewarmed for trees that are
-    // already standing, which is what a walk towards them costs.
     this.rows.get('queued').textContent = formatQueuedWork(sample);
     this.rows.get('memory').textContent =
       `${sample.geometries} geometries · ${sample.textures} textures`;
