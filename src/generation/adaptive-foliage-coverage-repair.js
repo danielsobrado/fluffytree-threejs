@@ -4,6 +4,7 @@ import { FOLIAGE_SHELL_CONSTANTS } from './foliage-shell-constants.js';
 import {
   buildExposureNeighborhoods,
   calculateExposureLipschitz,
+  prepareExposureLobes,
 } from './lobe-exposure.js';
 import {
   createIcosahedronDirectionTriangles,
@@ -194,6 +195,14 @@ function inspectLobe(index, lobe, lobes, options, exposureContext) {
   };
 }
 
+function isPreparedExposureLobe(lobe) {
+  return (
+    Number.isFinite(lobe?.boundingRadius) &&
+    Number.isFinite(lobe?.minimumRadius) &&
+    lobe?.exposureTransform
+  );
+}
+
 function createExposureContext(lobe, neighborhoods) {
   const lobes = neighborhoods.get(lobe.id) ?? [];
   return Object.freeze({
@@ -209,7 +218,10 @@ export function inspectAdaptiveFoliageCoverage(selected, lobes, options) {
   validateOptions(options);
 
   const index = createFoliageCoverageCertificationIndex(selected);
-  const exposureNeighborhoods = buildExposureNeighborhoods(lobes);
+  const preparedExposureLobes = lobes.every(isPreparedExposureLobe)
+    ? lobes
+    : prepareExposureLobes(lobes);
+  const exposureNeighborhoods = buildExposureNeighborhoods(preparedExposureLobes);
   const holes = [];
   let trianglesVisited = 0;
   let certifiedTriangleCount = 0;
