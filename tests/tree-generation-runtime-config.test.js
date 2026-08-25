@@ -14,4 +14,5 @@ test('tree generation runtime config is valid', () => {
   assert.ok(policy.maximumWorkers >= 1);
   assert.ok(policy.reserveLogicalCores >= 0);
   assert.equal(policy.terminateOnCancel, true);
+  assert.ok(policy.maximumCachedResults >= 1);
 });
