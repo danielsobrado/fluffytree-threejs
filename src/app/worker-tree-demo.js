@@ -70,6 +70,22 @@ export class WorkerTreeDemo extends TreeDemo {
     });
   }
 
+  attachBuiltTree(built, entry, minimumLod) {
+    this.context.scene.add(built.root);
+    this.treeRoots.push(built.root);
+    if (minimumLod === 0) this.treeDataByPreset.set(entry.preset, built.treeData);
+    this.lodController.register(built.root);
+    this.windController.register(built.root, built.treeData.seed);
+    this.dressTree(built.root);
+    this.context.renderer.shadowMap.needsUpdate = true;
+  }
+
+  installCachedTree(entry, revision, minimumLod) {
+    if (!this.isCurrentWorkerBuild(revision)) return;
+    const built = this.buildTreeEntry(entry, this.billboardBatchManager);
+    this.attachBuiltTree(built, entry, minimumLod);
+  }
+
   installGeneratedTree(
     treeIr,
     preset,
@@ -86,13 +102,11 @@ export class WorkerTreeDemo extends TreeDemo {
     if (!this.isCurrentWorkerBuild(revision)) return;
 
     const built = this.buildTreeEntry(entry, this.billboardBatchManager);
-    this.context.scene.add(built.root);
-    this.treeRoots.push(built.root);
-    if (minimumLod === 0) this.treeDataByPreset.set(entry.preset, built.treeData);
-    this.lodController.register(built.root);
-    this.windController.register(built.root, built.treeData.seed);
-    this.dressTree(built.root);
-    this.context.renderer.shadowMap.needsUpdate = true;
+    this.attachBuiltTree(built, entry, minimumLod);
+  }
+
+  queueTreeInstall(key, task) {
+    this.generationQueue.enqueue(key, task);
   }
 
   async generateQueuedTree(entry, index, treeCount, revision, seedOffset) {
@@ -107,6 +121,15 @@ export class WorkerTreeDemo extends TreeDemo {
       const generationOptions = Object.freeze({
         includeSurfaceSamples: minimumLod < 2,
       });
+      const queueKey = `tree:${revision}:${index}`;
+
+      if (this.treeGenerator.hasCached?.(preset, seed, generationOptions)) {
+        this.queueTreeInstall(queueKey, () =>
+          this.installCachedTree(entry, revision, minimumLod),
+        );
+        return;
+      }
+
       const treeIr = await this.workerTreeGenerationService.generate(preset, seed, {
         generationOptions,
         priority: treeCount - index,
@@ -114,7 +137,7 @@ export class WorkerTreeDemo extends TreeDemo {
 
       if (!this.isCurrentWorkerBuild(revision)) return;
 
-      this.generationQueue.enqueue(`tree:${revision}:${index}`, () =>
+      this.queueTreeInstall(queueKey, () =>
         this.installGeneratedTree(
           treeIr,
           preset,
