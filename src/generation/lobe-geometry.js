@@ -18,26 +18,31 @@ export function normalizeVector(vector) {
   };
 }
 
-export function rotateVectorEuler(vector, rotation = { x: 0, y: 0, z: 0 }) {
-  const cosX = Math.cos(rotation.x);
-  const sinX = Math.sin(rotation.x);
-  const cosY = Math.cos(rotation.y);
-  const sinY = Math.sin(rotation.y);
-  const cosZ = Math.cos(rotation.z);
-  const sinZ = Math.sin(rotation.z);
-
+function rotateVectorWithTransform(vector, transform) {
   const xAfterX = vector.x;
-  const yAfterX = vector.y * cosX - vector.z * sinX;
-  const zAfterX = vector.y * sinX + vector.z * cosX;
-  const xAfterY = xAfterX * cosY + zAfterX * sinY;
+  const yAfterX = vector.y * transform.cosX - vector.z * transform.sinX;
+  const zAfterX = vector.y * transform.sinX + vector.z * transform.cosX;
+  const xAfterY = xAfterX * transform.cosY + zAfterX * transform.sinY;
   const yAfterY = yAfterX;
-  const zAfterY = -xAfterX * sinY + zAfterX * cosY;
+  const zAfterY = -xAfterX * transform.sinY + zAfterX * transform.cosY;
 
   return {
-    x: xAfterY * cosZ - yAfterY * sinZ,
-    y: xAfterY * sinZ + yAfterY * cosZ,
+    x: xAfterY * transform.cosZ - yAfterY * transform.sinZ,
+    y: xAfterY * transform.sinZ + yAfterY * transform.cosZ,
     z: zAfterY,
   };
+}
+
+export function rotateVectorEuler(vector, rotation = { x: 0, y: 0, z: 0 }) {
+  const transform = {
+    cosX: Math.cos(rotation.x),
+    sinX: Math.sin(rotation.x),
+    cosY: Math.cos(rotation.y),
+    sinY: Math.sin(rotation.y),
+    cosZ: Math.cos(rotation.z),
+    sinZ: Math.sin(rotation.z),
+  };
+  return rotateVectorWithTransform(vector, transform);
 }
 
 export function inverseRotateVectorEuler(
@@ -70,19 +75,17 @@ export function inverseRotateVectorEuler(
   };
 }
 
+function rotateLobeVector(lobe, vector) {
+  const transform = lobe.surfaceTransform;
+  return transform
+    ? rotateVectorWithTransform(vector, transform)
+    : rotateVectorEuler(vector, lobe.rotation);
+}
+
 export function lobeAxisAlignedExtents(lobe) {
-  const basisX = rotateVectorEuler(
-    { x: lobe.scale.x, y: 0, z: 0 },
-    lobe.rotation,
-  );
-  const basisY = rotateVectorEuler(
-    { x: 0, y: lobe.scale.y, z: 0 },
-    lobe.rotation,
-  );
-  const basisZ = rotateVectorEuler(
-    { x: 0, y: 0, z: lobe.scale.z },
-    lobe.rotation,
-  );
+  const basisX = rotateLobeVector(lobe, { x: lobe.scale.x, y: 0, z: 0 });
+  const basisY = rotateLobeVector(lobe, { x: 0, y: lobe.scale.y, z: 0 });
+  const basisZ = rotateLobeVector(lobe, { x: 0, y: 0, z: lobe.scale.z });
 
   return {
     x: Math.hypot(basisX.x, basisY.x, basisZ.x),
@@ -98,7 +101,7 @@ export function pointOnLobeSurface(lobe, direction) {
     y: unit.y * lobe.scale.y,
     z: unit.z * lobe.scale.z,
   };
-  const rotatedPoint = rotateVectorEuler(localPoint, lobe.rotation);
+  const rotatedPoint = rotateLobeVector(lobe, localPoint);
 
   return {
     x: lobe.position.x + rotatedPoint.x,
@@ -115,7 +118,7 @@ export function lobeSurfaceNormal(lobe, direction) {
     z: unit.z / lobe.scale.z,
   };
 
-  return normalizeVector(rotateVectorEuler(localNormal, lobe.rotation));
+  return normalizeVector(rotateLobeVector(lobe, localNormal));
 }
 
 export function normalizedRotatedPointDistance(point, lobe) {
