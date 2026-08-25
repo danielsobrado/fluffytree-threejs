@@ -3,7 +3,7 @@ import {
   formatOverlayTitle,
   formatReleaseVersion,
 } from './app/release-title.js';
-import { TreeDemo } from './app/tree-demo.js';
+import { WorkerTreeDemo } from './app/worker-tree-demo.js';
 import { validateSceneConfig } from './config/scene-config-validator.js';
 import { YamlConfigLoader } from './config/yaml-config-loader.js';
 import { logger } from './core/logger.js';
@@ -27,6 +27,12 @@ import { TreeMeshBuilder } from './rendering/tree-mesh-builder.js';
 import { showFatalError } from './ui/demo-overlay.js';
 import { createSceneMenu } from './ui/scene-menu.js';
 import { createTuningPanel } from './ui/tuning-panel.js';
+import {
+  parseTreeGenerationRuntimePolicy,
+  resolveTreeGenerationWorkerCount,
+} from './workers/tree-generation-runtime-policy.js';
+import { TreeGenerationWorkerPool } from './workers/tree-generation-worker-pool.js';
+import { WorkerTreeGenerationService } from './workers/worker-tree-generation-service.js';
 
 const CONFIG_URLS = Object.freeze({
   release: './config/release.yaml',
@@ -35,6 +41,7 @@ const CONFIG_URLS = Object.freeze({
   foliageContinuity: './config/foliage-continuity.yaml',
   foliageRendering: './config/foliage-rendering.yaml',
   forestVariants: './config/forest-variant-policy.yaml',
+  treeGenerationRuntime: './config/tree-generation-runtime.yaml',
   shellCoverageQa: './config/shell-coverage-qa.yaml',
   treeStressQa: './config/tree-stress-qa.yaml',
   stemManifoldQa: './config/stem-manifold-qa.yaml',
@@ -51,6 +58,28 @@ async function runStemManifoldQa(loader) {
   ]);
   const library = PresetLibrary.fromConfig(treeConfig);
   await new StemManifoldProbe().run(library.presets, qaConfig);
+}
+
+function createWorkerGenerationService(policy, maximumCacheEntries) {
+  const maximumWorkers = resolveTreeGenerationWorkerCount(policy);
+  if (maximumWorkers === 0) return null;
+
+  try {
+    return new WorkerTreeGenerationService({
+      workerPool: new TreeGenerationWorkerPool({
+        policy: {
+          maximumWorkers,
+          terminateOnCancel: policy.terminateOnCancel,
+        },
+      }),
+      maximumCacheEntries,
+    });
+  } catch (error) {
+    logger.warn('Background tree generation is unavailable; using the synchronous path.', {
+      error,
+    });
+    return null;
+  }
 }
 
 async function bootstrap() {
@@ -76,6 +105,7 @@ async function bootstrap() {
       continuityConfig,
       rawFoliageRenderingConfig,
       rawForestVariantConfig,
+      rawTreeGenerationRuntimeConfig,
       rawCoverageConfig,
       rawStressConfig,
     ] = await Promise.all([
@@ -85,6 +115,7 @@ async function bootstrap() {
       loader.load(CONFIG_URLS.foliageContinuity),
       loader.load(CONFIG_URLS.foliageRendering),
       loader.load(CONFIG_URLS.forestVariants),
+      loader.load(CONFIG_URLS.treeGenerationRuntime),
       loader.load(CONFIG_URLS.shellCoverageQa),
       loader.load(CONFIG_URLS.treeStressQa),
     ]);
@@ -93,6 +124,9 @@ async function bootstrap() {
       rawFoliageRenderingConfig,
     );
     const forestVariantPolicy = parseForestVariantPolicy(rawForestVariantConfig);
+    const treeGenerationRuntimePolicy = parseTreeGenerationRuntimePolicy(
+      rawTreeGenerationRuntimeConfig,
+    );
     const coverageConfig = parseShellCoverageQaConfig(rawCoverageConfig);
     const stressPolicy = parseTreeStressQaPolicy(rawStressConfig);
     const releaseVersion = formatReleaseVersion(releaseConfig);
@@ -107,7 +141,12 @@ async function bootstrap() {
       library.presets.size,
       forestVariantPolicy.maximumPerSpecies,
     );
-    demo = new TreeDemo({
+    const workerTreeGenerationService = createWorkerGenerationService(
+      treeGenerationRuntimePolicy,
+      generationCacheCapacity,
+    );
+    demo = new WorkerTreeDemo({
+      workerTreeGenerationService,
       canopySolidityProbe: new IsolatedCanopySolidityProbe(),
       treeGenerator: new CachedTreeGenerator({
         generator: new TreeGenerator(),
