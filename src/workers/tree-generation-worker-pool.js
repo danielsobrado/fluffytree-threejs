@@ -1,5 +1,5 @@
 import { PrioritizedFrameBudgetQueue } from '../generation/prioritized-frame-budget-queue.js';
-import { validateTreeIr } from '../generation/tree-ir-validator.js';
+import { TREE_IR_SCHEMA_VERSION } from '../generation/tree-ir-schema.js';
 import { createTreeGenerationWorker } from './tree-generation-worker-factory.js';
 import {
   createTreeGenerationRequest,
@@ -45,6 +45,39 @@ function requirePriority(priority) {
     throw new TypeError('Tree generation job priority must be finite.');
   }
   return priority;
+}
+
+function responseMatchesRequest(message, request) {
+  return (
+    message?.requestId === request.requestId &&
+    message?.key === request.key &&
+    message?.revision === request.revision
+  );
+}
+
+function validateWorkerTreeIrEnvelope(treeIr, request) {
+  if (!treeIr || typeof treeIr !== 'object' || Array.isArray(treeIr)) {
+    throw new TypeError('Tree generation worker returned an invalid Tree IR envelope.');
+  }
+  if (treeIr.schemaVersion !== TREE_IR_SCHEMA_VERSION) {
+    throw new Error(
+      `Tree generation worker returned schema version '${treeIr.schemaVersion}'.`,
+    );
+  }
+  if (treeIr.presetId !== request.preset?.id) {
+    throw new Error(
+      `Tree generation worker returned preset '${treeIr.presetId}' for '${request.preset?.id}'.`,
+    );
+  }
+  if (treeIr.seed !== (Number(request.seed) >>> 0)) {
+    throw new Error(
+      `Tree generation worker returned seed '${treeIr.seed}' for '${request.seed}'.`,
+    );
+  }
+  if (typeof treeIr.generationModel !== 'string' || treeIr.generationModel === '') {
+    throw new Error('Tree generation worker returned an invalid generation model.');
+  }
+  return treeIr;
 }
 
 export class TreeGenerationWorkerPool {
@@ -255,7 +288,7 @@ export class TreeGenerationWorkerPool {
     const job = slot.job;
     const message = event?.data;
     if (!job) return;
-    if (!message || message.requestId !== job.request.requestId) {
+    if (!responseMatchesRequest(message, job.request)) {
       this.failWorkerProtocol(slot, job, message);
       return;
     }
@@ -266,7 +299,7 @@ export class TreeGenerationWorkerPool {
     }
     if (message.type === TREE_GENERATION_WORKER_MESSAGES.RESULT) {
       try {
-        validateTreeIr(message.treeIr);
+        validateWorkerTreeIrEnvelope(message.treeIr, job.request);
       } catch (error) {
         this.failedCount += 1;
         this.settleJob(job, () => job.reject(error));
