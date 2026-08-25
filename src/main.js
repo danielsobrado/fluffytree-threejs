@@ -61,7 +61,7 @@ async function runStemManifoldQa(loader) {
   await new StemManifoldProbe().run(library.presets, qaConfig);
 }
 
-function createWorkerGenerationService(policy, maximumCacheEntries) {
+function createWorkerGenerationService(policy) {
   const maximumWorkers = resolveTreeGenerationWorkerCount(policy);
   if (maximumWorkers === 0) return null;
 
@@ -73,7 +73,7 @@ function createWorkerGenerationService(policy, maximumCacheEntries) {
           terminateOnCancel: policy.terminateOnCancel,
         },
       }),
-      maximumCacheEntries,
+      maximumCacheEntries: policy.maximumCachedResults,
     });
   } catch (error) {
     logger.warn('Background tree generation is unavailable; using the synchronous path.', {
@@ -144,7 +144,6 @@ async function bootstrap() {
     );
     const workerTreeGenerationService = createWorkerGenerationService(
       treeGenerationRuntimePolicy,
-      generationCacheCapacity,
     );
     demo = new WorkerTreeDemo({
       workerTreeGenerationService,
