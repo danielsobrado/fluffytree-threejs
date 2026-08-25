@@ -129,6 +129,43 @@ test('queued scenes keep worker result adaptation inside frame-scheduled work', 
   demo.destroyed = true;
 });
 
+test('cached tree data bypasses background generation and adaptation', () => {
+  let workerCalls = 0;
+  const service = {
+    generate() {
+      workerCalls += 1;
+      throw new Error('Cached tree data must not be regenerated.');
+    },
+    cancelAll() {
+      return 0;
+    },
+    destroy() {},
+  };
+  const { demo, primeCalls, adapterCalls, added } = createDemo(service);
+  demo.treeGenerator.hasCached = () => true;
+  let buildCalls = 0;
+  demo.buildTreeEntry = () => {
+    buildCalls += 1;
+    return {
+      root: { id: 'cached-root' },
+      treeData: { seed: 17 },
+    };
+  };
+
+  demo.rebuildQueuedTrees();
+
+  assert.equal(workerCalls, 0);
+  assert.equal(adapterCalls.length, 0);
+  assert.equal(primeCalls.length, 0);
+  assert.equal(demo.generationQueue.length, 1);
+
+  demo.generationQueue.process(8);
+
+  assert.equal(buildCalls, 1);
+  assert.equal(added.length, 1);
+  demo.destroyed = true;
+});
+
 test('stale worker results cannot repopulate a replaced scene', async () => {
   const deferred = createDeferred();
   const service = {
