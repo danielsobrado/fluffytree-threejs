@@ -37,6 +37,21 @@ test('repeated variants reuse generated tree data', () => {
   assert.equal(cache.metrics.misses, 1);
 });
 
+test('worker generated tree data primes the cache without synchronous generation', () => {
+  const generator = createGenerator();
+  const cache = new CachedTreeGenerator({ generator, maximumEntries: 4 });
+  const preset = { id: 'oak' };
+  const treeData = Object.freeze({ presetId: 'oak', seed: 19 });
+
+  cache.prime(preset, 19, { includeSurfaceSamples: true }, treeData);
+  const generated = cache.generate(preset, 19, { includeSurfaceSamples: false });
+
+  assert.equal(generated, treeData);
+  assert.equal(generator.calls.length, 0);
+  assert.equal(cache.metrics.hits, 1);
+  assert.equal(cache.metrics.misses, 0);
+});
+
 test('full tree data can satisfy a compact forest request', () => {
   const generator = createGenerator();
   const cache = new CachedTreeGenerator({ generator, maximumEntries: 4 });
