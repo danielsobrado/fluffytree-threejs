@@ -11,6 +11,7 @@ const CONFIG = Object.freeze({
     maximumWorkers: 2,
     reserveLogicalCores: 1,
     terminateOnCancel: true,
+    maximumCachedResults: 4,
   }),
 });
 
@@ -21,6 +22,7 @@ test('tree generation worker policy preserves a logical core for the browser', (
   assert.equal(resolveTreeGenerationWorkerCount(policy, 2), 1);
   assert.equal(resolveTreeGenerationWorkerCount(policy, 1), 1);
   assert.equal(resolveTreeGenerationWorkerCount(policy, undefined), 1);
+  assert.equal(policy.maximumCachedResults, 4);
 });
 
 test('disabled tree generation workers resolve to zero workers', () => {
@@ -52,5 +54,12 @@ test('tree generation worker policy rejects invalid limits', () => {
         workers: { ...CONFIG.workers, terminateOnCancel: 'yes' },
       }),
     /boolean/,
+  );
+  assert.throws(
+    () =>
+      parseTreeGenerationRuntimePolicy({
+        workers: { ...CONFIG.workers, maximumCachedResults: 0 },
+      }),
+    /positive integer/,
   );
 });
