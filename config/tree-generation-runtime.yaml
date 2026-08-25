@@ -3,3 +3,4 @@ workers:
   maximumWorkers: 2
   reserveLogicalCores: 1
   terminateOnCancel: true
+  maximumCachedResults: 4
