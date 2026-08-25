@@ -1,5 +1,5 @@
 import { logger } from '../core/logger.js';
-import { adaptTreeIrToLegacyTreeData } from '../generation/tree-ir-legacy-adapter.js';
+import { adaptValidatedTreeIrToLegacyTreeData } from '../generation/tree-ir-legacy-adapter.js';
 import { TreeDemo } from './tree-demo.js';
 
 const RESEED_STEP = 1009;
@@ -15,7 +15,7 @@ function isCancellation(error) {
 export class WorkerTreeDemo extends TreeDemo {
   constructor({
     workerTreeGenerationService = null,
-    treeIrAdapter = adaptTreeIrToLegacyTreeData,
+    treeIrAdapter = adaptValidatedTreeIrToLegacyTreeData,
     ...options
   } = {}) {
     super(options);
