@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { pointOnLobeSurface } from '../src/generation/lobe-geometry.js';
+import {
+  lobeSurfaceNormal,
+  pointOnLobeSurface,
+} from '../src/generation/lobe-geometry.js';
 import {
   buildExposureNeighborhoods,
   calculateLobeClearance,
@@ -26,6 +29,12 @@ function createLobes() {
   ];
 }
 
+function assertVectorClose(actual, expected) {
+  for (const axis of ['x', 'y', 'z']) {
+    assert.ok(Math.abs(actual[axis] - expected[axis]) < 1e-12);
+  }
+}
+
 test('prepared exposure lobes preserve rotated clearance exactly', () => {
   const lobes = createLobes();
   const point = { x: 0.65, y: 1.45, z: 0.2 };
@@ -37,6 +46,21 @@ test('prepared exposure lobes preserve rotated clearance exactly', () => {
   );
 
   assert.ok(Math.abs(prepared - direct) < 1e-12);
+});
+
+test('prepared rotation transforms preserve lobe surface geometry', () => {
+  const raw = createLobes()[0];
+  const prepared = prepareExposureLobes([raw])[0];
+  const direction = { x: 0.31, y: -0.47, z: 0.82 };
+
+  assertVectorClose(
+    pointOnLobeSurface(prepared, direction),
+    pointOnLobeSurface(raw, direction),
+  );
+  assertVectorClose(
+    lobeSurfaceNormal(prepared, direction),
+    lobeSurfaceNormal(raw, direction),
+  );
 });
 
 test('exposure neighborhoods remove impossible lobes without changing clearance', () => {
