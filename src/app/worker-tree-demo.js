@@ -77,7 +77,6 @@ export class WorkerTreeDemo extends TreeDemo {
     this.lodController.register(built.root);
     this.windController.register(built.root, built.treeData.seed);
     this.dressTree(built.root);
-    this.context.renderer.shadowMap.needsUpdate = true;
   }
 
   installCachedTree(entry, revision, minimumLod) {

@@ -102,7 +102,7 @@ test('culled trees keep an explicit non-rendering role without indexing past lev
   });
 });
 
-test('staggered LOD updates settle after one full sweep and restart on change', () => {
+test('staggered LOD updates cache static tree transforms across camera changes', () => {
   const settings = { ...SETTINGS, updateStride: 2 };
   const controller = new TreeLodController(settings);
   const reads = { count: 0 };
@@ -112,6 +112,7 @@ test('staggered LOD updates settle after one full sweep and restart on change', 
   countWorldPositionReads(second, reads);
   controller.register(first);
   controller.register(second);
+  assert.equal(reads.count, 2);
 
   const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
   camera.position.set(0, 0, 100);
@@ -129,10 +130,7 @@ test('staggered LOD updates settle after one full sweep and restart on change', 
   camera.updateMatrixWorld(true);
   controller.update(camera, 720);
   controller.update(camera, 720);
-  assert.equal(reads.count, 4);
-
-  controller.update(camera, 720);
-  assert.equal(reads.count, 4);
+  assert.equal(reads.count, 2);
 });
 
 test('LOD update stride rejects values that could disable the sweep', () => {

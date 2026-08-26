@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { logger } from '../core/logger.js';
 import { setObjectLodFade } from './lod-dither-fade.js';
+import { freezeStaticSubtree } from './static-object-transform.js';
 import {
   calculateLodWeights,
   remapUnavailableLodWeights,
@@ -96,14 +97,6 @@ export class TreeLodController {
     this.frameIndex = 0;
   }
 
-  /**
-   * How many trees each level is carrying right now.
-   *
-   * A level is only worth having if something is using it, and the only way to
-   * see that a forest is running all four at once is to count them. A tree
-   * below the cull threshold is reported separately: it still costs an update,
-   * but it draws nothing.
-   */
   summarize() {
     const levels = [0, 0, 0, 0];
     let culled = 0;
@@ -127,8 +120,15 @@ export class TreeLodController {
   register(tree) {
     if (this.entries.some((entry) => entry.tree === tree)) return false;
     const lodState = tree.userData.lod;
+    tree.updateMatrixWorld(true);
+    tree.getWorldPosition(this.worldPosition);
+    tree.getWorldScale(this.worldScale);
     this.entries.push({
       tree,
+      worldX: this.worldPosition.x,
+      worldY: this.worldPosition.y,
+      worldZ: this.worldPosition.z,
+      worldScale: resolveTreeWorldScale(this.worldScale),
       stableLevel: lodState.currentLevel ?? 1,
       heroLevelIndex: findRoleIndex(
         lodState.levels,
@@ -167,6 +167,7 @@ export class TreeLodController {
     const task = () => {
       try {
         lodState.buildHero?.();
+        freezeStaticSubtree(entry.tree);
       } catch (error) {
         lodState.heroBuildFailed = true;
         if (this.onGenerationError) {
@@ -296,17 +297,18 @@ export class TreeLodController {
       const entry = this.entries[entryIndex];
       const treeState = entry.tree.userData.tree;
       const lodState = entry.tree.userData.lod;
-      entry.tree.getWorldPosition(this.worldPosition);
-      entry.tree.getWorldScale(this.worldScale);
+      const dx = this.cameraWorldPosition.x - entry.worldX;
+      const dy = this.cameraWorldPosition.y - entry.worldY;
+      const dz = this.cameraWorldPosition.z - entry.worldZ;
       const distance = Math.max(
         MINIMUM_TREE_DISTANCE,
-        this.cameraWorldPosition.distanceTo(this.worldPosition),
+        Math.sqrt(dx * dx + dy * dy + dz * dz),
       );
       const projectedPixels = calculateProjectedTreePixels(
         treeState.height,
         distance,
         focalPixels,
-        resolveTreeWorldScale(this.worldScale),
+        entry.worldScale,
       );
       const minimumLevel = lodState.minimumLevel ?? 0;
       entry.stableLevel = Math.max(

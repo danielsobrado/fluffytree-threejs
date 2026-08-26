@@ -8,7 +8,7 @@ import { releaseTreeBillboardBatchReferences } from './tree-billboard-batch-life
 import { TreeBillboardBatchState } from './tree-billboard-batch-state.js';
 import { calculateTreeBillboardWorldSize } from './tree-billboard-scale.js';
 import { calculateTreeWorldYaw } from './tree-world-yaw.js';
-import { freezeStaticLocalTransform } from './static-object-transform.js';
+import { freezeStaticSubtree } from './static-object-transform.js';
 
 const DITHER_FRAGMENT = `
   float treeBatchNoise = fract(
@@ -195,7 +195,6 @@ export class TreeBillboardBatchManager {
   }
 
   register(tree) {
-    freezeStaticLocalTransform(tree);
     tree.updateMatrixWorld(true);
     const presetId = tree.userData.tree.presetId;
     tree.getWorldQuaternion(this.worldQuaternion);
@@ -203,6 +202,7 @@ export class TreeBillboardBatchManager {
     const worldYaw = calculateTreeWorldYaw(this.worldForward, tree.rotation.y);
     tree.userData.lod.rebuildImpostor?.(worldYaw);
     tree.updateMatrixWorld(true);
+    freezeStaticSubtree(tree);
     tree.getWorldScale(this.worldScale);
     const impostor = findImpostor(tree);
     const sourceTexture = impostor?.material?.map;

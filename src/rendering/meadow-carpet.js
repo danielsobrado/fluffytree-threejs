@@ -55,8 +55,6 @@ function createTuftTexture() {
   paintBlade(context, 24, 12, 4, 44);
   paintBlade(context, 40, 52, 4, 40);
   paintBlade(context, 29, 20, 3, 26);
-  // Two florets. In a grass colour they read as a fatter blade tip; in a pale
-  // lilac they are the flower heads the reference scatters through its meadows.
   context.beginPath();
   context.arc(30, 8, 5, 0, Math.PI * 2);
   context.arc(50, 26, 3.6, 0, Math.PI * 2);
@@ -68,7 +66,6 @@ function createTuftTexture() {
   return texture;
 }
 
-/** Two quads crossed through the vertical, rooted on the ground plane. */
 function createTuftGeometry() {
   const first = new THREE.PlaneGeometry(1, TUFT_HEIGHT);
   first.translate(0, TUFT_HEIGHT * 0.5, 0);
@@ -88,13 +85,6 @@ export class MeadowCarpet {
     this.material = null;
   }
 
-  /**
-   * Rebuilds the carpet for a scene of this size.
-   *
-   * `radius` comes from the scene rather than the configuration, because a
-   * forest's clearing and a garden's ground disc are different sizes and the
-   * carpet has to stop where the ground does.
-   */
   build(radius = this.settings.radius) {
     this.dispose();
     if (!this.settings.enabled || this.settings.count === 0 || radius <= 0) {
@@ -105,8 +95,6 @@ export class MeadowCarpet {
     this.texture ??= createTuftTexture();
     this.material ??= new THREE.MeshLambertMaterial({
       map: this.texture,
-      // Cut out rather than blended: the carpet is thousands of overlapping
-      // instances, and nothing about it can afford to be depth-sorted.
       alphaTest: 0.5,
       transparent: false,
       side: THREE.DoubleSide,
@@ -125,10 +113,8 @@ export class MeadowCarpet {
     mesh.name = 'meadow';
     mesh.userData.tree = { height: TUFT_HEIGHT };
     mesh.receiveShadow = true;
-    // Thousands of four-triangle tufts would double the shadow map's cost to
-    // add speckle no one can read at this softness.
     mesh.castShadow = false;
-    mesh.frustumCulled = false;
+    mesh.frustumCulled = true;
 
     const matrix = new THREE.Matrix4();
     const quaternion = new THREE.Quaternion();
@@ -147,6 +133,8 @@ export class MeadowCarpet {
     }
     mesh.instanceMatrix.needsUpdate = true;
     mesh.instanceColor.needsUpdate = true;
+    mesh.computeBoundingBox();
+    mesh.computeBoundingSphere();
 
     this.mesh = mesh;
     this.scene.add(mesh);

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
+import { createGoldenAngleDiskKernel } from './depth-of-field-kernel.js';
 
 /**
  * The lens blur, as one pass over the scene's own depth.
@@ -21,6 +22,9 @@ import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
  */
 
 const TAP_COUNT = 16;
+const TAP_OFFSETS = createGoldenAngleDiskKernel(TAP_COUNT).map(
+  ([x, y]) => new THREE.Vector2(x, y),
+);
 
 const DEPTH_OF_FIELD_SHADER = {
   uniforms: {
@@ -34,6 +38,7 @@ const DEPTH_OF_FIELD_SHADER = {
     uFarFalloff: { value: 26 },
     uBlurRadius: { value: 0.011 },
     uAspect: { value: 1 },
+    uTapOffsets: { value: null },
   },
   vertexShader: `
     varying vec2 vUv;
@@ -55,10 +60,10 @@ const DEPTH_OF_FIELD_SHADER = {
     uniform float uFarFalloff;
     uniform float uBlurRadius;
     uniform float uAspect;
+    uniform vec2 uTapOffsets[${TAP_COUNT}];
     varying vec2 vUv;
 
     const int TAP_COUNT = ${TAP_COUNT};
-    const float GOLDEN_ANGLE = 2.39996323;
 
     float sceneDistance( vec2 uv ) {
       float depth = texture2D( tDepth, uv ).x;
@@ -90,12 +95,7 @@ const DEPTH_OF_FIELD_SHADER = {
       float weight = 1.0;
 
       for ( int i = 0; i < TAP_COUNT; i ++ ) {
-        float spread = ( float( i ) + 0.5 ) / float( TAP_COUNT );
-        float angle = float( i ) * GOLDEN_ANGLE;
-        // sqrt spreads the taps evenly over the disc's area rather than
-        // crowding them at the centre.
-        vec2 offset = vec2( cos( angle ), sin( angle ) ) * sqrt( spread ) * radius;
-        vec2 tapUv = vUv + offset;
+        vec2 tapUv = vUv + uTapOffsets[i] * radius;
         float tapCoc = circleOfConfusion( sceneDistance( tapUv ) );
         // A sharp subject must not bleed outwards into the blur behind it, so a
         // tap only contributes if it is itself close to as defocused as here.
@@ -128,6 +128,7 @@ export class DepthOfFieldPass extends Pass {
     uniforms.uNearFalloff.value = settings.nearFalloff;
     uniforms.uFarFalloff.value = settings.farFalloff;
     uniforms.uBlurRadius.value = settings.blurRadius;
+    uniforms.uTapOffsets.value = TAP_OFFSETS;
   }
 
   setFocusDistance(distance) {

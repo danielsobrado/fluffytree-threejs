@@ -15,6 +15,7 @@ export class FrameBudgetQueue {
     this.head = 0;
     this.keys = new Set();
     this.lastProcessDuration = 0;
+    this.lastTaskDuration = 0;
     this.maximumTaskDuration = 0;
   }
 
@@ -65,6 +66,15 @@ export class FrameBudgetQueue {
 
     try {
       while (this.head < this.tasks.length) {
+        const elapsed = this.now() - started;
+        if (
+          processed > 0 &&
+          this.lastTaskDuration > 0 &&
+          elapsed + this.lastTaskDuration > budget
+        ) {
+          break;
+        }
+
         const entry = this.tasks[this.head];
         this.head += 1;
         this.keys.delete(entry.key);
@@ -73,9 +83,10 @@ export class FrameBudgetQueue {
         try {
           entry.task();
         } finally {
+          this.lastTaskDuration = this.now() - taskStarted;
           this.maximumTaskDuration = Math.max(
             this.maximumTaskDuration,
-            this.now() - taskStarted,
+            this.lastTaskDuration,
           );
         }
 
@@ -95,6 +106,7 @@ export class FrameBudgetQueue {
     this.head = 0;
     this.keys.clear();
     this.lastProcessDuration = 0;
+    this.lastTaskDuration = 0;
     this.maximumTaskDuration = 0;
   }
 

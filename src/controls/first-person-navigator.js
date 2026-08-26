@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { ColliderSpatialIndex } from './collider-spatial-index.js';
 import {
   clampHeight,
   clampPitch,
@@ -35,7 +36,6 @@ const MODE_SETTINGS = Object.freeze({
 const LOOK_SENSITIVITY = 0.0022;
 const MINIMUM_FLY_HEIGHT = 0.6;
 const DEFAULT_CEILING = 240;
-// Typing into the studio must never also walk the camera into a tree.
 const TEXT_ENTRY_SELECTOR = 'input, select, textarea, [contenteditable="true"]';
 
 export class FirstPersonNavigator {
@@ -61,6 +61,10 @@ export class FirstPersonNavigator {
     this.pitch = 0;
     this.euler = new THREE.Euler(0, 0, 0, 'YXZ');
     this.state = createMotionState(camera.position);
+    this.colliderIndex = new ColliderSpatialIndex();
+    this.colliderSource = null;
+    this.colliderCount = -1;
+    this.nearbyColliders = [];
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleKeyUp = this.handleKeyUp.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -83,15 +87,12 @@ export class FirstPersonNavigator {
     return document.pointerLockElement === this.domElement;
   }
 
-  /** Takes over the camera, keeping where it stands and which way it faces. */
   enter(mode) {
     if (!MODE_SETTINGS[mode]) throw new Error(`Unknown navigation mode '${mode}'.`);
 
     this.mode = mode;
     this.euler.setFromQuaternion(this.camera.quaternion, 'YXZ');
     this.yaw = this.euler.y;
-    // Standing up looks at the horizon. The angle an orbit camera was looking
-    // down from is not the one anyone wants once they are on the ground.
     this.pitch = mode === 'walk' ? 0 : clampPitch(this.euler.x);
     this.actions.clear();
     this.state = createMotionState({
@@ -118,6 +119,21 @@ export class FirstPersonNavigator {
     if (this.active && !this.locked) this.domElement.requestPointerLock?.();
   }
 
+  resolveNearbyColliders(position) {
+    const colliders = this.getColliders();
+    if (colliders !== this.colliderSource || colliders.length !== this.colliderCount) {
+      this.colliderIndex.rebuild(colliders);
+      this.colliderSource = colliders;
+      this.colliderCount = colliders.length;
+    }
+    return this.colliderIndex.query(
+      position.x,
+      position.z,
+      PLAYER_RADIUS,
+      this.nearbyColliders,
+    );
+  }
+
   update(delta) {
     if (!this.mode) return;
 
@@ -141,7 +157,7 @@ export class FirstPersonNavigator {
       this.mode === 'walk'
         ? resolveTreeCollisions(
             { ...this.state.position, y: WALK_EYE_HEIGHT },
-            this.getColliders(),
+            this.resolveNearbyColliders(this.state.position),
             PLAYER_RADIUS,
           )
         : clampHeight(this.state.position, MINIMUM_FLY_HEIGHT, this.getCeiling());
@@ -197,8 +213,6 @@ export class FirstPersonNavigator {
   }
 
   handleLockChange() {
-    // Releasing the pointer releases the keys with it, or a key held while the
-    // lock broke would walk the camera away on its own.
     if (!this.locked) this.actions.clear();
     this.onChange(this);
   }
